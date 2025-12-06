@@ -1588,7 +1588,7 @@
             const status = document.getElementById('browser-status');
             
             // Check for cookie input if we're on Vercel (or just always allow it)
-            const cookieInput = prompt("Optional: Paste your Schoology 'SESS...' cookie to skip login (Required for Vercel):");
+            const cookieInput = prompt("Optional: Paste your Schoology 'SESS...' cookie to skip login (Required for Vercel).\n\nYou can paste either:\n1. The full cookie string (e.g. 'SESS...=12345...')\n2. Just the value (e.g. '12345...')");
             
             startBtn.disabled = true;
             startBtn.textContent = 'Opening browser...';

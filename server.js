@@ -2334,34 +2334,51 @@ app.post('/api/browser/login', requireBrowserFeatures, express.json(), async (re
         // If cookie provided (e.g. on Vercel), inject it
         if (schoologyCookie) {
             debugLog('BROWSER', 'Injecting provided Schoology cookie...');
-            const domain = config.domain || 'schoology.com';
-            await browserContext.addCookies([{
-                name: 'SESS' + crypto.createHash('md5').update(domain).digest('hex').substring(0, 5), // Approximate name, usually SESS<hash>
-                // Actually, user should provide the full cookie string "name=value" or just the value if we know the name
-                // Let's assume they provide the full cookie string or we parse it
-                // Simplest: User provides the value of the SESS... cookie
-                // But the name varies.
-                // Better: User provides the full "Cookie: ..." header string or we ask for specific cookie name/value
-                // Let's try to parse a cookie string "key=value; key2=value2"
-            }]);
             
-            // Actually, let's just ask for the SESS cookie value and try to find the name or set a wildcard?
-            // Schoology uses a cookie named like SESS<md5_of_domain_or_something>
-            // Let's just parse the input string as cookies
+            const cookies = [];
+            // Handle multiple cookies separated by semicolon
+            const rawCookies = schoologyCookie.split(';');
             
-            const cookies = schoologyCookie.split(';').map(c => {
-                const [name, ...v] = c.trim().split('=');
-                return {
-                    name: name,
-                    value: v.join('='),
-                    domain: '.' + (config.domain || 'schoology.com'),
-                    path: '/'
-                };
-            });
+            for (const c of rawCookies) {
+                if (!c || !c.trim()) continue;
+                
+                if (c.includes('=')) {
+                    // Format: name=value
+                    const parts = c.trim().split('=');
+                    const name = parts[0].trim();
+                    const value = parts.slice(1).join('=').trim();
+                    
+                    if (name && value) {
+                        cookies.push({
+                            name: name,
+                            value: value,
+                            domain: '.schoology.com', // Wildcard for subdomains
+                            path: '/'
+                        });
+                    }
+                } else {
+                    // Format: just value (assume it's the SESS cookie)
+                    // Calculate name: SESS + md5(domain)
+                    // We use fuhsd.schoology.com for login, so calculate hash for that
+                    const domain = 'fuhsd.schoology.com';
+                    const hash = crypto.createHash('md5').update(domain).digest('hex');
+                    const name = 'SESS' + hash;
+                    
+                    cookies.push({
+                        name: name,
+                        value: c.trim(),
+                        domain: '.schoology.com',
+                        path: '/'
+                    });
+                }
+            }
             
             if (cookies.length > 0) {
+                debugLog('BROWSER', `Injecting ${cookies.length} cookies: ${cookies.map(c => c.name).join(', ')}`);
                 await browserContext.addCookies(cookies);
-                debugLog('BROWSER', `✓ Injected ${cookies.length} cookies`);
+                debugLog('BROWSER', `✓ Injected cookies successfully`);
+            } else {
+                debugLog('BROWSER', '⚠️ No valid cookies found in input');
             }
         }
         
