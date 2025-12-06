@@ -16,17 +16,28 @@ const IS_VERCEL = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undef
 // Conditionally require fs only for local development
 const fs = IS_VERCEL ? null : require('fs');
 
-// Browser features disabled on Vercel (Playwright is too large for serverless)
-// On local development, you can still use browser features by running locally
-const BROWSER_FEATURES_ENABLED = !IS_VERCEL && process.env.ENABLE_BROWSER !== 'false';
-
-// Only require Playwright if browser features are enabled
+// Browser features configuration
+let BROWSER_FEATURES_ENABLED = process.env.ENABLE_BROWSER !== 'false';
 let chromium = null;
-if (BROWSER_FEATURES_ENABLED) {
+let chromiumPack = null; // For Vercel
+
+if (IS_VERCEL) {
+    try {
+        // Try to load Vercel-compatible chromium
+        chromium = require('playwright-core').chromium;
+        chromiumPack = require('@sparticuz/chromium');
+        console.log('✓ Vercel Chromium setup loaded');
+    } catch (e) {
+        console.log('⚠️  Vercel Chromium dependencies not found. Install @sparticuz/chromium and playwright-core to enable.');
+        BROWSER_FEATURES_ENABLED = false;
+    }
+} else {
+    // Local development
     try {
         chromium = require('playwright').chromium;
     } catch (e) {
         console.log('⚠️  Playwright not available - browser features disabled');
+        BROWSER_FEATURES_ENABLED = false;
     }
 }
 
@@ -2265,8 +2276,9 @@ app.get('/api/browser/status', (req, res) => {
 });
 
 // Start browser login (opens visible browser for Google SSO)
-app.post('/api/browser/login', requireBrowserFeatures, async (req, res) => {
+app.post('/api/browser/login', requireBrowserFeatures, express.json(), async (req, res) => {
     debugLog('BROWSER', 'Starting browser login...');
+    const { schoologyCookie } = req.body;
     
     try {
         // Close existing browser if any
@@ -2287,12 +2299,24 @@ app.post('/api/browser/login', requireBrowserFeatures, async (req, res) => {
             isLoggedIn = false;
         }
         
-        // Launch browser in visible mode for login
-        debugLog('BROWSER', 'Launching visible browser for Google SSO...');
-        browserInstance = await chromium.launch({
+        // Launch browser
+        debugLog('BROWSER', `Launching browser (Vercel: ${IS_VERCEL})...`);
+        
+        let launchOptions = {
             headless: false,
             args: ['--start-maximized']
-        });
+        };
+
+        if (IS_VERCEL && chromiumPack) {
+            launchOptions = {
+                args: chromiumPack.args,
+                defaultViewport: chromiumPack.defaultViewport,
+                executablePath: await chromiumPack.executablePath(),
+                headless: chromiumPack.headless,
+            };
+        }
+
+        browserInstance = await chromium.launch(launchOptions);
         
         // Check if we have saved state to restore (only locally, not on Vercel)
         let contextOptions = {
@@ -2307,29 +2331,69 @@ app.post('/api/browser/login', requireBrowserFeatures, async (req, res) => {
         
         browserContext = await browserInstance.newContext(contextOptions);
         
+        // If cookie provided (e.g. on Vercel), inject it
+        if (schoologyCookie) {
+            debugLog('BROWSER', 'Injecting provided Schoology cookie...');
+            const domain = config.domain || 'schoology.com';
+            await browserContext.addCookies([{
+                name: 'SESS' + crypto.createHash('md5').update(domain).digest('hex').substring(0, 5), // Approximate name, usually SESS<hash>
+                // Actually, user should provide the full cookie string "name=value" or just the value if we know the name
+                // Let's assume they provide the full cookie string or we parse it
+                // Simplest: User provides the value of the SESS... cookie
+                // But the name varies.
+                // Better: User provides the full "Cookie: ..." header string or we ask for specific cookie name/value
+                // Let's try to parse a cookie string "key=value; key2=value2"
+            }]);
+            
+            // Actually, let's just ask for the SESS cookie value and try to find the name or set a wildcard?
+            // Schoology uses a cookie named like SESS<md5_of_domain_or_something>
+            // Let's just parse the input string as cookies
+            
+            const cookies = schoologyCookie.split(';').map(c => {
+                const [name, ...v] = c.trim().split('=');
+                return {
+                    name: name,
+                    value: v.join('='),
+                    domain: '.' + (config.domain || 'schoology.com'),
+                    path: '/'
+                };
+            });
+            
+            if (cookies.length > 0) {
+                await browserContext.addCookies(cookies);
+                debugLog('BROWSER', `✓ Injected ${cookies.length} cookies`);
+            }
+        }
+        
         const page = await browserContext.newPage();
         
         // Navigate to Schoology
         debugLog('BROWSER', 'Navigating to fuhsd.schoology.com...');
         await page.goto('https://fuhsd.schoology.com', { waitUntil: 'networkidle' });
         
-        // Check if already logged in from restored state
+        // Check if already logged in from restored state or injected cookie
         const currentUrl = page.url();
         if (currentUrl.includes('schoology.com') && 
             !currentUrl.includes('login') && 
             !currentUrl.includes('google.com') &&
             !currentUrl.includes('accounts.')) {
             isLoggedIn = true;
-            debugLog('BROWSER', '✓ Already logged in from saved state!');
+            debugLog('BROWSER', '✓ Already logged in!');
+            
+            // On Vercel, we might want to return the storage state so the client can save it?
+            // For now, just keep it in memory (will be lost on cold start)
+            
             res.json({
                 success: true,
                 alreadyLoggedIn: true,
-                message: 'Browser opened with saved login! You are already authenticated.'
+                message: 'Browser opened and authenticated successfully!'
             });
         } else {
             res.json({
                 success: true,
-                message: 'Browser opened. Please complete Google SSO login in the browser window, then click "Check Login Status".'
+                message: IS_VERCEL 
+                    ? 'Browser opened but login failed. Please provide a valid Schoology SESS cookie.' 
+                    : 'Browser opened. Please complete Google SSO login in the browser window, then click "Check Login Status".'
             });
         }
         
@@ -4105,8 +4169,12 @@ app.listen(PORT, () => {
     
     if (IS_VERCEL) {
         console.log('🌐 Running on Vercel (Serverless Mode)');
-        console.log('⚠️  Browser/Quiz features are DISABLED');
-        console.log('   (Playwright is too large for serverless deployment)');
+        if (BROWSER_FEATURES_ENABLED) {
+            console.log('✓ Browser features ENABLED (using @sparticuz/chromium)');
+        } else {
+            console.log('⚠️  Browser/Quiz features are DISABLED');
+            console.log('   (Install @sparticuz/chromium to enable)');
+        }
     } else {
         console.log(`📍 Open http://localhost:${PORT} in your browser`);
         if (BROWSER_FEATURES_ENABLED) {

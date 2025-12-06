@@ -1587,15 +1587,26 @@
             const startBtn = document.getElementById('start-login-btn');
             const status = document.getElementById('browser-status');
             
+            // Check for cookie input if we're on Vercel (or just always allow it)
+            const cookieInput = prompt("Optional: Paste your Schoology 'SESS...' cookie to skip login (Required for Vercel):");
+            
             startBtn.disabled = true;
             startBtn.textContent = 'Opening browser...';
             
             try {
-                const response = await fetch('/api/browser/login', { method: 'POST' });
+                const response = await fetch('/api/browser/login', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schoologyCookie: cookieInput })
+                });
                 const data = await response.json();
                 
                 if (data.success) {
-                    showToast('Browser opened! Complete Google SSO login, then click "Check Login Status"', 'success');
+                    if (data.alreadyLoggedIn) {
+                        showToast('Browser authenticated successfully!', 'success');
+                    } else {
+                        showToast('Browser opened! Complete Google SSO login, then click "Check Login Status"', 'success');
+                    }
                     await checkBrowserStatus();
                 } else {
                     showToast('Error: ' + data.error, 'error');
