@@ -25,10 +25,5 @@
     "SCHOOLOGY_DOMAIN": "@schoology-domain",
     "SESSION_SECRET": "@session-secret",
     "GEMINI_API_KEY": "@gemini-api-key"
-  },
-  "functions": {
-    "server.js": {
-      "maxDuration": 30
-    }
   }
 }
