@@ -2259,6 +2259,113 @@ function requireBrowserFeatures(req, res, next) {
     next();
 }
 
+// Helper to ensure browser is running (restoring from cookie if needed)
+async function ensureBrowser(req) {
+    if (browserContext && isLoggedIn) return true;
+    
+    const storedCookie = req.cookies.schoology_sess ? decryptToken(req.cookies.schoology_sess) : null;
+    if (!storedCookie) return false;
+    
+    debugLog('BROWSER', 'Restoring browser session from cookie...');
+    
+    try {
+        let launchOptions = {
+            headless: false,
+            args: ['--start-maximized']
+        };
+
+        if (IS_VERCEL && chromiumPack) {
+            launchOptions = {
+                args: chromiumPack.args,
+                defaultViewport: chromiumPack.defaultViewport,
+                executablePath: await chromiumPack.executablePath(),
+                headless: chromiumPack.headless,
+            };
+        }
+
+        browserInstance = await chromium.launch(launchOptions);
+        
+        let contextOptions = {
+            viewport: { width: 1280, height: 800 },
+            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        };
+        
+        browserContext = await browserInstance.newContext(contextOptions);
+        
+        const cookies = [];
+        const rawCookies = storedCookie.split(';');
+        
+        for (const c of rawCookies) {
+            if (!c || !c.trim()) continue;
+            
+            if (c.includes('=')) {
+                const parts = c.trim().split('=');
+                const name = parts[0].trim();
+                const value = parts.slice(1).join('=').trim();
+                if (name && value) {
+                    cookies.push({ name, value, domain: '.schoology.com', path: '/' });
+                }
+            } else {
+                const domain = 'fuhsd.schoology.com';
+                const hash = crypto.createHash('md5').update(domain).digest('hex');
+                const name = 'SESS' + hash;
+                cookies.push({ name, value: c.trim(), domain: '.schoology.com', path: '/' });
+            }
+        }
+        
+        if (cookies.length > 0) {
+            await browserContext.addCookies(cookies);
+        }
+        
+        isLoggedIn = true;
+        return true;
+    } catch (e) {
+        debugLog('BROWSER', `Failed to restore browser: ${e.message}`);
+        return false;
+    }
+}
+
+// Helper to ensure quiz page is active (restoring from cookie URL if needed)
+async function ensureQuizPage(req) {
+    if (quizPage) return true;
+    
+    const url = req.cookies.current_assessment_url;
+    if (!url) return false;
+    
+    debugLog('QUIZ', 'Restoring quiz page from cookie URL...');
+    
+    try {
+        if (!browserContext) {
+            const success = await ensureBrowser(req);
+            if (!success) return false;
+        }
+        
+        quizPage = await browserContext.newPage();
+        await quizPage.setViewportSize({ width: 1280, height: 800 });
+        
+        await quizPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await quizPage.waitForTimeout(2000);
+        
+        // Click Resume/Start
+        const resumeButton = await quizPage.$('input[value*="Resume"], button:has-text("Resume"), a:has-text("Resume")');
+        if (resumeButton) {
+            await resumeButton.click();
+            await quizPage.waitForTimeout(3000);
+        } else {
+            const startButton = await quizPage.$('input[value*="Start Attempt"], input[value*="Start"], button:has-text("Start Attempt"), button:has-text("Start"), a:has-text("Start Attempt")');
+            if (startButton) {
+                await startButton.click();
+                await quizPage.waitForTimeout(3000);
+            }
+        }
+        
+        return true;
+    } catch (e) {
+        debugLog('QUIZ', `Failed to restore page: ${e.message}`);
+        return false;
+    }
+}
+
 // Check browser login status
 app.get('/api/browser/status', (req, res) => {
     if (!BROWSER_FEATURES_ENABLED) {
@@ -2269,9 +2376,13 @@ app.get('/api/browser/status', (req, res) => {
             message: 'Browser features are disabled on Vercel'
         });
     }
+    
+    // Check if we have a stored cookie (for Vercel persistence)
+    const storedCookie = req.cookies.schoology_sess ? decryptToken(req.cookies.schoology_sess) : null;
+    
     res.json({
         browserOpen: browserInstance !== null,
-        loggedIn: isLoggedIn
+        loggedIn: isLoggedIn || !!storedCookie
     });
 });
 
@@ -2397,8 +2508,15 @@ app.post('/api/browser/login', requireBrowserFeatures, express.json(), async (re
             isLoggedIn = true;
             debugLog('BROWSER', '✓ Already logged in!');
             
-            // On Vercel, we might want to return the storage state so the client can save it?
-            // For now, just keep it in memory (will be lost on cold start)
+            // Save the cookie for future serverless invocations
+            if (schoologyCookie) {
+                res.cookie('schoology_sess', encryptToken(schoologyCookie), { 
+                    httpOnly: true, 
+                    secure: IS_VERCEL, 
+                    sameSite: 'lax',
+                    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+                });
+            }
             
             res.json({
                 success: true,
@@ -2507,8 +2625,11 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
     const { courseId, assignmentId } = req.body;
     debugLog('QUIZ-START', `=== Starting quiz for course: ${courseId}, assignment: ${assignmentId} ===`);
     
-    if (!browserContext || !isLoggedIn) {
-        debugLog('QUIZ-START', '✗ Browser not logged in');
+    // Check for stored cookie if not logged in
+    const storedCookie = req.cookies.schoology_sess ? decryptToken(req.cookies.schoology_sess) : null;
+    
+    if ((!browserContext || !isLoggedIn) && !storedCookie) {
+        debugLog('QUIZ-START', '✗ Browser not logged in and no stored cookie');
         return res.json({
             success: false,
             error: 'Browser not logged in. Please complete browser login first.',
@@ -2517,6 +2638,64 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
     }
     
     try {
+        // If browser not running but we have cookie, launch it (Vercel persistence)
+        if ((!browserContext || !isLoggedIn) && storedCookie) {
+            debugLog('QUIZ-START', 'Launching browser with stored cookie...');
+            
+            let launchOptions = {
+                headless: false,
+                args: ['--start-maximized']
+            };
+
+            if (IS_VERCEL && chromiumPack) {
+                launchOptions = {
+                    args: chromiumPack.args,
+                    defaultViewport: chromiumPack.defaultViewport,
+                    executablePath: await chromiumPack.executablePath(),
+                    headless: chromiumPack.headless,
+                };
+            }
+
+            browserInstance = await chromium.launch(launchOptions);
+            
+            let contextOptions = {
+                viewport: { width: 1280, height: 800 },
+                userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            };
+            
+            browserContext = await browserInstance.newContext(contextOptions);
+            
+            // Inject cookie
+            debugLog('QUIZ-START', 'Injecting stored Schoology cookie...');
+            const cookies = [];
+            const rawCookies = storedCookie.split(';');
+            
+            for (const c of rawCookies) {
+                if (!c || !c.trim()) continue;
+                
+                if (c.includes('=')) {
+                    const parts = c.trim().split('=');
+                    const name = parts[0].trim();
+                    const value = parts.slice(1).join('=').trim();
+                    if (name && value) {
+                        cookies.push({ name, value, domain: '.schoology.com', path: '/' });
+                    }
+                } else {
+                    const domain = 'fuhsd.schoology.com';
+                    const hash = crypto.createHash('md5').update(domain).digest('hex');
+                    const name = 'SESS' + hash;
+                    cookies.push({ name, value: c.trim(), domain: '.schoology.com', path: '/' });
+                }
+            }
+            
+            if (cookies.length > 0) {
+                await browserContext.addCookies(cookies);
+                debugLog('QUIZ-START', `✓ Injected ${cookies.length} cookies`);
+            }
+            
+            isLoggedIn = true;
+        }
+
         // Close existing quiz page if any
         if (quizPage) {
             debugLog('QUIZ-START', 'Closing existing quiz page...');
@@ -2535,6 +2714,15 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
         
         // Navigate to the assessment page
         const assessmentUrl = `https://fuhsd.schoology.com/course/${courseId}/assessments/${assignmentId}`;
+        
+        // Save URL for session restoration on Vercel
+        res.cookie('current_assessment_url', assessmentUrl, { 
+            httpOnly: true, 
+            secure: IS_VERCEL, 
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000 
+        });
+        
         debugLog('QUIZ-START', `Navigating to: ${assessmentUrl}`);
         
         // Use domcontentloaded instead of networkidle to avoid timeout
@@ -2639,6 +2827,9 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
 app.post('/api/quiz/next', requireBrowserFeatures, async (req, res) => {
     debugLog('QUIZ-NEXT', '=== Navigating to next question ===');
     
+    // Ensure we have a page (restore if needed)
+    await ensureQuizPage(req);
+    
     if (!quizPage) {
         debugLog('QUIZ-NEXT', '✗ No active quiz page');
         return res.json({
@@ -2696,6 +2887,9 @@ app.post('/api/quiz/next', requireBrowserFeatures, async (req, res) => {
 // Navigate to previous question
 app.post('/api/quiz/prev', requireBrowserFeatures, async (req, res) => {
     debugLog('QUIZ-PREV', '=== Navigating to previous question ===');
+    
+    // Ensure we have a page (restore if needed)
+    await ensureQuizPage(req);
     
     if (!quizPage) {
         debugLog('QUIZ-PREV', '✗ No active quiz page');
@@ -2781,6 +2975,9 @@ app.get('/api/quiz/screenshot', requireBrowserFeatures, async (req, res) => {
 // Submit quiz - click Review, then Finish, then confirm
 app.post('/api/quiz/submit', requireBrowserFeatures, async (req, res) => {
     debugLog('QUIZ-SUBMIT', '=== Submitting quiz ===');
+    
+    // Ensure we have a page (restore if needed)
+    await ensureQuizPage(req);
     
     if (!quizPage) {
         debugLog('QUIZ-SUBMIT', '✗ No active quiz page');
