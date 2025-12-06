@@ -923,11 +923,13 @@ app.get('/auth/schoology', async (req, res) => {
         const tokenData = JSON.stringify({ oauth_token, oauth_token_secret });
         const encryptedToken = encryptToken(tokenData);
         
+        // Use 'lax' sameSite - we're on the same domain, just different routes
         res.cookie('oauth_request_token', encryptedToken, {
             httpOnly: true,
-            secure: IS_VERCEL,
-            sameSite: IS_VERCEL ? 'none' : 'lax',
-            maxAge: 10 * 60 * 1000 // 10 minutes - just for OAuth flow
+            secure: true, // Always use secure on Vercel (HTTPS)
+            sameSite: 'lax', // 'lax' works for same-site navigation
+            maxAge: 10 * 60 * 1000, // 10 minutes - just for OAuth flow
+            path: '/' // Ensure cookie is available on all paths
         });
         
         // Also store in session as backup for local development
@@ -935,6 +937,7 @@ app.get('/auth/schoology', async (req, res) => {
             oauth_token,
             oauth_token_secret
         };
+        
         debugLog('OAUTH-STEP1', '✓ Request token stored in cookie and session');
 
         // Schoology doesn't like localhost callbacks - they get blocked by CloudFront
@@ -945,12 +948,12 @@ app.get('/auth/schoology', async (req, res) => {
         debugLog('OAUTH-STEP2', `Authorization URL: ${authUrl}`);
         debugLog('OAUTH-STEP2', 'User will authorize on Schoology, then click complete');
         
-        // Store that we're waiting for auth completion and the auth URL
-        req.session.awaitingAuth = true;
-        req.session.authUrl = authUrl;
+        // Pass encrypted token via query param as backup for serverless environments
+        // where cookies might not persist between function invocations
+        const stateToken = encodeURIComponent(encryptedToken);
         
         // Render page that tells user to authorize
-        res.render('authorize', { authUrl });
+        res.render('authorize', { authUrl, stateToken });
     } catch (error) {
         debugLog('OAUTH-ERROR', '✗ OAuth Step 1/2 FAILED');
         debugLog('OAUTH-ERROR', `Error: ${error.message}`);
@@ -963,21 +966,38 @@ app.get('/auth/schoology', async (req, res) => {
 app.get('/auth/complete', async (req, res) => {
     debugLog('OAUTH-STEP3', '========== STEP 3: Manual Auth Completion ==========');
     debugLog('OAUTH-STEP3', 'User clicked Complete Login after authorizing on Schoology');
+    debugLog('OAUTH-STEP3', 'Available cookies:', Object.keys(req.cookies || {}));
+    debugLog('OAUTH-STEP3', 'State param present:', !!req.query.state);
     
     try {
-        // Try to get request token from cookie first (works on Vercel), then fall back to session
+        // Try to get request token from multiple sources (in order of preference)
         let requestToken = null;
         
-        const encryptedToken = req.cookies.oauth_request_token;
-        if (encryptedToken) {
-            const decrypted = decryptToken(encryptedToken);
+        // 1. First try the state query parameter (most reliable for serverless)
+        if (req.query.state) {
+            const decrypted = decryptToken(decodeURIComponent(req.query.state));
             if (decrypted) {
                 requestToken = JSON.parse(decrypted);
-                debugLog('OAUTH-STEP3', '✓ Request token retrieved from cookie');
+                debugLog('OAUTH-STEP3', '✓ Request token retrieved from state parameter');
             }
         }
         
-        // Fall back to session (for local development)
+        // 2. Try cookie
+        if (!requestToken) {
+            const encryptedToken = req.cookies.oauth_request_token;
+            debugLog('OAUTH-STEP3', 'Encrypted token from cookie:', encryptedToken ? 'present (' + encryptedToken.length + ' chars)' : 'NOT FOUND');
+            
+            if (encryptedToken) {
+                const decrypted = decryptToken(encryptedToken);
+                debugLog('OAUTH-STEP3', 'Decryption result:', decrypted ? 'success' : 'FAILED');
+                if (decrypted) {
+                    requestToken = JSON.parse(decrypted);
+                    debugLog('OAUTH-STEP3', '✓ Request token retrieved from cookie');
+                }
+            }
+        }
+        
+        // 3. Fall back to session (for local development)
         if (!requestToken) {
             requestToken = req.session.requestToken;
             debugLog('OAUTH-STEP3', 'Request token from session:', !!requestToken);
