@@ -247,6 +247,19 @@ async function fetchCategoriesForSectionsParallel(sectionIds, accessToken, maxCo
     return results;
 }
 
+// Fetch grades for a specific section
+async function fetchSectionGrades(sectionId, accessToken) {
+    try {
+        const gradesUrl = `${config.apiBase}/sections/${sectionId}/grades`;
+        debugLog('API', `Fetching section grades: ${gradesUrl}`);
+        const gradesData = await makeOAuthRequest('GET', gradesUrl, accessToken);
+        return gradesData;
+    } catch (e) {
+        debugLog('API', `Failed to fetch section grades: ${e.message}`);
+        return null;
+    }
+}
+
 // Parse grades into a lookup map by assignment_id
 function parseGradesIntoMap(gradesData) {
     const gradesMap = {};
@@ -1663,20 +1676,28 @@ app.get('/grades', async (req, res) => {
         
         for (const section of allSections) {
             try {
+                debugLog('GRADES', `Processing section ${section.id}: ${section.course_title || section.section_title}`);
+                
                 // Get the final grade from our pre-fetched data
                 let finalGrade = sectionFinalGrades[section.id];
                 if (finalGrade === undefined || finalGrade === null || isNaN(finalGrade)) {
                     finalGrade = null;
                 }
                 
+                debugLog('GRADES', `  Final grade: ${finalGrade !== null ? finalGrade : 'N/A'}`);
+                
                 // Use pre-fetched grade data
                 const sectionGradesData = sectionGradeData[section.id] 
                     ? { section: [sectionGradeData[section.id]] } 
                     : { section: [] };
                 
+                debugLog('GRADES', `  Has section grade data from user/grades: ${!!sectionGradeData[section.id]}`);
+                
                 // Get pre-fetched assignments
                 const assignmentResult = assignmentsResults[section.id];
                 const assignments = assignmentResult ? assignmentResult.assignments : [];
+                
+                debugLog('GRADES', `  Assignments found: ${assignments.length}`);
                 
                 // Create assignment lookup
                 const assignmentLookup = {};
@@ -1703,11 +1724,36 @@ app.get('/grades', async (req, res) => {
                     }
                 }
                 
+                // If no grades found from user-level API and we have assignments, 
+                // try fetching section-specific grades
+                if (gradesList.length === 0 && assignments.length > 0 && !sectionGradeData[section.id]) {
+                    debugLog('GRADES', `  No user-level grades, trying section-specific grades...`);
+                    const sectionSpecificGrades = await fetchSectionGrades(section.id, req.session.accessToken);
+                    
+                    if (sectionSpecificGrades && sectionSpecificGrades.section) {
+                        const sections = Array.isArray(sectionSpecificGrades.section) 
+                            ? sectionSpecificGrades.section 
+                            : [sectionSpecificGrades.section];
+                        
+                        for (const sec of sections) {
+                            const periods = sec.period || [];
+                            for (const period of periods) {
+                                const periodAssignments = period.assignment || [];
+                                gradesList = gradesList.concat(periodAssignments);
+                            }
+                        }
+                        debugLog('GRADES', `  Found ${gradesList.length} grades from section-specific API`);
+                    }
+                }
+                
                 // Create a map of assignment ID -> grade data for quick lookup
                 const gradesMap = {};
                 gradesList.forEach(g => {
                     gradesMap[g.assignment_id] = g;
                 });
+                
+                debugLog('GRADES', `  Grades found: ${gradesList.length}`);
+                debugLog('GRADES', `  Grades mapped: ${Object.keys(gradesMap).length}`);
                 
                 let grades = [];
                 let totalPoints = 0;
