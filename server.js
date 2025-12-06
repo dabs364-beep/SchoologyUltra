@@ -33,6 +33,39 @@ if (BROWSER_FEATURES_ENABLED) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ============================================================
+// Cookie Encryption for Serverless OAuth Token Storage
+// ============================================================
+// On Vercel, sessions don't persist between requests, so we store
+// OAuth request tokens in encrypted cookies instead
+
+const ENCRYPTION_KEY = crypto.createHash('sha256')
+    .update(process.env.SESSION_SECRET || 'schoology-pro-max-secret')
+    .digest();
+const IV_LENGTH = 16;
+
+function encryptToken(text) {
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return iv.toString('hex') + ':' + encrypted;
+}
+
+function decryptToken(text) {
+    try {
+        const parts = text.split(':');
+        const iv = Buffer.from(parts[0], 'hex');
+        const encrypted = parts[1];
+        const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+    } catch (e) {
+        return null;
+    }
+}
+
 // Browser session management (only used when browser features enabled)
 let browserContext = null;
 let browserInstance = null;
@@ -809,6 +842,27 @@ if (IS_VERCEL) {
     app.set('trust proxy', 1);
 }
 
+// Middleware to restore access token from cookie on Vercel
+// This ensures authentication persists across serverless function invocations
+app.use((req, res, next) => {
+    if (!req.session.accessToken && req.cookies.access_token) {
+        const decrypted = decryptToken(req.cookies.access_token);
+        if (decrypted) {
+            try {
+                const tokenData = JSON.parse(decrypted);
+                req.session.accessToken = tokenData;
+                if (req.cookies.user_id) {
+                    req.session.userId = req.cookies.user_id;
+                }
+                debugLog('AUTH', '✓ Access token restored from cookie');
+            } catch (e) {
+                debugLog('AUTH', '✗ Failed to parse access token from cookie');
+            }
+        }
+    }
+    next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -865,12 +919,23 @@ app.get('/auth/schoology', async (req, res) => {
         
         debugLog('OAUTH-STEP1', '✓ Successfully obtained request token');
 
-        // Store request token in session
+        // Store request token in encrypted cookie (works on serverless/Vercel)
+        const tokenData = JSON.stringify({ oauth_token, oauth_token_secret });
+        const encryptedToken = encryptToken(tokenData);
+        
+        res.cookie('oauth_request_token', encryptedToken, {
+            httpOnly: true,
+            secure: IS_VERCEL,
+            sameSite: IS_VERCEL ? 'none' : 'lax',
+            maxAge: 10 * 60 * 1000 // 10 minutes - just for OAuth flow
+        });
+        
+        // Also store in session as backup for local development
         req.session.requestToken = {
             oauth_token,
             oauth_token_secret
         };
-        debugLog('OAUTH-STEP1', '✓ Request token stored in session');
+        debugLog('OAUTH-STEP1', '✓ Request token stored in cookie and session');
 
         // Schoology doesn't like localhost callbacks - they get blocked by CloudFront
         // Instead, we'll show user the authorize page with the Schoology URL to open
@@ -900,13 +965,29 @@ app.get('/auth/complete', async (req, res) => {
     debugLog('OAUTH-STEP3', 'User clicked Complete Login after authorizing on Schoology');
     
     try {
-        const requestToken = req.session.requestToken;
+        // Try to get request token from cookie first (works on Vercel), then fall back to session
+        let requestToken = null;
         
-        debugLog('OAUTH-STEP3', 'Session requestToken exists:', !!requestToken);
+        const encryptedToken = req.cookies.oauth_request_token;
+        if (encryptedToken) {
+            const decrypted = decryptToken(encryptedToken);
+            if (decrypted) {
+                requestToken = JSON.parse(decrypted);
+                debugLog('OAUTH-STEP3', '✓ Request token retrieved from cookie');
+            }
+        }
+        
+        // Fall back to session (for local development)
+        if (!requestToken) {
+            requestToken = req.session.requestToken;
+            debugLog('OAUTH-STEP3', 'Request token from session:', !!requestToken);
+        }
+        
+        debugLog('OAUTH-STEP3', 'RequestToken exists:', !!requestToken);
 
         if (!requestToken) {
-            debugLog('OAUTH-STEP3', '✗ FAILED: No request token in session');
-            return res.render('error', { message: 'No request token found. Please start the login process again.' });
+            debugLog('OAUTH-STEP3', '✗ FAILED: No request token in cookie or session');
+            return res.render('error', { message: 'No request token found. Please try logging in again.' });
         }
         
         debugLog('OAUTH-STEP3', 'Using stored request token:', requestToken.oauth_token ? requestToken.oauth_token.substring(0, 12) + '...' : 'NULL');
@@ -944,13 +1025,24 @@ app.get('/auth/complete', async (req, res) => {
             oauth_token: access_token,
             oauth_token_secret: access_token_secret
         };
-        debugLog('OAUTH-STEP4', '✓ Access token stored in session');
+        
+        // Also store in encrypted cookie for Vercel serverless persistence
+        const accessTokenData = JSON.stringify({ oauth_token: access_token, oauth_token_secret: access_token_secret });
+        res.cookie('access_token', encryptToken(accessTokenData), {
+            httpOnly: true,
+            secure: IS_VERCEL,
+            sameSite: IS_VERCEL ? 'none' : 'lax',
+            maxAge: 365 * 24 * 60 * 60 * 1000 // 1 year
+        });
+        
+        debugLog('OAUTH-STEP4', '✓ Access token stored in session and cookie');
 
         // Clear request token and awaiting flag
         delete req.session.requestToken;
         delete req.session.awaitingAuth;
         delete req.session.authUrl;
-        debugLog('OAUTH-STEP4', '✓ Request token cleared from session');
+        res.clearCookie('oauth_request_token'); // Clear the OAuth cookie
+        debugLog('OAUTH-STEP4', '✓ Request token cleared from session and cookie');
 
         debugLog('OAUTH-COMPLETE', '========== OAuth Flow Complete! ==========');
         debugLog('OAUTH-COMPLETE', '✓ User is now authenticated');
@@ -1078,6 +1170,14 @@ app.get('/dashboard', async (req, res) => {
         
         req.session.userId = user.id;
         req.session.userName = `${user.name_first} ${user.name_last}`;
+        
+        // Store user ID in cookie for Vercel serverless persistence
+        res.cookie('user_id', user.id, {
+            httpOnly: true,
+            secure: IS_VERCEL,
+            sameSite: IS_VERCEL ? 'none' : 'lax',
+            maxAge: 365 * 24 * 60 * 60 * 1000 // 1 year
+        });
         
         // Step 3: PARALLEL FETCH - Get sections and grades simultaneously
         debugLog('DASHBOARD', '⚡ Starting parallel fetch for sections and grades...');
@@ -3837,6 +3937,10 @@ app.get('/settings', async (req, res) => {
 app.get('/logout', (req, res) => {
     debugLog('LOGOUT', 'User logging out');
     req.session.destroy();
+    // Clear authentication cookies
+    res.clearCookie('access_token');
+    res.clearCookie('user_id');
+    res.clearCookie('oauth_request_token');
     res.redirect('/');
 });
 
