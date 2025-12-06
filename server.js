@@ -293,6 +293,8 @@ function parseGradesIntoMap(gradesData) {
             for (const period of periods) {
                 const assignments = period.assignment || [];
                 for (const grade of assignments) {
+                    // Inject section_id into the grade object for reverse lookup
+                    grade._section_id = sectionId;
                     gradesMap[grade.assignment_id] = grade;
                 }
             }
@@ -1652,9 +1654,9 @@ app.get('/grades', async (req, res) => {
         debugLog('GRADES', `✓ Found ${allSections.length} total sections`);
         
         // Parse final grades from the all-grades response
-        const { sectionGrades: sectionFinalGrades, sectionGradeData } = allGradesData 
+        const { sectionGrades: sectionFinalGrades, sectionGradeData, gradesMap: globalGradesMap } = allGradesData 
             ? parseGradesIntoMap(allGradesData) 
-            : { sectionGrades: {}, sectionGradeData: {} };
+            : { sectionGrades: {}, sectionGradeData: {}, gradesMap: {} };
         
         debugLog('GRADES', `✓ Parsed final grades for ${Object.keys(sectionFinalGrades).length} sections`);
         
@@ -1787,10 +1789,20 @@ app.get('/grades', async (req, res) => {
                 if (assignments.length > 0) {
                     for (const assignment of assignments) {
                         // Use String() for lookup to match map keys
-                        const grade = gradesMap[String(assignment.id)];
+                        // Try local map first, then global map (handles linked sections)
+                        const grade = gradesMap[String(assignment.id)] || globalGradesMap[String(assignment.id)];
                         const maxPoints = parseFloat((grade?.max_points) || assignment.max_points || 100);
                         
                         if (grade) {
+                            // If we found the grade via global map (linked section), try to recover final grade
+                            if (finalGrade === null && grade._section_id && grade._section_id != section.id) {
+                                const linkedFinalGrade = sectionFinalGrades[grade._section_id];
+                                if (linkedFinalGrade !== undefined && linkedFinalGrade !== null) {
+                                    finalGrade = linkedFinalGrade;
+                                    debugLog('GRADES', `  Recovered final grade ${finalGrade} from linked section ${grade._section_id}`);
+                                }
+                            }
+
                             // Assignment has grade data from API
                             if (grade.grade !== null && grade.grade !== undefined && grade.grade !== '' && grade.exception === 0) {
                                 earnedPoints += parseFloat(grade.grade);
