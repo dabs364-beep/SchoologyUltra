@@ -1730,12 +1730,35 @@ app.get('/grades', async (req, res) => {
                     debugLog('GRADES', `  No user-level grades, trying section-specific grades...`);
                     const sectionSpecificGrades = await fetchSectionGrades(section.id, req.session.accessToken);
                     
-                    if (sectionSpecificGrades && sectionSpecificGrades.section) {
-                        const sections = Array.isArray(sectionSpecificGrades.section) 
-                            ? sectionSpecificGrades.section 
-                            : [sectionSpecificGrades.section];
-                        
+                    if (sectionSpecificGrades) {
+                        // Handle both wrapped {section: [...]} and unwrapped response formats
+                        let sections = [];
+                        if (sectionSpecificGrades.section) {
+                             sections = Array.isArray(sectionSpecificGrades.section) 
+                                ? sectionSpecificGrades.section 
+                                : [sectionSpecificGrades.section];
+                        } else if (sectionSpecificGrades.period) {
+                            // Handle case where response IS the section object directly
+                            sections = [sectionSpecificGrades];
+                        }
+
                         for (const sec of sections) {
+                            // Try to extract final grade if we don't have it yet
+                            if (finalGrade === null) {
+                                if (sec.final_grade !== undefined && sec.final_grade !== null && sec.final_grade !== '') {
+                                    if (Array.isArray(sec.final_grade) && sec.final_grade.length > 0) {
+                                        const fg = sec.final_grade[0];
+                                        if (fg.grade !== undefined) {
+                                            const parsed = parseFloat(fg.grade);
+                                            if (!isNaN(parsed)) finalGrade = parsed;
+                                        }
+                                    } else {
+                                        const parsed = parseFloat(sec.final_grade);
+                                        if (!isNaN(parsed)) finalGrade = parsed;
+                                    }
+                                }
+                            }
+
                             const periods = sec.period || [];
                             for (const period of periods) {
                                 const periodAssignments = period.assignment || [];
@@ -1747,9 +1770,10 @@ app.get('/grades', async (req, res) => {
                 }
                 
                 // Create a map of assignment ID -> grade data for quick lookup
+                // Use String() for keys to ensure type matching (API might return numbers, assignments might have strings)
                 const gradesMap = {};
                 gradesList.forEach(g => {
-                    gradesMap[g.assignment_id] = g;
+                    gradesMap[String(g.assignment_id)] = g;
                 });
                 
                 debugLog('GRADES', `  Grades found: ${gradesList.length}`);
@@ -1762,7 +1786,8 @@ app.get('/grades', async (req, res) => {
                 // Process all assignments, merging with grade data when available
                 if (assignments.length > 0) {
                     for (const assignment of assignments) {
-                        const grade = gradesMap[assignment.id];
+                        // Use String() for lookup to match map keys
+                        const grade = gradesMap[String(assignment.id)];
                         const maxPoints = parseFloat((grade?.max_points) || assignment.max_points || 100);
                         
                         if (grade) {
