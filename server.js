@@ -1706,22 +1706,41 @@ app.get('/grades', async (req, res) => {
                 let totalPoints = 0;
                 let earnedPoints = 0;
 
-                for (const grade of gradesList) {
-                    const assignment = assignmentLookup[grade.assignment_id] || {};
-                    const maxPoints = parseFloat(grade.max_points || assignment.max_points || 100);
-                    
-                    if (grade.grade !== null && grade.grade !== undefined && grade.grade !== '' && grade.exception === 0) {
-                        earnedPoints += parseFloat(grade.grade);
-                        totalPoints += maxPoints;
+                // If we have grades data from the API, use it
+                if (gradesList.length > 0) {
+                    for (const grade of gradesList) {
+                        const assignment = assignmentLookup[grade.assignment_id] || {};
+                        const maxPoints = parseFloat(grade.max_points || assignment.max_points || 100);
+                        
+                        if (grade.grade !== null && grade.grade !== undefined && grade.grade !== '' && grade.exception === 0) {
+                            earnedPoints += parseFloat(grade.grade);
+                            totalPoints += maxPoints;
+                        }
+                        
+                        grades.push({
+                            ...grade,
+                            title: assignment.title || 'Unknown Assignment',
+                            max_points: maxPoints,
+                            category: assignment.grading_category || 0,
+                            due: assignment.due
+                        });
                     }
-                    
-                    grades.push({
-                        ...grade,
-                        title: assignment.title || 'Unknown Assignment',
-                        max_points: maxPoints,
-                        category: assignment.grading_category || 0,
-                        due: assignment.due
-                    });
+                } else if (assignments.length > 0) {
+                    // No grades data but we have assignments - show them without grades
+                    // This happens when a course doesn't have grades enabled or data isn't available
+                    for (const assignment of assignments) {
+                        const maxPoints = parseFloat(assignment.max_points || 100);
+                        
+                        grades.push({
+                            assignment_id: assignment.id,
+                            grade: null,
+                            exception: 0,
+                            title: assignment.title || 'Unknown Assignment',
+                            max_points: maxPoints,
+                            category: assignment.grading_category || 0,
+                            due: assignment.due
+                        });
+                    }
                 }
 
                 let percentage = finalGrade;
