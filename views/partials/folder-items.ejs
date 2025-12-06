@@ -1,0 +1,67 @@
+<% items.forEach(item => { 
+    const hasChildren = item.children && item.children.length > 0;
+    const sectionId = typeof selectedSection !== 'undefined' ? selectedSection.id : '';
+    
+    // Modern SVG icons
+    const icons = {
+        folder: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>',
+        'folder-open': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v1"></path><path d="M2 10h20l-2 9H4l-2-9z" fill="none"></path></svg>',
+        assignment: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>',
+        discussion: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>',
+        page: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>',
+        'media-album': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>',
+        link: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>',
+        document: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>',
+        quiz: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+        assessment: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>',
+        default: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>'
+    };
+    
+    let iconKey = item.type || 'default';
+    if (iconKey === 'assessment_v2') iconKey = 'assessment';
+    const icon = icons[iconKey] || icons.default;
+    
+    // All item types are clickable - assignments open locally, others open on Schoology
+    const isClickable = !hasChildren;
+    
+    // Build the web_url for items that should open on Schoology
+    const schoologyDomain = 'fuhsd.schoology.com';
+    let itemUrl = '';
+    if (item.type === 'page') {
+        itemUrl = `https://${schoologyDomain}/page/${item.id}`;
+    } else if (item.type === 'document' || item.type === 'file') {
+        itemUrl = `https://${schoologyDomain}/course/${sectionId}/materials/gp/${item.id}`;
+    } else if (item.type === 'link') {
+        itemUrl = item.url || `https://${schoologyDomain}/course/${sectionId}/materials/gp/${item.id}`;
+    } else if (item.type === 'discussion') {
+        itemUrl = `https://${schoologyDomain}/course/${sectionId}/materials/discussion/view/${item.id}`;
+    } else if (item.type === 'media-album') {
+        itemUrl = `https://${schoologyDomain}/course/${sectionId}/materials/album/view/${item.id}`;
+    }
+%>
+    <li class="folder-item">
+        <div class="folder-item-content" 
+             onclick="<%= hasChildren ? 'toggleFolder(this, event)' : (isClickable ? `openItem('${sectionId}', '${item.id}', '${item.type}', '${itemUrl.replace(/'/g, "\\'")}')` : '') %>"
+             style="<%= isClickable ? 'cursor: pointer;' : '' %>">
+            <% if (hasChildren) { %>
+                <span class="folder-toggle">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </span>
+            <% } else { %>
+                <span class="folder-toggle" style="visibility: hidden;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </span>
+            <% } %>
+            <span class="folder-icon"><%- icon %></span>
+            <span class="folder-title"><%= item.title %></span>
+            <span class="folder-type <%= item.type %>"><%= item.type === 'assessment_v2' ? 'quiz' : item.type %></span>
+        </div>
+        <% if (hasChildren) { %>
+            <ul class="folder-children">
+                <%- include('folder-items', { items: item.children, selectedSection: typeof selectedSection !== 'undefined' ? selectedSection : null }) %>
+            </ul>
+        <% } %>
+    </li>
+<% }) %>

@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= assignment.title %> - Schoology Pro Max</title>
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <%- include('partials/theme') %>
+    <style>
+        .assignment-page {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            margin-bottom: var(--space-4);
+            transition: color var(--duration-fast) ease;
+        }
+        
+        .back-link:hover {
+            color: var(--accent-primary);
+        }
+        
+        .assignment-header {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            border: 1px solid var(--border-light);
+            margin-bottom: var(--space-4);
+        }
+        
+        .assignment-course {
+            font-size: 0.875rem;
+            color: var(--accent-primary);
+            font-weight: 500;
+            margin-bottom: var(--space-2);
+        }
+        
+        .assignment-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-4);
+            line-height: 1.3;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .assignment-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .meta-item svg {
+            color: var(--text-tertiary);
+        }
+        
+        .meta-item.due {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .meta-item.overdue {
+            background: rgba(239, 68, 68, 0.15);
+            color: #dc2626;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        
+        /* Time estimate colors */
+        .meta-item.time-quick {
+            background: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .meta-item.time-quick svg { color: #16a34a; }
+        
+        .meta-item.time-medium {
+            background: rgba(139, 92, 246, 0.15);
+            color: #7c3aed;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .meta-item.time-medium svg { color: #7c3aed; }
+        
+        .meta-item.time-long {
+            background: rgba(249, 115, 22, 0.15);
+            color: #ea580c;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .meta-item.time-long svg { color: #ea580c; }
+
+        .grade-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+        }
+        
+        /* Grade colors from global CSS, just add grade-na for this page */
+        .grade-badge.grade-na { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
+        
+        .assignment-content {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            border: 1px solid var(--border-light);
+            margin-bottom: var(--space-4);
+        }
+        
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-3);
+        }
+        
+        .description-content {
+            color: var(--text-primary);
+            line-height: 1.7;
+            font-size: 0.9375rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .description-content p {
+            margin-bottom: var(--space-3);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .description-content a {
+            color: var(--accent-primary);
+            text-decoration: none;
+        }
+        
+        .description-content a:hover {
+            text-decoration: underline;
+        }
+        
+        .no-description {
+            color: var(--text-tertiary);
+            font-style: italic;
+        }
+        
+        .attachments-section {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            border: 1px solid var(--border-light);
+            margin-bottom: var(--space-4);
+        }
+        
+        .attachment-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+        
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all var(--duration-fast) ease;
+        }
+        
+        .attachment-item:hover {
+            background: var(--bg-hover);
+            transform: translateX(4px);
+        }
+        
+        .attachment-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            background: var(--bg-card);
+            color: var(--accent-primary);
+            flex-shrink: 0;
+        }
+        
+        .attachment-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .attachment-name {
+            font-weight: 500;
+            font-size: 0.9375rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .attachment-type {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+        }
+        
+        .attachment-action {
+            color: var(--text-tertiary);
+        }
+        
+        .no-attachments {
+            color: var(--text-tertiary);
+            font-style: italic;
+            text-align: center;
+            padding: var(--space-4);
+        }
+        
+        .grade-section {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            border: 1px solid var(--border-light);
+        }
+        
+        .grade-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+        }
+        
+        .grade-score {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .grade-max {
+            font-size: 1.25rem;
+            color: var(--text-tertiary);
+            font-weight: 400;
+        }
+        
+        .grade-percentage {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .grade-comment {
+            margin-top: var(--space-4);
+            padding-top: var(--space-4);
+            border-top: 1px solid var(--border-light);
+        }
+        
+        .grade-comment-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-2);
+        }
+        
+        .grade-comment-text {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        .not-graded {
+            color: var(--text-tertiary);
+            font-style: italic;
+        }
+        
+        .quiz-action {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--space-5);
+            border: 1px solid var(--accent-primary);
+            margin-bottom: var(--space-4);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-4);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+        }
+        
+        .quiz-action-info h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-1);
+        }
+        
+        .quiz-action-info p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .quiz-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-3) var(--space-5);
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            color: white;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            text-decoration: none;
+            transition: all var(--duration-fast) ease;
+            white-space: nowrap;
+        }
+        
+        .quiz-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+        
+        .submission-section {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            border: 1px solid var(--border-light);
+            margin-bottom: var(--space-4);
+        }
+        
+        .submission-section.has-submission {
+            border-color: #22c55e;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+        }
+        
+        .submission-section.no-submission {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(234, 179, 8, 0.05) 100%);
+        }
+        
+        .submission-status {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-3);
+        }
+        
+        .submission-status-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .submission-status-icon.submitted {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        
+        .submission-status-icon.not-submitted {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+        
+        .submission-status-text h4 {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        
+        .submission-status-text p {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+        
+        .submission-files {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+            margin-top: var(--space-3);
+        }
+        
+        .submission-file {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all var(--duration-fast) ease;
+        }
+        
+        .submission-file:hover {
+            background: var(--bg-hover);
+            transform: translateX(4px);
+        }
+        
+        .submission-file-icon {
+            color: #22c55e;
+        }
+        
+        .submission-file-name {
+            flex: 1;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        
+        .schoology-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-top: var(--space-2);
+            transition: all var(--duration-fast) ease;
+        }
+        
+        .schoology-link:hover {
+            background: var(--bg-hover);
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/nav', { active: 'courses' }) %>
+    
+    <main class="container">
+        <div class="assignment-page">
+            <a href="/courses?section=<%= section.id %>" class="back-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Back to <%= section.course_title || section.section_title %>
+            </a>
+            
+            <!-- Header -->
+            <div class="assignment-header">
+                <div class="assignment-course"><%= section.course_title || section.section_title %></div>
+                <h1 class="assignment-title"><%= assignment.title %></h1>
+                
+                <div class="assignment-meta">
+                    <% if (assignment.due) { 
+                        const dueDate = new Date(assignment.due);
+                        const now = new Date();
+                        // Compare by calendar day for overdue check
+                        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        const dueDayStart = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+                        const isOverdue = dueDayStart < todayStart || (dueDayStart.getTime() === todayStart.getTime() && dueDate < now);
+                        const dueFormatted = dueDate.toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit'
+                        });
+                    %>
+                    <div class="meta-item due <%= isOverdue ? 'overdue' : '' %>" title="<%= assignment.dueAdjusted ? 'Adjusted to class start time from your schedule' : '' %>">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <%= isOverdue ? 'Was due' : 'Due' %> <%= dueFormatted %><%= assignment.dueAdjusted ? ' 📅' : '' %>
+                    </div>
+                    <% } %>
+                    
+                    <div class="meta-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                        <%= assignment.max_points || 0 %> points
+                    </div>
+                    
+                    <% if (estimatedTime) { 
+                        const estMins = estimatedTime.minutes;
+                        let timeClass = 'time-medium';
+                        if (estMins <= 15) timeClass = 'time-quick';
+                        else if (estMins >= 45) timeClass = 'time-long';
+                    %>
+                    <div class="meta-item <%= timeClass %>" title="AI-estimated time to complete">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        ~<%= estimatedTime.display %>
+                    </div>
+                    <% } %>
+                    
+                    <div class="meta-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <%= categoryName %>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quiz Action - Show ONLY for assessment type assignments -->
+            <!-- Debug: type="<%= assignment.type %>" -->
+            <% if (assignment.type === 'assessment' || assignment.type === 'assessment_v2') { %>
+            <div class="quiz-action">
+                <div class="quiz-action-info">
+                    <h3>📝 Online Assessment</h3>
+                    <p>This assignment has an online quiz. Click to start with AI assistance.</p>
+                </div>
+                <a href="/quiz?section=<%= section.id %>&id=<%= assignment.id %>&course=<%= section.course_nid || section.course_id %>" class="quiz-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Take Quiz
+                </a>
+            </div>
+            <% } %>
+            
+            <!-- Grade Section -->
+            <div class="grade-section">
+                <div class="section-title">Your Grade</div>
+                <% if (userGrade && userGrade.grade !== null && userGrade.grade !== '' && userGrade.exception !== 1) { 
+                    const score = parseFloat(userGrade.grade);
+                    const maxPoints = parseFloat(assignment.max_points || 100);
+                    const percentage = maxPoints > 0 ? (score / maxPoints * 100) : 0;
+                    let gradeClass = 'grade-f';
+                    if (percentage >= 90) gradeClass = 'grade-a';
+                    else if (percentage >= 80) gradeClass = 'grade-b';
+                    else if (percentage >= 70) gradeClass = 'grade-c';
+                    else if (percentage >= 60) gradeClass = 'grade-d';
+                %>
+                <div class="grade-display">
+                    <div>
+                        <span class="grade-score"><%= score %></span>
+                        <span class="grade-max">/ <%= maxPoints %></span>
+                    </div>
+                    <div class="grade-badge <%= gradeClass %>">
+                        <span class="grade-percentage"><%= percentage.toFixed(1) %>%</span>
+                    </div>
+                </div>
+                <% if (userGrade.comment) { %>
+                <div class="grade-comment">
+                    <div class="grade-comment-label">Teacher Comment</div>
+                    <div class="grade-comment-text"><%= userGrade.comment %></div>
+                </div>
+                <% } %>
+                <% } else if (userGrade && userGrade.exception === 1) { %>
+                <div class="grade-display">
+                    <span class="grade-pill status-excused">Excused</span>
+                </div>
+                <% } else if (userGrade && userGrade.exception === 2) { %>
+                <div class="grade-display">
+                    <span class="grade-pill status-missing">Missing</span>
+                </div>
+                <% } else { %>
+                <p class="not-graded">Not graded yet</p>
+                <% } %>
+            </div>
+            
+            <!-- Submission Section (for submittable assignments) -->
+            <% 
+            const isSubmittable = assignment.allow_dropbox == 1 || assignment.allow_dropbox === '1';
+            if (isSubmittable) { 
+                const hasSubmission = userSubmission && (userSubmission.attachments || userSubmission.body || userSubmission.created);
+            %>
+            <div class="submission-section <%= hasSubmission ? 'has-submission' : 'no-submission' %>">
+                <div class="section-title">Your Submission</div>
+                <% if (hasSubmission) { %>
+                <div class="submission-status">
+                    <div class="submission-status-icon submitted">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
+                    <div class="submission-status-text">
+                        <h4>Submitted</h4>
+                        <% if (userSubmission.created) { 
+                            const submittedDate = new Date(userSubmission.created * 1000);
+                            const submittedFormatted = submittedDate.toLocaleDateString('en-US', {
+                                month: 'short', day: 'numeric', year: 'numeric',
+                                hour: 'numeric', minute: '2-digit'
+                            });
+                        %>
+                        <p>Submitted on <%= submittedFormatted %></p>
+                        <% } %>
+                    </div>
+                </div>
+                
+                <% 
+                // Parse submission attachments
+                const subAttachments = userSubmission.attachments || {};
+                const subFiles = [];
+                
+                // Extract files from attachments
+                if (subAttachments.files) {
+                    const files = subAttachments.files.file || subAttachments.files;
+                    if (Array.isArray(files)) {
+                        subFiles.push(...files);
+                    } else if (files && files.id) {
+                        subFiles.push(files);
+                    }
+                }
+                if (subAttachments.links) {
+                    const links = subAttachments.links.link || subAttachments.links;
+                    if (Array.isArray(links)) {
+                        subFiles.push(...links);
+                    } else if (links && (links.url || links.id)) {
+                        subFiles.push(links);
+                    }
+                }
+                %>
+                
+                <% if (subFiles.length > 0) { %>
+                <div class="submission-files">
+                    <% subFiles.forEach(file => { 
+                        const fileUrl = file.download_path || file.url || '#';
+                        const fileName = file.title || file.filename || file.name || 'Submitted File';
+                    %>
+                    <a href="<%= fileUrl %>" target="_blank" rel="noopener noreferrer" class="submission-file">
+                        <div class="submission-file-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                        </div>
+                        <span class="submission-file-name"><%= fileName %></span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-tertiary);">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                    </a>
+                    <% }) %>
+                </div>
+                <% } else if (userSubmission.body) { %>
+                <div class="description-content" style="margin-top: var(--space-3); padding: var(--space-4); background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                    <%- userSubmission.body %>
+                </div>
+                <% } %>
+                
+                <% 
+                // Link to view/edit submission on Schoology
+                const schoologySubmitUrl = `https://fuhsd.schoology.com/assignment/${assignment.id}/submissions/${section.id}`;
+                %>
+                <a href="<%= schoologySubmitUrl %>" target="_blank" rel="noopener noreferrer" class="schoology-link">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                    View on Schoology
+                </a>
+                
+                <% } else { %>
+                <div class="submission-status">
+                    <div class="submission-status-icon not-submitted">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                    </div>
+                    <div class="submission-status-text">
+                        <h4>Not Submitted</h4>
+                        <p>This assignment requires a submission</p>
+                    </div>
+                </div>
+                
+                <% 
+                const schoologySubmitUrl = `https://fuhsd.schoology.com/assignment/${assignment.id}/submission/${section.id}`;
+                %>
+                <a href="<%= schoologySubmitUrl %>" target="_blank" rel="noopener noreferrer" class="schoology-link" style="background: var(--accent-primary); color: white;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Submit on Schoology
+                </a>
+                <% } %>
+            </div>
+            <% } %>
+            
+            <!-- Description -->
+            <div class="assignment-content">
+                <div class="section-title">Description</div>
+                <% if (assignment.description && assignment.description.trim()) { %>
+                <div class="description-content">
+                    <%- assignment.description %>
+                </div>
+                <% } else { %>
+                <p class="no-description">No description provided.</p>
+                <% } %>
+            </div>
+            
+            <!-- Attachments -->
+            <div class="attachments-section">
+                <div class="section-title">Attachments</div>
+                <% 
+                // Per Schoology API docs (documents endpoint shows):
+                // attachments: { files: { file: [...] }, links: { link: [...] }, videos: { video: [...] }, embeds: { embed: [...] } }
+                // The key may be "attachments" or "attachment" depending on endpoint
+                const attachmentsObj = assignment.attachments || assignment.attachment || {};
+                const hasAttachmentsKey = 'attachments' in assignment || 'attachment' in assignment;
+                
+                // Helper to extract array from Schoology's wrapped structure
+                // Schoology uses: files: { file: [...] } or files: { file: {...} } for single item
+                const extractArray = (obj, pluralKey, singularKey) => {
+                    if (!obj) return [];
+                    const container = obj[pluralKey];
+                    if (!container) return [];
+                    
+                    // Direct array: files = [...]
+                    if (Array.isArray(container)) return container;
+                    
+                    // Object with singular key: files = { file: [...] } or { file: {...} }
+                    if (typeof container === 'object') {
+                        const inner = container[singularKey];
+                        if (inner) {
+                            return Array.isArray(inner) ? inner : [inner];
+                        }
+                        // Maybe it's a single object directly (has id/title/filename)
+                        if (container.id || container.title || container.filename || container.url) {
+                            return [container];
+                        }
+                    }
+                    return [];
+                };
+                
+                const files = extractArray(attachmentsObj, 'files', 'file');
+                const links = extractArray(attachmentsObj, 'links', 'link');
+                const videos = extractArray(attachmentsObj, 'videos', 'video');
+                const embeds = extractArray(attachmentsObj, 'embeds', 'embed');
+                
+                // Combine all - videos are like links but for video sites
+                const allAttachments = [...files, ...links, ...videos].filter(a => a && (a.title || a.filename || a.url || a.download_path));
+                %>
+                <% if (allAttachments.length > 0) { %>
+                <div class="attachment-list">
+                    <% allAttachments.forEach(attachment => { 
+                        const isLink = !!attachment.url && !attachment.download_path;
+                        const url = attachment.download_path || attachment.url || '#';
+                        const name = attachment.title || attachment.filename || attachment.name || 'Attachment';
+                        // Get extension from filename if not provided
+                        let ext = 'FILE';
+                        if (isLink) {
+                            ext = 'LINK';
+                        } else if (attachment.extension) {
+                            ext = attachment.extension.toUpperCase();
+                        } else if (attachment.filename) {
+                            const parts = attachment.filename.split('.');
+                            if (parts.length > 1) ext = parts.pop().toUpperCase();
+                        }
+                    %>
+                    <a href="<%= url %>" target="_blank" rel="noopener noreferrer" class="attachment-item">
+                        <div class="attachment-icon">
+                            <% if (isLink) { %>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>
+                            <% } else { %>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                <polyline points="13 2 13 9 20 9"></polyline>
+                            </svg>
+                            <% } %>
+                        </div>
+                        <div class="attachment-info">
+                            <div class="attachment-name"><%= name %></div>
+                            <div class="attachment-type"><%= ext %></div>
+                        </div>
+                        <div class="attachment-action">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                        </div>
+                    </a>
+                    <% }) %>
+                </div>
+                <% } else { 
+                    // Check if this is an LTI assignment (Google Docs, etc.)
+                    const isLtiAssignment = assignment.assignment_type === 'lti_submission' || 
+                                           assignment.assignment_type === 'external_tool' ||
+                                           (assignment.assignment_type && assignment.assignment_type.includes('lti'));
+                %>
+                    <% if (isLtiAssignment && assignment.web_url) { 
+                        const schoologyUrl = assignment.web_url.replace('app.schoology.com', 'fuhsd.schoology.com');
+                    %>
+                    <div class="attachment-list">
+                        <a href="<%= schoologyUrl %>" target="_blank" rel="noopener noreferrer" class="attachment-item">
+                            <div class="attachment-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                </svg>
+                            </div>
+                            <div class="attachment-info">
+                                <div class="attachment-name">Open in Schoology</div>
+                                <div class="attachment-type">EXTERNAL</div>
+                            </div>
+                            <div class="attachment-action">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                            </div>
+                        </a>
+                    </div>
+                    <p class="no-attachments" style="margin-top: 8px; font-size: 12px;">This assignment uses an external tool (like Google Docs). Click above to access it on Schoology.</p>
+                    <% } else { %>
+                    <p class="no-attachments">No attachments for this assignment.</p>
+                    <% } %>
+                <% } %>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // Auto-link URLs in the description that aren't already wrapped in anchor tags
+        document.addEventListener('DOMContentLoaded', function() {
+            const descContent = document.querySelector('.description-content');
+            if (descContent) {
+                // First, make existing links open in new tabs
+                descContent.querySelectorAll('a').forEach(link => {
+                    if (!link.getAttribute('target')) {
+                        link.setAttribute('target', '_blank');
+                        link.setAttribute('rel', 'noopener noreferrer');
+                    }
+                });
+                
+                // Process text nodes to convert plain URLs to links
+                const urlPattern = /(https?:\/\/[^\s<>"']+)/gi;
+                
+                function linkifyTextNode(node) {
+                    const text = node.textContent;
+                    if (urlPattern.test(text)) {
+                        urlPattern.lastIndex = 0; // Reset regex state
+                        const fragment = document.createDocumentFragment();
+                        let lastIndex = 0;
+                        let match;
+                        
+                        while ((match = urlPattern.exec(text)) !== null) {
+                            const url = match[1];
+                            const offset = match.index;
+                            
+                            // Add text before the URL
+                            if (offset > lastIndex) {
+                                fragment.appendChild(document.createTextNode(text.slice(lastIndex, offset)));
+                            }
+                            // Add the link
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.textContent = url;
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+                            fragment.appendChild(link);
+                            lastIndex = offset + url.length;
+                        }
+                        
+                        // Add remaining text
+                        if (lastIndex < text.length) {
+                            fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+                        }
+                        
+                        return fragment.childNodes.length > 0 ? fragment : null;
+                    }
+                    return null;
+                }
+                
+                function processNode(node) {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        const replacement = linkifyTextNode(node);
+                        if (replacement) {
+                            node.parentNode.replaceChild(replacement, node);
+                        }
+                    } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'A') {
+                        // Process children, but skip anchor tags
+                        Array.from(node.childNodes).forEach(processNode);
+                    }
+                }
+                
+                processNode(descContent);
+            }
+        });
+    </script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

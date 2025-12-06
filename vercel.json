@@ -1,0 +1,34 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/public/(.*)",
+      "dest": "/public/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/server.js"
+    }
+  ],
+  "env": {
+    "SCHOOLOGY_CONSUMER_KEY": "@schoology-consumer-key",
+    "SCHOOLOGY_CONSUMER_SECRET": "@schoology-consumer-secret",
+    "SCHOOLOGY_DOMAIN": "@schoology-domain",
+    "SESSION_SECRET": "@session-secret",
+    "GEMINI_API_KEY": "@gemini-api-key"
+  },
+  "functions": {
+    "server.js": {
+      "maxDuration": 30
+    }
+  }
+}

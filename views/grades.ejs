@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grades - Schoology Pro Max</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logo.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <%- include('partials/theme') %>
+    <style>
+        /* Grade styling already in global CSS - only page-specific styles here */
+        
+        .category-section {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+        }
+        
+        .category-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-3) var(--space-4);
+            margin-bottom: var(--space-3);
+            border-bottom: 2px solid var(--text-primary);
+            flex-wrap: wrap;
+            gap: var(--space-2);
+        }
+        
+        .category-left {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        
+        .category-right {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        
+        .category-grade {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .category-original {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .category-edited {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--accent-warning);
+        }
+        
+        .grade-arrow {
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+        }
+        
+        .section-grade-display {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        
+        .original-grade {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .edited-grade {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding-left: var(--space-3);
+            border-left: 2px solid var(--accent-warning);
+        }
+        
+        .edited-grade .grade-percentage,
+        .edited-grade .grade-letter {
+            color: var(--accent-warning);
+        }
+        
+        .add-assignment-section {
+            margin-top: var(--space-4);
+            padding: var(--space-4);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            border: 1px dashed var(--border-medium);
+        }
+        
+        .add-assignment-section h4 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-3);
+        }
+        
+        .add-assignment-form {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            flex-wrap: wrap;
+        }
+        
+        .add-assignment-form input {
+            padding: var(--space-2) var(--space-3);
+            font-size: 0.8125rem;
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-md);
+            background: var(--bg-card);
+        }
+        
+        .add-assignment-form input[type="text"] {
+            width: 150px;
+        }
+        
+        .add-assignment-form input[type="number"] {
+            width: 70px;
+            text-align: center;
+        }
+        
+        .custom-assignment-row {
+            background: rgba(255, 159, 10, 0.05);
+        }
+        
+        .custom-badge {
+            font-size: 0.625rem;
+            padding: 2px 6px;
+            background: var(--accent-warning);
+            color: white;
+            border-radius: var(--radius-sm);
+            margin-left: var(--space-2);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .remove-custom {
+            background: none;
+            border: none;
+            color: var(--accent-danger);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .remove-custom:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/nav', { active: 'grades' }) %>
+    
+    <%
+    // Helper function to convert percentage to letter grade
+    function getLetterGrade(percentage) {
+        if (percentage >= 97) return 'A+';
+        if (percentage >= 93) return 'A';
+        if (percentage >= 90) return 'A-';
+        if (percentage >= 87) return 'B+';
+        if (percentage >= 83) return 'B';
+        if (percentage >= 80) return 'B-';
+        if (percentage >= 77) return 'C+';
+        if (percentage >= 73) return 'C';
+        if (percentage >= 70) return 'C-';
+        if (percentage >= 67) return 'D+';
+        if (percentage >= 63) return 'D';
+        if (percentage >= 60) return 'D-';
+        return 'F';
+    }
+    
+    // Helper function to get color class based on letter grade
+    function getGradeColorClass(percentage) {
+        if (percentage >= 90) return 'grade-a';
+        if (percentage >= 80) return 'grade-b';
+        if (percentage >= 70) return 'grade-c';
+        if (percentage >= 60) return 'grade-d';
+        return 'grade-f';
+    }
+    
+    // Calculate category percentage
+    function getCategoryPercentage(cat) {
+        let earned = 0, total = 0;
+        cat.grades.forEach(g => {
+            if (g.grade !== null && g.grade !== undefined && g.exception === 0) {
+                earned += g.grade;
+                total += g.max_points;
+            }
+        });
+        return total > 0 ? (earned / total * 100) : null;
+    }
+    %>
+    
+    <main class="container">
+        <div class="page-header">
+            <h1>Grades</h1>
+            <div class="grade-actions">
+                <button class="btn btn-secondary" onclick="resetAllChanges()">Reset Changes</button>
+            </div>
+        </div>
+
+        <div class="grades-container">
+            <% if (gradesData.length === 0) { %>
+                <div class="empty-state">
+                    <p>No grades found. You might not be enrolled in any courses yet.</p>
+                </div>
+            <% } else { %>
+                <% gradesData.forEach((course, index) => { %>
+                    <div class="course-card" data-section="<%= course.section_id %>">
+                        <div class="course-header" onclick="toggleCourse(<%= index %>)">
+                            <div class="course-info">
+                                <h2><%= course.course_name %></h2>
+                                <% if (course.categories.length > 0) { %>
+                                    <span class="category-count"><%= course.categories.length %> categories</span>
+                                <% } %>
+                            </div>
+                            <div class="course-grade">
+                                <% if (course.percentage !== null && course.percentage !== undefined) { %>
+                                    <div class="section-grade-display">
+                                        <div class="original-grade" data-original-pct="<%= course.percentage %>" title="Official grade from Schoology">
+                                            <span class="grade-pill <%= getGradeColorClass(course.percentage) %>" id="grade-<%= course.section_id %>"><%= course.percentage.toFixed(1) %>%</span>
+                                            <span class="grade-pill <%= getGradeColorClass(course.percentage) %>"><%= getLetterGrade(course.percentage) %></span>
+                                        </div>
+                                        <div class="edited-grade" id="edited-section-<%= course.section_id %>" style="display: none;" title="Calculated with your changes">
+                                            <span class="grade-arrow">→</span>
+                                            <span class="grade-pill" id="edited-pct-<%= course.section_id %>"></span>
+                                            <span class="grade-pill" id="edited-letter-<%= course.section_id %>"></span>
+                                        </div>
+                                    </div>
+                                <% } else { %>
+                                    <div class="section-grade-display">
+                                        <div class="original-grade" data-original-pct="" title="No grade available from Schoology">
+                                            <span class="grade-pill" style="background: rgba(107, 114, 128, 0.15); color: #6b7280;">N/A</span>
+                                        </div>
+                                        <div class="edited-grade" id="edited-section-<%= course.section_id %>" style="display: none;" title="Calculated with your changes">
+                                            <span class="grade-arrow">→</span>
+                                            <span class="grade-pill" id="edited-pct-<%= course.section_id %>"></span>
+                                            <span class="grade-pill" id="edited-letter-<%= course.section_id %>"></span>
+                                        </div>
+                                    </div>
+                                <% } %>
+                            </div>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                        
+                        <div class="course-grades" id="course-<%= index %>" style="display: none;">
+                            <!-- Hidden: earned/total points -->
+                            <div class="grade-summary" style="display: none;">
+                                <span>Earned: <strong id="earned-<%= course.section_id %>"><%= course.earnedPoints.toFixed(1) %></strong></span>
+                                <span>Total: <strong id="total-<%= course.section_id %>"><%= course.totalPoints.toFixed(1) %></strong></span>
+                            </div>
+
+                            <% if (course.categories.length > 0) { 
+                                // Filter out "Uncategorized" categories
+                                const visibleCategories = course.categories.filter(cat => 
+                                    cat.title && cat.title.toLowerCase() !== 'uncategorized'
+                                );
+                            %>
+                            <% if (visibleCategories.length > 0) { %>
+                                <% visibleCategories.forEach((cat, catIndex) => { 
+                                    const catPct = getCategoryPercentage(cat);
+                                %>
+                                    <div class="category-section" data-section="<%= course.section_id %>" data-category="<%= catIndex %>">
+                                        <div class="category-header">
+                                            <div class="category-left">
+                                                <span class="category-title"><%= cat.title %></span>
+                                                <% if (cat.weight) { %>
+                                                    <span class="category-weight">(<%= cat.weight %>%)</span>
+                                                <% } %>
+                                            </div>
+                                            <div class="category-right">
+                                                <div class="category-grade" data-original-pct="<%= catPct ? catPct.toFixed(1) : '' %>">
+                                                    <% if (catPct !== null) { %>
+                                                        <span class="category-original grade-pill <%= getGradeColorClass(catPct) %>"><%= catPct.toFixed(1) %>% (<%= getLetterGrade(catPct) %>)</span>
+                                                        <span class="category-edited" id="cat-edited-<%= course.section_id %>-<%= catIndex %>" style="display: none;">
+                                                            → <span class="edited-val"></span>
+                                                        </span>
+                                                    <% } %>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <table class="grades-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Assignment</th>
+                                                    <th>Due Date</th>
+                                                    <th>Grade</th>
+                                                    <th>Max</th>
+                                                    <th>%</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="cat-tbody-<%= course.section_id %>-<%= catIndex %>"
+                                                   data-category-id="<%= cat.id %>"
+                                                   data-section="<%= course.section_id %>"
+                                                   data-cat-index="<%= catIndex %>">
+                                                <% cat.grades.forEach((grade, gradeIndex) => { %>
+                                                    <tr class="grade-row" data-section="<%= course.section_id %>" data-assignment="<%= grade.assignment_id %>">
+                                                        <td class="assignment-name"><%= grade.title %></td>
+                                                        <td class="due-date">
+                                                            <% if (grade.due && grade.due.trim() !== '') { %>
+                                                                <%= new Date(grade.due).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
+                                                            <% } else { %>
+                                                                -
+                                                            <% } %>
+                                                        </td>
+                                                        <td class="grade-value">
+                                                            <% if (grade.exception === 1) { %>
+                                                                <span class="grade-pill status-excused">Excused</span>
+                                                            <% } else if (grade.exception === 2) { %>
+                                                                <span class="grade-pill status-missing">Missing</span>
+                                                            <% } else if (grade.grade !== null && grade.grade !== undefined) { %>
+                                                                <input type="number" 
+                                                                       class="grade-input" 
+                                                                       value="<%= grade.grade %>" 
+                                                                       data-original="<%= grade.grade %>"
+                                                                       data-section="<%= course.section_id %>"
+                                                                       onchange="updateGrade(this)"
+                                                                       step="0.5">
+                                                            <% } else { %>
+                                                                <span class="no-grade">-</span>
+                                                            <% } %>
+                                                        </td>
+                                                        <td class="max-points">
+                                                            <input type="number" 
+                                                                   class="max-input" 
+                                                                   value="<%= grade.max_points %>" 
+                                                                   data-original="<%= grade.max_points %>"
+                                                                   data-section="<%= course.section_id %>"
+                                                                   onchange="updateMaxPoints(this)"
+                                                                   step="0.5">
+                                                        </td>
+                                                        <td class="percentage">
+                                                            <% if (grade.grade !== null && grade.grade !== undefined && grade.exception === 0) { 
+                                                                const pct = (grade.grade / grade.max_points * 100);
+                                                            %>
+                                                                <span class="grade-pill <%= getGradeColorClass(pct) %>"><%= pct.toFixed(1) %>%</span>
+                                                            <% } else { %>
+                                                                -
+                                                            <% } %>
+                                                        </td>
+                                                    </tr>
+                                                <% }) %>
+                                            </tbody>
+                                        </table>
+                                        
+                                        <div class="add-assignment-section">
+                                            <h4>➕ Add Custom Assignment</h4>
+                                            <div class="add-assignment-form">
+                                                <input type="text" 
+                                                       placeholder="Assignment name" 
+                                                       id="custom-name-<%= course.section_id %>-<%= catIndex %>">
+                                                <input type="number" 
+                                                       placeholder="Score" 
+                                                       id="custom-score-<%= course.section_id %>-<%= catIndex %>"
+                                                       step="0.5">
+                                                <span>/</span>
+                                                <input type="number" 
+                                                       placeholder="Max" 
+                                                       id="custom-max-<%= course.section_id %>-<%= catIndex %>"
+                                                       value="100"
+                                                       step="0.5">
+                                                <button class="btn btn-small" onclick="addCustomAssignment('<%= course.section_id %>', <%= catIndex %>)">Add</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } else { %>
+                                <p class="no-grades">No categorized assignments yet.</p>
+                            <% } %>
+                            <% } else { %>
+                                <p class="no-grades">No graded assignments yet.</p>
+                            <% } %>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } %>
+        </div>
+    </main>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/grades.js"></script>
+    <script>
+        function getLetterGrade(percentage) {
+            if (percentage >= 97) return 'A+';
+            if (percentage >= 93) return 'A';
+            if (percentage >= 90) return 'A-';
+            if (percentage >= 87) return 'B+';
+            if (percentage >= 83) return 'B';
+            if (percentage >= 80) return 'B-';
+            if (percentage >= 77) return 'C+';
+            if (percentage >= 73) return 'C';
+            if (percentage >= 70) return 'C-';
+            if (percentage >= 67) return 'D+';
+            if (percentage >= 63) return 'D';
+            if (percentage >= 60) return 'D-';
+            return 'F';
+        }
+        
+        function getGradeColorClass(percentage) {
+            if (percentage >= 90) return 'grade-a';
+            if (percentage >= 80) return 'grade-b';
+            if (percentage >= 70) return 'grade-c';
+            if (percentage >= 60) return 'grade-d';
+            return 'grade-f';
+        }
+    </script>
+</body>
+</html>

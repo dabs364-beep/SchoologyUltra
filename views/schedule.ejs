@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule - Schoology Pro Max</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logo.png">
+    <%- include('partials/theme') %>
+    <style>
+        .schedule-page {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--space-6);
+        }
+        
+        .schedule-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-6);
+            flex-wrap: wrap;
+            gap: var(--space-4);
+        }
+        
+        .schedule-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .schedule-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: var(--space-1);
+        }
+        
+        .schedule-actions {
+            display: flex;
+            gap: var(--space-3);
+        }
+        
+        .schedule-layout {
+            display: flex;
+            gap: var(--space-6);
+        }
+        
+        .courses-panel {
+            width: 280px;
+            flex-shrink: 0;
+        }
+        
+        .courses-panel h3 {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-3);
+        }
+        
+        .course-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+        
+        .course-item {
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            cursor: grab;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        
+        .course-item:hover {
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .course-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        
+        .course-color {
+            width: 12px;
+            height: 12px;
+            border-radius: var(--radius-full);
+            flex-shrink: 0;
+        }
+        
+        .course-name {
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .calendar-panel {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 60px repeat(5, 1fr);
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+        
+        .calendar-header {
+            display: contents;
+        }
+        
+        .calendar-header-cell {
+            padding: var(--space-3) var(--space-2);
+            text-align: center;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-light);
+        }
+        
+        .calendar-header-cell:first-child {
+            border-right: 1px solid var(--border-light);
+        }
+        
+        .time-column {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .time-slot-label {
+            height: 60px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: var(--space-1);
+            font-size: 0.6875rem;
+            color: var(--text-tertiary);
+            border-right: 1px solid var(--border-light);
+            border-bottom: 1px solid var(--border-lighter);
+        }
+        
+        .day-column {
+            position: relative;
+            min-height: 720px;
+            border-left: 1px solid var(--border-light);
+        }
+        
+        .day-column:first-of-type {
+            border-left: none;
+        }
+        
+        .time-slot {
+            height: 60px;
+            border-bottom: 1px solid var(--border-lighter);
+            position: relative;
+        }
+        
+        .time-slot:hover {
+            background: rgba(0, 113, 227, 0.03);
+        }
+        
+        .time-slot.drag-over {
+            background: rgba(0, 113, 227, 0.08);
+        }
+        
+        .schedule-block {
+            position: absolute;
+            left: 4px;
+            right: 4px;
+            border-radius: var(--radius-md);
+            padding: var(--space-2);
+            font-size: 0.75rem;
+            color: white;
+            cursor: pointer;
+            overflow: hidden;
+            z-index: 10;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        
+        .schedule-block:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .schedule-block-title {
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .schedule-block-time {
+            font-size: 0.625rem;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+        
+        .schedule-block-delete {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 16px;
+            height: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: none;
+            border-radius: var(--radius-full);
+            color: white;
+            font-size: 0.625rem;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        
+        .schedule-block:hover .schedule-block-delete {
+            display: flex;
+        }
+        
+        /* Modal for editing block */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-xl);
+            transform: translateY(20px);
+            transition: transform 0.2s;
+        }
+        
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+        
+        .modal-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-4);
+        }
+        
+        .modal-field {
+            margin-bottom: var(--space-4);
+        }
+        
+        .modal-field label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-2);
+        }
+        
+        .modal-field input,
+        .modal-field select {
+            width: 100%;
+            padding: var(--space-3);
+            font-size: 0.875rem;
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        .modal-field input:focus,
+        .modal-field select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--space-3);
+            margin-top: var(--space-5);
+        }
+        
+        .duration-presets {
+            display: flex;
+            gap: var(--space-2);
+            margin-top: var(--space-2);
+        }
+        
+        .duration-preset {
+            padding: var(--space-1) var(--space-3);
+            font-size: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .duration-preset:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-primary);
+        }
+        
+        .info-banner {
+            background: rgba(0, 113, 227, 0.08);
+            border: 1px solid rgba(0, 113, 227, 0.2);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+        
+        .info-banner-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: var(--space-2);
+        }
+        
+        .info-banner-text {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        .empty-courses {
+            padding: var(--space-6);
+            text-align: center;
+            color: var(--text-tertiary);
+            font-size: 0.875rem;
+        }
+        
+        @media (max-width: 1024px) {
+            .schedule-layout {
+                flex-direction: column;
+            }
+            
+            .courses-panel {
+                width: 100%;
+            }
+            
+            .course-list {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            
+            .course-item {
+                flex: 1;
+                min-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/nav', { active: 'schedule' }) %>
+    
+    <main class="schedule-page">
+        <div class="schedule-header">
+            <div>
+                <h1 class="schedule-title">Class Schedule</h1>
+                <p class="schedule-subtitle">Drag courses to set your weekly schedule</p>
+            </div>
+            <div class="schedule-actions">
+                <button class="btn btn-secondary" onclick="clearSchedule()">Clear All</button>
+                <button class="btn btn-primary" onclick="saveSchedule()">Save Schedule</button>
+            </div>
+        </div>
+        
+        <div class="info-banner">
+            <div class="info-banner-title">📅 How Schedule Affects Due Times</div>
+            <div class="info-banner-text">
+                When you save your schedule, assignments that are <strong>not submittable online</strong> 
+                (like paper tests or in-class work) will have their due times adjusted to match when 
+                that class starts on the due date. Online assignments keep their original due times.
+            </div>
+        </div>
+        
+        <div class="schedule-layout">
+            <div class="courses-panel">
+                <h3>Your Courses</h3>
+                <div class="course-list" id="course-list">
+                    <% if (courses && courses.length > 0) { %>
+                        <% courses.forEach((course, index) => { %>
+                            <div class="course-item" 
+                                 draggable="true"
+                                 data-section-id="<%= course.id %>"
+                                 data-course-name="<%= course.course_title || course.section_title %>"
+                                 data-color="<%= ['#0071e3', '#34c759', '#ff9500', '#af52de', '#ff3b30', '#5856d6', '#00c7be', '#ff2d55'][index % 8] %>">
+                                <div class="course-color" style="background: <%= ['#0071e3', '#34c759', '#ff9500', '#af52de', '#ff3b30', '#5856d6', '#00c7be', '#ff2d55'][index % 8] %>;"></div>
+                                <span class="course-name"><%= course.course_title || course.section_title %></span>
+                            </div>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="empty-courses">No courses found</div>
+                    <% } %>
+                </div>
+            </div>
+            
+            <div class="calendar-panel">
+                <div class="calendar-grid">
+                    <div class="calendar-header">
+                        <div class="calendar-header-cell">Time</div>
+                        <div class="calendar-header-cell">Monday</div>
+                        <div class="calendar-header-cell">Tuesday</div>
+                        <div class="calendar-header-cell">Wednesday</div>
+                        <div class="calendar-header-cell">Thursday</div>
+                        <div class="calendar-header-cell">Friday</div>
+                    </div>
+                    
+                    <!-- Time labels column -->
+                    <div class="time-column" id="time-labels">
+                        <!-- Generated by JS -->
+                    </div>
+                    
+                    <!-- Day columns -->
+                    <div class="day-column" data-day="1" id="day-monday">
+                        <!-- Time slots generated by JS -->
+                    </div>
+                    <div class="day-column" data-day="2" id="day-tuesday"></div>
+                    <div class="day-column" data-day="3" id="day-wednesday"></div>
+                    <div class="day-column" data-day="4" id="day-thursday"></div>
+                    <div class="day-column" data-day="5" id="day-friday"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Edit Block Modal -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal">
+            <div class="modal-title">Edit Class Block</div>
+            <input type="hidden" id="edit-block-id">
+            
+            <div class="modal-field">
+                <label>Start Time</label>
+                <input type="time" id="edit-start-time">
+            </div>
+            
+            <div class="modal-field">
+                <label>Duration (minutes)</label>
+                <input type="number" id="edit-duration" min="15" max="180" step="5" value="50">
+                <div class="duration-presets">
+                    <button type="button" class="duration-preset" onclick="setDuration(45)">45m</button>
+                    <button type="button" class="duration-preset" onclick="setDuration(50)">50m</button>
+                    <button type="button" class="duration-preset" onclick="setDuration(55)">55m</button>
+                    <button type="button" class="duration-preset" onclick="setDuration(90)">90m</button>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="deleteBlock()">Delete</button>
+                <button class="btn btn-primary" onclick="saveBlockEdit()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        // Schedule data structure
+        let schedule = {};
+        const START_HOUR = 7; // 7 AM
+        const END_HOUR = 18; // 6 PM
+        const SLOT_HEIGHT = 60; // pixels per hour
+        
+        // Initialize the calendar
+        function initCalendar() {
+            // Generate time labels
+            const timeLabels = document.getElementById('time-labels');
+            timeLabels.innerHTML = '';
+            
+            for (let hour = START_HOUR; hour < END_HOUR; hour++) {
+                const label = document.createElement('div');
+                label.className = 'time-slot-label';
+                const displayHour = hour > 12 ? hour - 12 : hour;
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                label.textContent = displayHour + ' ' + ampm;
+                timeLabels.appendChild(label);
+            }
+            
+            // Generate time slots for each day
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+            days.forEach((day, dayIndex) => {
+                const column = document.getElementById('day-' + day);
+                column.innerHTML = '';
+                
+                for (let hour = START_HOUR; hour < END_HOUR; hour++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'time-slot';
+                    slot.dataset.day = dayIndex + 1;
+                    slot.dataset.hour = hour;
+                    
+                    // Drop handlers
+                    slot.addEventListener('dragover', handleDragOver);
+                    slot.addEventListener('dragleave', handleDragLeave);
+                    slot.addEventListener('drop', handleDrop);
+                    
+                    column.appendChild(slot);
+                }
+            });
+            
+            // Setup course dragging
+            document.querySelectorAll('.course-item').forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragend', handleDragEnd);
+            });
+            
+            // Load saved schedule
+            loadSchedule();
+        }
+        
+        let draggedCourse = null;
+        
+        function handleDragStart(e) {
+            draggedCourse = {
+                sectionId: this.dataset.sectionId,
+                courseName: this.dataset.courseName,
+                color: this.dataset.color
+            };
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'copy';
+        }
+        
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.time-slot').forEach(slot => {
+                slot.classList.remove('drag-over');
+            });
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            this.classList.add('drag-over');
+        }
+        
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            if (!draggedCourse) return;
+            
+            const day = parseInt(this.dataset.day);
+            const hour = parseInt(this.dataset.hour);
+            
+            // Enforce time window (7 AM - 6 PM)
+            if (hour < START_HOUR || hour >= END_HOUR) {
+                showToast('Classes can only be scheduled between 7 AM and 6 PM', 'error');
+                draggedCourse = null;
+                return;
+            }
+            
+            // Create a new block
+            const blockId = 'block-' + Date.now();
+            const block = {
+                id: blockId,
+                sectionId: draggedCourse.sectionId,
+                courseName: draggedCourse.courseName,
+                color: draggedCourse.color,
+                day: day,
+                startHour: hour,
+                startMinute: 0,
+                duration: 50 // default 50 minutes
+            };
+            
+            if (!schedule[day]) schedule[day] = [];
+            schedule[day].push(block);
+            
+            renderSchedule();
+            draggedCourse = null;
+        }
+        
+        function renderSchedule() {
+            // Clear existing blocks
+            document.querySelectorAll('.schedule-block').forEach(el => el.remove());
+            
+            // Render each day's blocks
+            Object.keys(schedule).forEach(day => {
+                const dayNum = parseInt(day);
+                const column = document.querySelector('.day-column[data-day="' + dayNum + '"]');
+                if (!column) return;
+                
+                schedule[day].forEach(block => {
+                    const blockEl = document.createElement('div');
+                    blockEl.className = 'schedule-block';
+                    blockEl.id = block.id;
+                    blockEl.style.background = block.color;
+                    
+                    // Calculate position
+                    const topOffset = ((block.startHour - START_HOUR) * 60 + block.startMinute) * (SLOT_HEIGHT / 60);
+                    const height = block.duration * (SLOT_HEIGHT / 60);
+                    
+                    blockEl.style.top = topOffset + 'px';
+                    blockEl.style.height = height + 'px';
+                    
+                    // Format times
+                    const startTime = formatTime(block.startHour, block.startMinute);
+                    const endHour = block.startHour + Math.floor((block.startMinute + block.duration) / 60);
+                    const endMinute = (block.startMinute + block.duration) % 60;
+                    const endTime = formatTime(endHour, endMinute);
+                    
+                    blockEl.innerHTML = 
+                        '<div class="schedule-block-title">' + escapeHtml(block.courseName) + '</div>' +
+                        '<div class="schedule-block-time">' + startTime + ' - ' + endTime + '</div>' +
+                        '<button class="schedule-block-delete" onclick="event.stopPropagation(); removeBlock(\'' + block.id + '\', ' + dayNum + ')">×</button>';
+                    
+                    blockEl.addEventListener('click', function() {
+                        openEditModal(block.id, dayNum);
+                    });
+                    
+                    column.appendChild(blockEl);
+                });
+            });
+        }
+        
+        function formatTime(hour, minute) {
+            const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const minStr = minute < 10 ? '0' + minute : minute;
+            return displayHour + ':' + minStr + ' ' + ampm;
+        }
+        
+        function formatTime24(hour, minute) {
+            const hourStr = hour < 10 ? '0' + hour : hour;
+            const minStr = minute < 10 ? '0' + minute : minute;
+            return hourStr + ':' + minStr;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function removeBlock(blockId, day) {
+            if (schedule[day]) {
+                schedule[day] = schedule[day].filter(b => b.id !== blockId);
+                if (schedule[day].length === 0) {
+                    delete schedule[day];
+                }
+            }
+            renderSchedule();
+        }
+        
+        let editingBlock = null;
+        
+        function openEditModal(blockId, day) {
+            const block = schedule[day]?.find(b => b.id === blockId);
+            if (!block) return;
+            
+            editingBlock = { blockId, day };
+            
+            document.getElementById('edit-block-id').value = blockId;
+            document.getElementById('edit-start-time').value = formatTime24(block.startHour, block.startMinute);
+            document.getElementById('edit-duration').value = block.duration;
+            
+            document.getElementById('edit-modal').classList.add('active');
+        }
+        
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('active');
+            editingBlock = null;
+        }
+        
+        function setDuration(minutes) {
+            document.getElementById('edit-duration').value = minutes;
+        }
+        
+        function saveBlockEdit() {
+            if (!editingBlock) return;
+            
+            const block = schedule[editingBlock.day]?.find(b => b.id === editingBlock.blockId);
+            if (!block) return;
+            
+            const timeValue = document.getElementById('edit-start-time').value;
+            const [hours, minutes] = timeValue.split(':').map(Number);
+            const duration = parseInt(document.getElementById('edit-duration').value);
+            
+            // Calculate end time
+            const endHour = hours + Math.floor((minutes + duration) / 60);
+            const endMinute = (minutes + duration) % 60;
+            
+            // Validate time window (7 AM - 6 PM)
+            if (hours < START_HOUR) {
+                showToast('Start time cannot be before 7 AM', 'error');
+                return;
+            }
+            if (endHour > END_HOUR || (endHour === END_HOUR && endMinute > 0)) {
+                showToast('Class cannot extend past 6 PM', 'error');
+                return;
+            }
+            
+            block.startHour = hours;
+            block.startMinute = minutes;
+            block.duration = duration;
+            
+            closeEditModal();
+            renderSchedule();
+        }
+        
+        function deleteBlock() {
+            if (!editingBlock) return;
+            removeBlock(editingBlock.blockId, editingBlock.day);
+            closeEditModal();
+        }
+        
+        function clearSchedule() {
+            if (!confirm('Are you sure you want to clear your entire schedule?')) return;
+            schedule = {};
+            renderSchedule();
+            showToast('Schedule cleared', 'success');
+        }
+        
+        async function saveSchedule() {
+            try {
+                const response = await fetch('/api/schedule/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schedule })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('Schedule saved! ' + (data.assignmentsUpdated || 0) + ' assignment due times adjusted.', 'success');
+                } else {
+                    showToast('Error saving schedule: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Error saving schedule:', error);
+                showToast('Error saving schedule', 'error');
+            }
+        }
+        
+        async function loadSchedule() {
+            try {
+                const response = await fetch('/api/schedule');
+                const data = await response.json();
+                
+                if (data.schedule) {
+                    schedule = data.schedule;
+                    
+                    // Filter out blocks outside the valid time window (7 AM - 6 PM)
+                    let removedCount = 0;
+                    Object.keys(schedule).forEach(day => {
+                        if (Array.isArray(schedule[day])) {
+                            const originalLength = schedule[day].length;
+                            schedule[day] = schedule[day].filter(block => {
+                                const endHour = block.startHour + Math.floor((block.startMinute + block.duration) / 60);
+                                const isValid = block.startHour >= START_HOUR && endHour <= END_HOUR;
+                                return isValid;
+                            });
+                            removedCount += originalLength - schedule[day].length;
+                        }
+                    });
+                    
+                    if (removedCount > 0) {
+                        showToast(removedCount + ' class(es) removed (outside 7 AM - 6 PM)', 'info');
+                    }
+                    
+                    renderSchedule();
+                }
+            } catch (error) {
+                console.error('Error loading schedule:', error);
+            }
+        }
+        
+        // Close modal on outside click
+        document.getElementById('edit-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditModal();
+            }
+        });
+        
+        // Initialize
+        initCalendar();
+    </script>
+</body>
+</html>

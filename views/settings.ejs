@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Schoology Pro Max</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+    <%- include('partials/theme') %>
+    <style>
+        .settings-page {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: var(--space-6);
+        }
+        
+        .settings-header {
+            margin-bottom: var(--space-8);
+        }
+        
+        .settings-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+        
+        .settings-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+        }
+        
+        .settings-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            margin-bottom: var(--space-4);
+        }
+        
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-3);
+            border-bottom: 1px solid var(--border-light);
+        }
+        
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-3) 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+        
+        .setting-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        
+        .setting-item:first-of-type {
+            padding-top: 0;
+        }
+        
+        .setting-info {
+            flex: 1;
+        }
+        
+        .setting-label {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .setting-description {
+            font-size: 0.8125rem;
+            color: var(--text-tertiary);
+        }
+        
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-tertiary);
+            transition: 0.3s;
+            border-radius: 28px;
+            border: 1px solid var(--border-medium);
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 2px;
+            bottom: 2px;
+            background: white;
+            transition: 0.3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+        
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+        
+        /* Select dropdown */
+        .setting-select {
+            padding: 8px 32px 8px 12px;
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-sm);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236e6e73' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+        
+        .setting-select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-glow);
+        }
+        
+        /* Link item */
+        .setting-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all 0.2s;
+            margin-top: var(--space-2);
+        }
+        
+        .setting-link:hover {
+            background: var(--bg-hover);
+            transform: translateX(4px);
+        }
+        
+        .setting-link svg {
+            color: var(--text-tertiary);
+        }
+        
+        /* Multiplier section */
+        .multiplier-section {
+            margin-top: var(--space-4);
+            padding-top: var(--space-4);
+            border-top: 1px solid var(--border-light);
+        }
+        
+        .multiplier-title {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-3);
+        }
+        
+        .multiplier-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: var(--space-3);
+        }
+        
+        .multiplier-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-3);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+        }
+        
+        .multiplier-label {
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+        
+        .multiplier-input {
+            width: 70px;
+            padding: 6px 10px;
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-sm);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            text-align: center;
+        }
+        
+        .multiplier-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+        
+        /* Save indicator */
+        .save-indicator {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            background: var(--text-primary);
+            color: var(--text-inverse);
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .save-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Notification test button */
+        .test-btn {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .test-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        /* Data management buttons */
+        .data-buttons {
+            display: flex;
+            gap: var(--space-3);
+            flex-wrap: wrap;
+        }
+        
+        .data-btn {
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .data-btn.primary {
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+        }
+        
+        .data-btn.primary:hover {
+            background: var(--accent-primary-hover);
+        }
+        
+        .data-btn.danger {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--accent-danger);
+            border: 1px solid rgba(255, 59, 48, 0.2);
+        }
+        
+        .data-btn.danger:hover {
+            background: rgba(255, 59, 48, 0.15);
+        }
+        
+        .data-btn.secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-medium);
+        }
+        
+        .data-btn.secondary:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        /* Version info */
+        .version-info {
+            text-align: center;
+            padding: var(--space-6);
+            color: var(--text-tertiary);
+            font-size: 0.8125rem;
+        }
+        
+        .version-info a {
+            color: var(--accent-primary);
+            text-decoration: none;
+        }
+        
+        .version-info a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/nav', { active: 'settings' }) %>
+    
+    <main class="container">
+        <div class="settings-page">
+            <div class="settings-header">
+                <h1 class="settings-title">⚙️ Settings</h1>
+                <p class="settings-subtitle">Customize your Schoology Pro Max experience</p>
+            </div>
+            
+            <!-- Appearance -->
+            <div class="settings-section">
+                <div class="section-title">Appearance</div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            🌙 Dark Mode
+                        </div>
+                        <div class="setting-description">Switch between light and dark themes</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="darkMode" onchange="updateSetting('darkMode', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            🎨 Accent Color
+                        </div>
+                        <div class="setting-description">Choose your primary accent color</div>
+                    </div>
+                    <select class="setting-select" id="accentColor" onchange="updateSetting('accentColor', this.value)">
+                        <option value="blue">Blue (Default)</option>
+                        <option value="purple">Purple</option>
+                        <option value="green">Green</option>
+                        <option value="orange">Orange</option>
+                        <option value="red">Red</option>
+                        <option value="pink">Pink</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Time Predictions -->
+            <div class="settings-section">
+                <div class="section-title">Time Predictions</div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            ⏱️ Enable Time Estimates
+                        </div>
+                        <div class="setting-description">Show AI-predicted completion times for assignments</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="timeEstimates" onchange="updateSetting('timeEstimates', this.checked)" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            📊 Base Time Multiplier
+                        </div>
+                        <div class="setting-description">Adjust all time estimates (1.0 = default)</div>
+                    </div>
+                    <input type="number" class="multiplier-input" id="baseMultiplier" value="1.0" min="0.5" max="3.0" step="0.1" onchange="updateSetting('baseMultiplier', parseFloat(this.value))">
+                </div>
+                
+                <div class="multiplier-section" id="subject-multipliers">
+                    <div class="multiplier-title">Course-Specific Multipliers</div>
+                    <div class="multiplier-grid" id="multiplier-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Schedule & Classes -->
+            <div class="settings-section">
+                <div class="section-title">Schedule & Classes</div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            📅 Adjust Due Times
+                        </div>
+                        <div class="setting-description">Set due times to when your class actually starts</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="adjustDueTimes" onchange="updateSetting('adjustDueTimes', this.checked)" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <a href="/schedule" class="setting-link">
+                    <span>📆 Manage Class Schedule</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </a>
+            </div>
+            
+            <!-- Notifications -->
+            <div class="settings-section">
+                <div class="section-title">Notifications</div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            🔔 New Assignment Alerts
+                        </div>
+                        <div class="setting-description">Get notified when new assignments are posted</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="notifyNewAssignments" onchange="updateSetting('notifyNewAssignments', this.checked)" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            📝 Grade Alerts
+                        </div>
+                        <div class="setting-description">Get notified when assignments are graded</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="notifyGrades" onchange="updateSetting('notifyGrades', this.checked)" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            ✏️ Update Alerts
+                        </div>
+                        <div class="setting-description">Get notified when assignments are edited</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="notifyUpdates" onchange="updateSetting('notifyUpdates', this.checked)" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: var(--space-2); padding-top: var(--space-4); margin-top: var(--space-2); border-top: 1px dashed var(--border-light);">
+                    <div class="setting-info" style="width: 100%;">
+                        <div class="setting-label" style="font-size: 0.8125rem;">
+                            ℹ️ How Notifications Work
+                        </div>
+                        <div class="setting-description" style="margin-top: var(--space-2); line-height: 1.5;">
+                            Notifications are checked when you visit any page. The app compares your current assignments and grades with what it saw last time. When something new or changed is detected, it appears in your inbox (bell icon). Click "Refresh" in the inbox to manually check for updates.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Focus Mode -->
+            <div class="settings-section">
+                <div class="section-title">Focus Mode</div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            🎯 Auto-skip Completed
+                        </div>
+                        <div class="setting-description">Automatically skip assignments you've already submitted</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoSkipCompleted" onchange="updateSetting('autoSkipCompleted', this.checked)" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            🎉 Celebration Effects
+                        </div>
+                        <div class="setting-description">Show achievement toasts when completing assignments</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="celebrationEffects" onchange="updateSetting('celebrationEffects', this.checked)" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Data Management -->
+            <div class="settings-section">
+                <div class="section-title">Data Management</div>
+                
+                <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: var(--space-3);">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            💾 Your Data
+                        </div>
+                        <div class="setting-description">Export or clear your local data (completed assignments, settings, etc.)</div>
+                    </div>
+                    <div class="data-buttons">
+                        <button class="data-btn secondary" onclick="exportData()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Export Data
+                        </button>
+                        <button class="data-btn secondary" onclick="importData()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            Import Data
+                        </button>
+                        <button class="data-btn danger" onclick="clearCompletedAssignments()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                            Clear Completed
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            🗑️ Clear All Notifications
+                        </div>
+                        <div class="setting-description">Remove all inbox notifications</div>
+                    </div>
+                    <button class="test-btn" onclick="clearNotifications()">Clear</button>
+                </div>
+            </div>
+            
+            <!-- Version Info -->
+            <div class="version-info">
+                <p><strong>Schoology Pro Max</strong> v1.0.0</p>
+                <p style="margin-top: 4px;">Made with ❤️ for students</p>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Save indicator -->
+    <div class="save-indicator" id="save-indicator">✓ Settings saved</div>
+    
+    <!-- Hidden file input for import -->
+    <input type="file" id="import-file" accept=".json" style="display: none;" onchange="handleImport(event)">
+    
+    <script src="/js/app.js"></script>
+    <script>
+        // User's enrolled courses (from server)
+        const enrolledCourses = <%- JSON.stringify(courses || []) %>;
+        
+        // Build default course multipliers from enrolled courses
+        const defaultCourseMultipliers = {};
+        enrolledCourses.forEach(course => {
+            // Set default multipliers based on course name patterns
+            let multiplier = 1.0;
+            const name = course.name.toLowerCase();
+            if (name.includes('ap ') || name.includes(' ap')) multiplier = 1.3;
+            else if (name.includes('honors') || name.includes('hon ')) multiplier = 1.2;
+            else if (name.includes('pe') || name.includes('physical education') || name.includes('gym')) multiplier = 0.7;
+            else if (name.includes('art') || name.includes('music') || name.includes('drama') || name.includes('theatre')) multiplier = 0.8;
+            defaultCourseMultipliers[course.name] = multiplier;
+        });
+        
+        // Default settings
+        const defaultSettings = {
+            darkMode: false,
+            accentColor: 'blue',
+            timeEstimates: true,
+            baseMultiplier: 1.0,
+            courseMultipliers: defaultCourseMultipliers,
+            adjustDueTimes: true,
+            notifyNewAssignments: true,
+            notifyGrades: true,
+            notifyUpdates: true,
+            autoSkipCompleted: true,
+            celebrationEffects: true
+        };
+        
+        // Load settings
+        let settings = loadSettings();
+        
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem('schoology_settings');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    // Merge course multipliers, keeping saved values but adding new courses
+                    if (!parsed.courseMultipliers) {
+                        parsed.courseMultipliers = defaultCourseMultipliers;
+                    } else {
+                        // Add any new courses that weren't in saved settings
+                        Object.keys(defaultCourseMultipliers).forEach(course => {
+                            if (!(course in parsed.courseMultipliers)) {
+                                parsed.courseMultipliers[course] = defaultCourseMultipliers[course];
+                            }
+                        });
+                    }
+                    return { ...defaultSettings, ...parsed };
+                }
+            } catch (e) {
+                console.error('Error loading settings:', e);
+            }
+            return { ...defaultSettings };
+        }
+        
+        function saveSettings() {
+            try {
+                localStorage.setItem('schoology_settings', JSON.stringify(settings));
+                showSaveIndicator();
+            } catch (e) {
+                console.error('Error saving settings:', e);
+            }
+        }
+        
+        function updateSetting(key, value) {
+            settings[key] = value;
+            saveSettings();
+            applySettings();
+        }
+        
+        function updateCourseMultiplier(course, value) {
+            if (!settings.courseMultipliers) {
+                settings.courseMultipliers = { ...defaultCourseMultipliers };
+            }
+            settings.courseMultipliers[course] = parseFloat(value) || 1.0;
+            saveSettings();
+        }
+        
+        function applySettings() {
+            // Apply dark mode
+            if (settings.darkMode) {
+                document.documentElement.classList.add('dark-mode');
+            } else {
+                document.documentElement.classList.remove('dark-mode');
+            }
+            
+            // Apply accent color
+            const colors = {
+                blue: '#0071e3',
+                purple: '#af52de',
+                green: '#34c759',
+                orange: '#ff9f0a',
+                red: '#ff3b30',
+                pink: '#ff2d55'
+            };
+            document.documentElement.style.setProperty('--accent-primary', colors[settings.accentColor] || colors.blue);
+        }
+        
+        function showSaveIndicator() {
+            const indicator = document.getElementById('save-indicator');
+            indicator.classList.add('show');
+            setTimeout(() => indicator.classList.remove('show'), 2000);
+        }
+        
+        // Initialize UI with current settings
+        function initializeUI() {
+            document.getElementById('darkMode').checked = settings.darkMode;
+            document.getElementById('accentColor').value = settings.accentColor || 'blue';
+            document.getElementById('timeEstimates').checked = settings.timeEstimates !== false;
+            document.getElementById('baseMultiplier').value = settings.baseMultiplier || 1.0;
+            document.getElementById('adjustDueTimes').checked = settings.adjustDueTimes !== false;
+            document.getElementById('notifyNewAssignments').checked = settings.notifyNewAssignments !== false;
+            document.getElementById('notifyGrades').checked = settings.notifyGrades !== false;
+            document.getElementById('notifyUpdates').checked = settings.notifyUpdates !== false;
+            document.getElementById('autoSkipCompleted').checked = settings.autoSkipCompleted !== false;
+            document.getElementById('celebrationEffects').checked = settings.celebrationEffects !== false;
+            
+            // Render course multipliers
+            renderCourseMultipliers();
+            
+            // Apply current settings
+            applySettings();
+        }
+        
+        function renderCourseMultipliers() {
+            const grid = document.getElementById('multiplier-grid');
+            const multipliers = settings.courseMultipliers || defaultCourseMultipliers;
+            
+            if (Object.keys(multipliers).length === 0) {
+                grid.innerHTML = '<p style="color: var(--text-tertiary); font-size: 0.875rem; grid-column: 1 / -1;">No courses found. Enroll in courses to see them here.</p>';
+                return;
+            }
+            
+            grid.innerHTML = Object.entries(multipliers).map(([course, value]) => `
+                <div class="multiplier-item">
+                    <span class="multiplier-label" title="${course}">${course.length > 25 ? course.substring(0, 22) + '...' : course}</span>
+                    <input type="number" class="multiplier-input" value="${value}" min="0.5" max="3.0" step="0.1" 
+                           onchange="updateCourseMultiplier('${course.replace(/'/g, "\\'")}', this.value)">
+                </div>
+            `).join('');
+        }
+        
+        // Data management functions
+        function exportData() {
+            const data = {
+                settings: settings,
+                completedAssignments: getCookie('completedAssignments') || [],
+                customAssignments: getCookie('customAssignments') || [],
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `schoology-pro-max-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast('Data exported successfully', 'success');
+        }
+        
+        function importData() {
+            document.getElementById('import-file').click();
+        }
+        
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data.settings) {
+                        settings = { ...defaultSettings, ...data.settings };
+                        saveSettings();
+                    }
+                    
+                    if (data.completedAssignments) {
+                        setCookie('completedAssignments', data.completedAssignments);
+                    }
+                    
+                    if (data.customAssignments) {
+                        setCookie('customAssignments', data.customAssignments);
+                    }
+                    
+                    initializeUI();
+                    showToast('Data imported successfully', 'success');
+                } catch (err) {
+                    showToast('Error importing data', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+        
+        function clearCompletedAssignments() {
+            if (confirm('Are you sure you want to clear all completed assignment records? This cannot be undone.')) {
+                setCookie('completedAssignments', []);
+                showToast('Completed assignments cleared', 'success');
+            }
+        }
+        
+        async function clearNotifications() {
+            if (confirm('Are you sure you want to clear all notifications?')) {
+                try {
+                    await fetch('/api/notifications/clear', { method: 'POST' });
+                    showToast('Notifications cleared', 'success');
+                } catch (e) {
+                    showToast('Error clearing notifications', 'error');
+                }
+            }
+        }
+        
+        // Cookie helpers
+        function getCookie(name) {
+            const value = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+            if (!value) return null;
+            try {
+                return JSON.parse(decodeURIComponent(value.split('=')[1]));
+            } catch (e) {
+                return null;
+            }
+        }
+        
+        function setCookie(name, value) {
+            const expires = new Date();
+            expires.setFullYear(expires.getFullYear() + 1);
+            document.cookie = `${name}=${encodeURIComponent(JSON.stringify(value))}; expires=${expires.toUTCString()}; path=/`;
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeUI);
+    </script>
+</body>
+</html>

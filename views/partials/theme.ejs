@@ -1,0 +1,27 @@
+<script>
+// Instant theme application - runs before page renders to prevent flash
+(function() {
+    try {
+        const saved = localStorage.getItem('schoology_settings');
+        if (saved) {
+            const settings = JSON.parse(saved);
+            if (settings.darkMode) {
+                document.documentElement.classList.add('dark-mode');
+            }
+            // Apply accent color
+            const colors = {
+                blue: '#0071e3', purple: '#af52de', green: '#34c759',
+                orange: '#ff9f0a', red: '#ff3b30', pink: '#ff2d55'
+            };
+            const hoverColors = {
+                blue: '#0077ed', purple: '#c45ee8', green: '#3dd660',
+                orange: '#ffaa1f', red: '#ff5044', pink: '#ff4169'
+            };
+            if (settings.accentColor && colors[settings.accentColor]) {
+                document.documentElement.style.setProperty('--accent-primary', colors[settings.accentColor]);
+                document.documentElement.style.setProperty('--accent-primary-hover', hoverColors[settings.accentColor]);
+            }
+        }
+    } catch (e) {}
+})();
+</script>

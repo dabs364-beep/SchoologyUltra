@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Schoology Pro Max</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logo.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <%- include('partials/theme') %>
+    <style>
+        /* Make dashboard a 2x2 grid with equal sized boxes */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: var(--space-6);
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+            }
+        }
+        
+        /* Ensure all cards have same height */
+        .dashboard-grid > .dashboard-card,
+        .dashboard-grid > .courses-card {
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .dashboard-card .dashboard-card-content,
+        .courses-card .courses-card-content {
+            flex: 1;
+        }
+        
+        /* Courses card styles - match dashboard cards exactly */
+        .courses-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            border: 1px solid var(--border-light);
+            transition: all var(--duration-normal) var(--ease-out);
+            position: relative;
+        }
+        
+        .courses-card:hover {
+            border-color: var(--border-medium);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .courses-card h3 {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-4);
+        }
+        
+        .courses-card-content {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+        
+        .courses-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: var(--radius-lg);
+            color: white;
+        }
+        
+        .courses-stat {
+            flex: 1;
+        }
+        
+        .courses-stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+        
+        .courses-stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: var(--space-1);
+        }
+        
+        .courses-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            margin-top: var(--space-2);
+            padding: var(--space-2);
+            box-shadow: var(--shadow-lg);
+            z-index: 50;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .courses-card:hover .courses-dropdown {
+            display: block;
+        }
+        
+        .course-link {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            transition: all var(--duration-fast) ease;
+        }
+        
+        .course-link:hover {
+            background: var(--bg-tertiary);
+        }
+        
+        .course-link-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--accent-primary) 0%, #5856d6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+        
+        .course-link-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .course-link-text {
+            font-size: 0.9375rem;
+            font-weight: 500;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .course-link-grade {
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+        
+        .course-link-arrow {
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+        }
+        
+        .view-all-link {
+            display: block;
+            text-align: center;
+            padding: var(--space-3);
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border-light);
+            margin-top: var(--space-2);
+        }
+        
+        .view-all-link:hover {
+            background: rgba(0, 113, 227, 0.05);
+        }
+        
+        /* Current class card - clickable link version */
+        a.current-class-card {
+            cursor: pointer;
+        }
+        
+        a.current-class-card h3 {
+            color: #16a34a;
+        }
+        
+        a.current-class-card:hover {
+            border-color: #16a34a;
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/nav', { active: 'dashboard' }) %>
+    
+    <main class="container">
+        <div class="welcome-section slide-up">
+            <h1>Welcome back, <%= user.name_first %> 👋</h1>
+            <p>Here's your Schoology overview for today</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="dashboard-card slide-up">
+                <h3>Assignments</h3>
+                <div class="dashboard-card-content">
+                    <div class="dashboard-icon">📝</div>
+                    <div class="dashboard-stat">
+                        <div class="dashboard-stat-value">Track</div>
+                        <div class="dashboard-stat-label">Your upcoming work</div>
+                    </div>
+                </div>
+                <div class="quick-links">
+                    <a href="/assignments" class="quick-link">View All →</a>
+                </div>
+            </div>
+            
+            <div class="dashboard-card slide-up">
+                <h3>Grades</h3>
+                <div class="dashboard-card-content">
+                    <div class="dashboard-icon">📊</div>
+                    <div class="dashboard-stat">
+                        <div class="dashboard-stat-value">Analyze</div>
+                        <div class="dashboard-stat-label">Your performance</div>
+                    </div>
+                </div>
+                <div class="quick-links">
+                    <a href="/grades" class="quick-link">View All →</a>
+                </div>
+            </div>
+
+            <div class="dashboard-card slide-up">
+                <h3>Profile</h3>
+                <div class="dashboard-card-content">
+                    <% if (user.picture_url) { %>
+                        <img src="<%= user.picture_url %>" alt="Profile" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover;">
+                    <% } else { %>
+                        <div class="dashboard-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 1rem; font-weight: 600;">
+                            <%= user.name_first.charAt(0) %><%= user.name_last.charAt(0) %>
+                        </div>
+                    <% } %>
+                    <div class="dashboard-stat">
+                        <div class="dashboard-stat-value" style="font-size: 1.25rem;"><%= user.name_first %> <%= user.name_last %></div>
+                        <div class="dashboard-stat-label">
+                            <% if (user.primary_email) { %>
+                                <%= user.primary_email %>
+                            <% } else { %>
+                                ID: <%= user.id %>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Courses Card - 4th card in the 2x2 grid -->
+            <% if (currentClass) { %>
+            <!-- Current class happening - clickable card -->
+            <a href="/courses?section=<%= currentClass.sectionId %>" class="courses-card slide-up current-class-card" style="text-decoration: none;">
+                <h3>In Class Now</h3>
+                <div class="courses-card-content">
+                    <div class="courses-icon" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </div>
+                    <div class="courses-stat">
+                        <div class="courses-stat-value" style="font-size: 1.25rem; line-height: 1.3;"><%= currentClass.courseName %></div>
+                        <div class="courses-stat-label">
+                            <% 
+                                const endHour = Math.floor(currentClass.endTime / 60);
+                                const endMin = currentClass.endTime % 60;
+                                const endAmPm = endHour >= 12 ? 'PM' : 'AM';
+                                const displayEndHour = endHour > 12 ? endHour - 12 : (endHour === 0 ? 12 : endHour);
+                            %>
+                            Ends at <%= displayEndHour %>:<%= endMin.toString().padStart(2, '0') %> <%= endAmPm %>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            <% } else { %>
+            <!-- No current class - original hover dropdown -->
+            <div class="courses-card slide-up">
+                <h3>Courses</h3>
+                <div class="courses-card-content">
+                    <div class="courses-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="courses-stat">
+                        <div class="courses-stat-value"><%= sections ? sections.length : 0 %></div>
+                        <div class="courses-stat-label">Hover to view courses</div>
+                    </div>
+                </div>
+                
+                <% if (sections && sections.length > 0) { 
+                    // Sort sections: those with grades first, N/A at bottom
+                    const sortedSections = [...sections].sort((a, b) => {
+                        const aHasGrade = a.final_grade !== null && a.final_grade !== undefined && a.final_grade !== '';
+                        const bHasGrade = b.final_grade !== null && b.final_grade !== undefined && b.final_grade !== '';
+                        if (aHasGrade && !bHasGrade) return -1;
+                        if (!aHasGrade && bHasGrade) return 1;
+                        return (a.course_title || a.section_title || '').localeCompare(b.course_title || b.section_title || '');
+                    });
+                %>
+                <div class="courses-dropdown">
+                    <% sortedSections.forEach(section => { 
+                        const grade = section.final_grade;
+                        const hasGrade = grade !== null && grade !== undefined && grade !== '' && !isNaN(parseFloat(grade));
+                        const pct = hasGrade ? parseFloat(grade) : null;
+                        let gradeClass = '';
+                        if (pct !== null) {
+                            if (pct >= 90) gradeClass = 'grade-a';
+                            else if (pct >= 80) gradeClass = 'grade-b';
+                            else if (pct >= 70) gradeClass = 'grade-c';
+                            else if (pct >= 60) gradeClass = 'grade-d';
+                            else gradeClass = 'grade-f';
+                        }
+                    %>
+                    <a href="/courses?section=<%= section.id %>" class="course-link">
+                        <div class="course-link-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="course-link-info">
+                            <div class="course-link-text"><%= section.course_title || section.section_title %></div>
+                            <div class="course-link-grade">
+                                <% if (hasGrade) { %>
+                                    <span class="grade-pill <%= gradeClass %>"><%= pct.toFixed(1) %>%</span>
+                                <% } else { %>
+                                    <span class="grade-pill" style="background: rgba(107, 114, 128, 0.15); color: #6b7280;">N/A</span>
+                                <% } %>
+                            </div>
+                        </div>
+                        <span class="course-link-arrow">→</span>
+                    </a>
+                    <% }) %>
+                    <a href="/courses" class="view-all-link">View All Courses →</a>
+                </div>
+                <% } else { %>
+                <div class="courses-dropdown">
+                    <p style="color: var(--text-tertiary); text-align: center; padding: var(--space-4);">No courses found.</p>
+                </div>
+                <% } %>
+            </div>
+            <% } %>
+        </div>
+    </main>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

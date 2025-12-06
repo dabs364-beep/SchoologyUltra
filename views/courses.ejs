@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Courses - Schoology Pro Max</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logo.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <%- include('partials/theme') %>
+    <style>
+        .courses-layout {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: var(--space-6);
+            margin-top: var(--space-6);
+        }
+        
+        @media (max-width: 900px) {
+            .courses-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .course-selector {
+            margin-bottom: var(--space-4);
+        }
+        
+        .course-select {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-size: 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            color: var(--text-primary);
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+        
+        .course-select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+        }
+        
+        /* Folder Structure */
+        .folder-container {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            border: 1px solid var(--border-light);
+        }
+        
+        .folder-empty {
+            text-align: center;
+            padding: var(--space-8);
+            color: var(--text-tertiary);
+        }
+        
+        .folder-empty-icon {
+            font-size: 3rem;
+            margin-bottom: var(--space-3);
+        }
+        
+        .folder-tree {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .folder-tree ul {
+            list-style: none;
+            padding-left: var(--space-5);
+            margin: 0;
+            border-left: 1px dashed var(--border-medium);
+            margin-left: 8px;
+        }
+        
+        .folder-item {
+            padding: var(--space-2) 0;
+        }
+        
+        .folder-item-content {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        
+        .folder-item-content:hover {
+            background: var(--bg-tertiary);
+        }
+        
+        .folder-icon {
+            font-size: 1.125rem;
+            flex-shrink: 0;
+        }
+        
+        .folder-title {
+            flex: 1;
+            font-size: 0.9375rem;
+            color: var(--text-primary);
+        }
+        
+        .folder-type {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(107, 114, 128, 0.15);
+            color: #6b7280;
+            text-transform: capitalize;
+            font-weight: 600;
+        }
+        
+        .folder-type.assignment {
+            background: rgba(0, 113, 227, 0.15);
+            color: #0071e3;
+        }
+        
+        .folder-type.discussion {
+            background: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+        }
+        
+        .folder-type.page {
+            background: rgba(234, 179, 8, 0.15);
+            color: #ca8a04;
+        }
+        
+        .folder-type.folder {
+            background: rgba(107, 114, 128, 0.15);
+            color: #6b7280;
+        }
+        
+        .folder-children {
+            display: none;
+        }
+        
+        .folder-item.expanded > .folder-children {
+            display: block;
+        }
+        
+        .folder-toggle {
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-tertiary);
+            transition: transform 0.2s ease;
+        }
+        
+        .folder-item.expanded > .folder-item-content .folder-toggle {
+            transform: rotate(90deg);
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+        
+        .sidebar-section {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+        }
+        
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-light);
+        }
+        
+        .sidebar-header h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .sidebar-badge {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            background: var(--accent-primary);
+            color: white;
+            font-weight: 500;
+        }
+        
+        .sidebar-badge.overdue {
+            background: var(--accent-danger);
+        }
+        
+        .sidebar-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .sidebar-item {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            border-bottom: 1px solid var(--border-light);
+            transition: background 0.15s ease;
+        }
+        
+        .sidebar-item:last-child {
+            border-bottom: none;
+        }
+        
+        .sidebar-item:hover {
+            background: var(--bg-tertiary);
+        }
+        
+        .sidebar-item-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .sidebar-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .sidebar-item-title {
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .sidebar-item-due {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+        }
+        
+        .sidebar-item-due.soon {
+            color: var(--accent-warning);
+        }
+        
+        .sidebar-item-due.overdue {
+            color: var(--accent-danger);
+        }
+        
+        .sidebar-empty {
+            padding: var(--space-4);
+            text-align: center;
+            color: var(--text-tertiary);
+            font-size: 0.875rem;
+        }
+        
+        .sidebar-empty-icon {
+            font-size: 1.5rem;
+            margin-bottom: var(--space-2);
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/nav', { active: 'courses' }) %>
+    
+    <main class="container">
+        <div class="page-header">
+            <h1>Courses</h1>
+        </div>
+        
+        <!-- Course Selector -->
+        <div class="course-selector">
+            <select class="course-select" id="courseSelect" onchange="changeCourse(this.value)">
+                <% sections.forEach(section => { %>
+                    <option value="<%= section.id %>" <%= selectedSection && section.id === selectedSection.id ? 'selected' : '' %>>
+                        <%= section.course_title || section.section_title %>
+                    </option>
+                <% }) %>
+            </select>
+        </div>
+        
+        <div class="courses-layout">
+            <!-- Main Content: Folder Structure -->
+            <div class="folder-container">
+                <% if (folderContents.length === 0) { %>
+                    <div class="folder-empty">
+                        <div class="folder-empty-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                        </div>
+                        <p>No materials in this course yet.</p>
+                    </div>
+                <% } else { %>
+                    <ul class="folder-tree">
+                        <%- include('partials/folder-items', { items: folderContents, selectedSection: selectedSection }) %>
+                    </ul>
+                <% } %>
+            </div>
+            
+            <!-- Sidebar: Upcoming & Overdue -->
+            <div class="sidebar">
+                <!-- Upcoming Assignments -->
+                <div class="sidebar-section">
+                    <div class="sidebar-header">
+                        <h3>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px;">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            Upcoming
+                        </h3>
+                        <span class="sidebar-badge"><%= upcomingAssignments.length %></span>
+                    </div>
+                    <div class="sidebar-list">
+                        <% if (upcomingAssignments.length === 0) { %>
+                            <div class="sidebar-empty">
+                                <div class="sidebar-empty-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                </div>
+                                <p>No upcoming assignments!</p>
+                            </div>
+                        <% } else { %>
+                            <% upcomingAssignments.slice(0, 10).forEach(assignment => { 
+                                const now = new Date();
+                                const dueDate = new Date(assignment.due);
+                                // Compare by calendar day, not milliseconds
+                                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                                const dueDayStart = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+                                const daysUntil = Math.round((dueDayStart - todayStart) / (1000 * 60 * 60 * 24));
+                                let dueClass = '';
+                                let dueText = dueDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                                
+                                if (daysUntil === 0) {
+                                    dueClass = 'soon';
+                                    dueText = 'Due today';
+                                } else if (daysUntil === 1) {
+                                    dueClass = 'soon';
+                                    dueText = 'Due tomorrow';
+                                } else if (daysUntil <= 3) {
+                                    dueClass = 'soon';
+                                }
+                            %>
+                                <div class="sidebar-item" onclick="openItem('<%= selectedSection.id %>', '<%= assignment.id %>', 'assignment')" style="cursor: pointer;">
+                                    <div class="sidebar-item-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                                            <polyline points="10 9 9 9 8 9"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div class="sidebar-item-content">
+                                        <div class="sidebar-item-title"><%= assignment.title %></div>
+                                        <div class="sidebar-item-due <%= dueClass %>"><%= dueText %></div>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        <% } %>
+                    </div>
+                </div>
+                
+                <!-- Overdue Assignments -->
+                <% if (overdueAssignments.length > 0) { %>
+                <div class="sidebar-section">
+                    <div class="sidebar-header">
+                        <h3>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            Overdue
+                        </h3>
+                        <span class="sidebar-badge overdue"><%= overdueAssignments.length %></span>
+                    </div>
+                    <div class="sidebar-list">
+                        <% overdueAssignments.slice(0, 5).forEach(assignment => { 
+                            const now = new Date();
+                            const dueDate = new Date(assignment.due);
+                            const daysOverdue = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
+                            let dueText = `${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue`;
+                        %>
+                            <div class="sidebar-item" onclick="openItem('<%= selectedSection.id %>', '<%= assignment.id %>', 'assignment')" style="cursor: pointer;">
+                                <div class="sidebar-item-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="sidebar-item-content">
+                                    <div class="sidebar-item-title"><%= assignment.title %></div>
+                                    <div class="sidebar-item-due overdue"><%= dueText %></div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                </div>
+                <% } %>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        function changeCourse(sectionId) {
+            window.location.href = '/courses?section=' + sectionId;
+        }
+        
+        function toggleFolder(element, event) {
+            event.stopPropagation();
+            const folderItem = element.closest('.folder-item');
+            if (folderItem) {
+                folderItem.classList.toggle('expanded');
+            }
+        }
+        
+        function openItem(sectionId, itemId, itemType, itemUrl) {
+            if (itemType === 'assignment' || itemType === 'assessment' || itemType === 'assessment_v2') {
+                // Open assignments and quizzes locally
+                window.location.href = '/assignment?section=' + sectionId + '&id=' + itemId;
+            } else if (itemUrl) {
+                // Open documents, pages, links, etc. on Schoology
+                window.open(itemUrl, '_blank');
+            } else {
+                // Fallback: open on Schoology
+                window.open('https://fuhsd.schoology.com/course/' + sectionId + '/materials', '_blank');
+            }
+        }
+        
+        // Folders collapsed by default - no auto-expand
+    </script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

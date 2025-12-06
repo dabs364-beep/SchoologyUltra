@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignments - Schoology Pro Max</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logo.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <%- include('partials/theme') %>
+    <style>
+        .assignment-item {
+            cursor: pointer;
+            transition: all var(--duration-fast) ease;
+        }
+        .assignment-item:hover {
+            background: var(--bg-hover);
+            transform: translateX(4px);
+        }
+        .assignment-item.completed {
+            opacity: 0.5;
+        }
+        
+        /* Time estimate badge */
+        .time-estimate {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .time-estimate svg {
+            width: 12px;
+            height: 12px;
+            opacity: 0.8;
+        }
+        
+        .time-estimate.quick {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+        
+        .time-estimate.medium {
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+        }
+        
+        .time-estimate.long {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+        
+        .assignment-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        /* Day grouping styles */
+        .day-group {
+            margin-bottom: var(--space-4);
+        }
+        
+        .day-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-2);
+            font-size: 0.875rem;
+            border: 1px solid var(--border-light);
+        }
+        
+        .day-header-left {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        
+        .day-date {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .day-date.today {
+            color: var(--accent-primary);
+        }
+        
+        .day-date.tomorrow {
+            color: #8b5cf6;
+        }
+        
+        .day-stats {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+        
+        .day-time {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+            font-size: 0.8125rem;
+        }
+        
+        .day-time svg {
+            width: 14px;
+            height: 14px;
+            opacity: 0.7;
+        }
+        
+        .day-completion {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8125rem;
+        }
+        
+        .completion-bar {
+            width: 60px;
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .completion-fill {
+            height: 100%;
+            background: var(--accent-primary);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .completion-fill.complete {
+            background: #10b981;
+        }
+        
+        .completion-text {
+            color: var(--text-secondary);
+            min-width: 70px;
+        }
+        
+        .completion-text.complete {
+            color: #10b981;
+            font-weight: 500;
+        }
+        
+        .day-assignments {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding-left: var(--space-2);
+        }
+        
+        /* No due date group */
+        .day-header.no-due {
+            background: var(--bg-tertiary);
+            opacity: 0.8;
+        }
+        
+        /* Section header stats */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+        }
+        
+        .section-stats {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+        
+        .total-time {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            padding: 6px 12px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-light);
+        }
+        
+        .total-time svg {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+        }
+        
+        .total-completion {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            background: var(--bg-secondary);
+            padding: 6px 12px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-light);
+        }
+        
+        .total-completion .completion-bar {
+            width: 80px;
+            height: 8px;
+        }
+        
+        .total-completion .completion-text {
+            min-width: 90px;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/nav', { active: 'assignments' }) %>
+    
+    <main class="container">
+        <div class="page-header">
+            <h1>Assignments</h1>
+        </div>
+
+        <div class="assignments-container">
+            <!-- Upcoming Section -->
+            <div class="assignment-section">
+                <% 
+                    // Calculate total time for all upcoming assignments
+                    let totalMinutesAll = 0;
+                    upcomingAssignments.forEach(a => {
+                        totalMinutesAll += a.estimatedTime ? a.estimatedTime.minutes : 15;
+                    });
+                    let totalTimeDisplayAll = '';
+                    if (totalMinutesAll < 60) {
+                        totalTimeDisplayAll = totalMinutesAll + ' min';
+                    } else {
+                        const hrs = Math.floor(totalMinutesAll / 60);
+                        const mns = totalMinutesAll % 60;
+                        totalTimeDisplayAll = hrs + 'h' + (mns > 0 ? ' ' + mns + 'm' : '');
+                    }
+                %>
+                <div class="section-header">
+                    <h2>
+                        <span>Upcoming</span>
+                        <span class="section-badge"><%= upcomingAssignments.length %></span>
+                    </h2>
+                    <% if (upcomingAssignments.length > 0) { %>
+                    <div class="section-stats">
+                        <div class="total-time" id="total-time" data-total-minutes="<%= totalMinutesAll %>">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            <span>~<%= totalTimeDisplayAll %></span>
+                        </div>
+                        <div class="total-completion" id="total-completion" data-total="<%= upcomingAssignments.length %>">
+                            <div class="completion-bar">
+                                <div class="completion-fill" style="width: 0%"></div>
+                            </div>
+                            <span class="completion-text">0/<%= upcomingAssignments.length %> (0%)</span>
+                        </div>
+                    </div>
+                    <% } %>
+                </div>
+                <div class="assignment-list">
+                    <% if (upcomingAssignments.length === 0) { %>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🎉</div>
+                            <p>No upcoming assignments!</p>
+                        </div>
+                    <% } else { 
+                        // Group assignments by day
+                        const now = new Date();
+                        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        const dayGroups = {};
+                        const noDueDateAssignments = [];
+                        
+                        upcomingAssignments.forEach(assignment => {
+                            const hasDue = assignment.due && assignment.due.trim() !== '';
+                            if (hasDue) {
+                                const dueDate = new Date(assignment.due);
+                                // Use local date for grouping (avoid UTC timezone issues)
+                                const dayKey = dueDate.getFullYear() + '-' + 
+                                    String(dueDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                                    String(dueDate.getDate()).padStart(2, '0');
+                                if (!dayGroups[dayKey]) {
+                                    dayGroups[dayKey] = {
+                                        date: dueDate,
+                                        assignments: [],
+                                        totalMinutes: 0
+                                    };
+                                }
+                                dayGroups[dayKey].assignments.push(assignment);
+                                dayGroups[dayKey].totalMinutes += assignment.estimatedTime ? assignment.estimatedTime.minutes : 15;
+                            } else {
+                                noDueDateAssignments.push(assignment);
+                            }
+                        });
+                        
+                        // Sort day keys
+                        const sortedDayKeys = Object.keys(dayGroups).sort((a, b) => new Date(a) - new Date(b));
+                    %>
+                        <% sortedDayKeys.forEach(dayKey => { 
+                            const group = dayGroups[dayKey];
+                            const dueDayStart = new Date(group.date.getFullYear(), group.date.getMonth(), group.date.getDate());
+                            const daysUntil = Math.round((dueDayStart - todayStart) / (1000 * 60 * 60 * 24));
+                            
+                            let dayLabel = '';
+                            let dayClass = '';
+                            if (daysUntil === 0) {
+                                dayLabel = 'Today';
+                                dayClass = 'today';
+                            } else if (daysUntil === 1) {
+                                dayLabel = 'Tomorrow';
+                                dayClass = 'tomorrow';
+                            } else {
+                                dayLabel = group.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+                            }
+                            
+                            // Format total time
+                            let totalTimeDisplay = '';
+                            if (group.totalMinutes < 60) {
+                                totalTimeDisplay = group.totalMinutes + ' min';
+                            } else {
+                                const hours = Math.floor(group.totalMinutes / 60);
+                                const mins = group.totalMinutes % 60;
+                                totalTimeDisplay = hours + 'h' + (mins > 0 ? ' ' + mins + 'm' : '');
+                            }
+                        %>
+                        <div class="day-group" data-day="<%= dayKey %>">
+                            <div class="day-header">
+                                <div class="day-header-left">
+                                    <span class="day-date <%= dayClass %>"><%= dayLabel %></span>
+                                </div>
+                                <div class="day-stats">
+                                    <div class="day-time" title="Total estimated time">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <polyline points="12 6 12 12 16 14"/>
+                                        </svg>
+                                        ~<%= totalTimeDisplay %>
+                                    </div>
+                                    <div class="day-completion" data-day="<%= dayKey %>" data-total="<%= group.assignments.length %>">
+                                        <div class="completion-bar">
+                                            <div class="completion-fill" style="width: 0%"></div>
+                                        </div>
+                                        <span class="completion-text">0/<%= group.assignments.length %> (0%)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="day-assignments">
+                                <% group.assignments.forEach(assignment => { 
+                                    const dueDate = new Date(assignment.due);
+                                    let timeText = '';
+                                    if (assignment.dueAdjusted) {
+                                        const hours = dueDate.getHours();
+                                        const mins = dueDate.getMinutes();
+                                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                                        const displayHour = hours % 12 || 12;
+                                        timeText = displayHour + ':' + mins.toString().padStart(2, '0') + ' ' + ampm;
+                                    } else {
+                                        const hours = dueDate.getHours();
+                                        const mins = dueDate.getMinutes();
+                                        if (hours !== 23 || mins !== 59) {
+                                            const ampm = hours >= 12 ? 'PM' : 'AM';
+                                            const displayHour = hours % 12 || 12;
+                                            timeText = displayHour + ':' + mins.toString().padStart(2, '0') + ' ' + ampm;
+                                        }
+                                    }
+                                    
+                                    // Check if has a grade
+                                    const hasGrade = assignment.grade !== null && assignment.grade !== undefined && assignment.grade !== '';
+                                    const gradeVal = hasGrade ? parseFloat(assignment.grade) : null;
+                                    const maxPts = parseFloat(assignment.max_points || 100);
+                                    const pct = hasGrade && maxPts > 0 ? (gradeVal / maxPts * 100) : null;
+                                    let gradeClass = '';
+                                    if (pct !== null) {
+                                        if (pct >= 90) gradeClass = 'grade-a';
+                                        else if (pct >= 80) gradeClass = 'grade-b';
+                                        else if (pct >= 70) gradeClass = 'grade-c';
+                                        else if (pct >= 60) gradeClass = 'grade-d';
+                                        else gradeClass = 'grade-f';
+                                    }
+                                    
+                                    // Time estimate class
+                                    const estMins = assignment.estimatedTime ? assignment.estimatedTime.minutes : 15;
+                                    let timeClass = 'medium';
+                                    if (estMins <= 15) timeClass = 'quick';
+                                    else if (estMins >= 45) timeClass = 'long';
+                                %>
+                                    <div class="assignment-item" 
+                                         data-id="<%= assignment.id %>" 
+                                         data-section="<%= assignment.section_id %>"
+                                         data-day="<%= dayKey %>"
+                                         data-time="<%= assignment.estimatedTime ? assignment.estimatedTime.minutes : 15 %>"
+                                         onclick="goToAssignment('<%= assignment.section_id %>', '<%= assignment.id %>', event)">
+                                        <div class="assignment-checkbox" 
+                                             onclick="toggleComplete('<%= assignment.id %>', this); event.stopPropagation();"
+                                             id="check-<%= assignment.id %>"></div>
+                                        <div class="assignment-content">
+                                            <div class="assignment-title"><%= assignment.title %></div>
+                                            <div class="assignment-meta">
+                                                <span class="assignment-course"><%= assignment.course_name %></span>
+                                                <% if (timeText) { %>
+                                                    <span class="assignment-due" title="<%= assignment.dueAdjusted ? 'Due time adjusted to class start time' : '' %>"><%= timeText %></span>
+                                                <% } %>
+                                                <% if (assignment.estimatedTime) { %>
+                                                <span class="time-estimate <%= timeClass %>" title="Estimated time to complete">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <circle cx="12" cy="12" r="10"/>
+                                                        <polyline points="12 6 12 12 16 14"/>
+                                                    </svg>
+                                                    <%= assignment.estimatedTime.display %>
+                                                </span>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                        <% if (hasGrade) { %>
+                                            <div class="assignment-points">
+                                                <span class="grade-pill <%= gradeClass %>"><%= gradeVal %>/<%= assignment.max_points %></span>
+                                            </div>
+                                        <% } else if (assignment.max_points) { %>
+                                            <div class="assignment-points"><%= assignment.max_points %> pts</div>
+                                        <% } %>
+                                    </div>
+                                <% }) %>
+                            </div>
+                        </div>
+                        <% }) %>
+                        
+                        <% if (noDueDateAssignments.length > 0) { %>
+                        <div class="day-group" data-day="no-due">
+                            <div class="day-header no-due">
+                                <div class="day-header-left">
+                                    <span class="day-date">No Due Date</span>
+                                </div>
+                                <div class="day-stats">
+                                    <div class="day-completion" data-day="no-due" data-total="<%= noDueDateAssignments.length %>">
+                                        <div class="completion-bar">
+                                            <div class="completion-fill" style="width: 0%"></div>
+                                        </div>
+                                        <span class="completion-text">0/<%= noDueDateAssignments.length %> (0%)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="day-assignments">
+                                <% noDueDateAssignments.forEach(assignment => { 
+                                    const hasGrade = assignment.grade !== null && assignment.grade !== undefined && assignment.grade !== '';
+                                    const gradeVal = hasGrade ? parseFloat(assignment.grade) : null;
+                                    const maxPts = parseFloat(assignment.max_points || 100);
+                                    const pct = hasGrade && maxPts > 0 ? (gradeVal / maxPts * 100) : null;
+                                    let gradeClass = '';
+                                    if (pct !== null) {
+                                        if (pct >= 90) gradeClass = 'grade-a';
+                                        else if (pct >= 80) gradeClass = 'grade-b';
+                                        else if (pct >= 70) gradeClass = 'grade-c';
+                                        else if (pct >= 60) gradeClass = 'grade-d';
+                                        else gradeClass = 'grade-f';
+                                    }
+                                    
+                                    const estMins = assignment.estimatedTime ? assignment.estimatedTime.minutes : 15;
+                                    let timeClass = 'medium';
+                                    if (estMins <= 15) timeClass = 'quick';
+                                    else if (estMins >= 45) timeClass = 'long';
+                                %>
+                                    <div class="assignment-item" 
+                                         data-id="<%= assignment.id %>" 
+                                         data-section="<%= assignment.section_id %>"
+                                         data-day="no-due"
+                                         data-time="<%= assignment.estimatedTime ? assignment.estimatedTime.minutes : 15 %>"
+                                         onclick="goToAssignment('<%= assignment.section_id %>', '<%= assignment.id %>', event)">
+                                        <div class="assignment-checkbox" 
+                                             onclick="toggleComplete('<%= assignment.id %>', this); event.stopPropagation();"
+                                             id="check-<%= assignment.id %>"></div>
+                                        <div class="assignment-content">
+                                            <div class="assignment-title"><%= assignment.title %></div>
+                                            <div class="assignment-meta">
+                                                <span class="assignment-course"><%= assignment.course_name %></span>
+                                                <% if (assignment.estimatedTime) { %>
+                                                <span class="time-estimate <%= timeClass %>" title="Estimated time to complete">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <circle cx="12" cy="12" r="10"/>
+                                                        <polyline points="12 6 12 12 16 14"/>
+                                                    </svg>
+                                                    <%= assignment.estimatedTime.display %>
+                                                </span>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                        <% if (hasGrade) { %>
+                                            <div class="assignment-points">
+                                                <span class="grade-pill <%= gradeClass %>"><%= gradeVal %>/<%= assignment.max_points %></span>
+                                            </div>
+                                        <% } else if (assignment.max_points) { %>
+                                            <div class="assignment-points"><%= assignment.max_points %> pts</div>
+                                        <% } %>
+                                    </div>
+                                <% }) %>
+                            </div>
+                        </div>
+                        <% } %>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Overdue Section -->
+            <% if (overdueAssignments.length > 0) { %>
+            <div class="assignment-section">
+                <div class="section-header" onclick="toggleOverdue()" style="cursor: pointer;">
+                    <h2>
+                        <span>Overdue / Missing</span>
+                        <span class="section-badge overdue"><%= overdueAssignments.length %></span>
+                    </h2>
+                </div>
+                <div class="assignment-list" id="overdue-list" style="display: none;">
+                    <% overdueAssignments.forEach(assignment => { 
+                        const now = new Date();
+                        const hasDue = assignment.due && assignment.due.trim() !== '';
+                        const dueDate = hasDue ? new Date(assignment.due) : null;
+                        const daysOverdue = dueDate ? Math.floor((now - dueDate) / (1000 * 60 * 60 * 24)) : 0;
+                        
+                        // Determine status text
+                        let statusText = '';
+                        if (assignment.exception === 2) {
+                            statusText = 'Missing';
+                        } else if (dueDate && daysOverdue > 0) {
+                            statusText = daysOverdue === 1 ? '1 day ago' : daysOverdue + ' days ago';
+                        }
+                        
+                        // Time estimate class
+                        const estMins = assignment.estimatedTime ? assignment.estimatedTime.minutes : 15;
+                        let timeClass = 'medium';
+                        if (estMins <= 15) timeClass = 'quick';
+                        else if (estMins >= 45) timeClass = 'long';
+                    %>
+                        <div class="assignment-item" 
+                             data-id="<%= assignment.id %>" 
+                             data-section="<%= assignment.section_id %>"
+                             onclick="goToAssignment('<%= assignment.section_id %>', '<%= assignment.id %>', event)">
+                            <div class="assignment-checkbox" 
+                                 onclick="toggleComplete('<%= assignment.id %>', this); event.stopPropagation();"
+                                 id="check-overdue-<%= assignment.id %>"></div>
+                            <div class="assignment-content">
+                                <div class="assignment-title"><%= assignment.title %></div>
+                                <div class="assignment-meta">
+                                    <span class="assignment-course"><%= assignment.course_name %></span>
+                                    <span class="assignment-due overdue">
+                                        <% if (dueDate) { %>
+                                            <%= dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
+                                            <% if (statusText) { %> · <%= statusText %><% } %>
+                                        <% } else if (statusText) { %>
+                                            <%= statusText %>
+                                        <% } %>
+                                    </span>
+                                    <% if (assignment.estimatedTime) { %>
+                                    <span class="time-estimate <%= timeClass %>" title="Estimated time to complete">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <polyline points="12 6 12 12 16 14"/>
+                                        </svg>
+                                        <%= assignment.estimatedTime.display %>
+                                    </span>
+                                    <% } %>
+                                </div>
+                            </div>
+                            <% if (assignment.max_points) { %>
+                                <div class="assignment-points"><%= assignment.max_points %> pts</div>
+                            <% } %>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+            <% } %>
+
+            <!-- Custom Assignments -->
+            <div id="customAssignments"></div>
+        </div>
+
+        <!-- Custom Assignment Section -->
+        <div class="custom-section">
+            <h3>➕ Add Custom Assignment</h3>
+            <form class="custom-form" onsubmit="addCustomAssignment(event)">
+                <input type="text" id="customTitle" placeholder="Assignment title" required>
+                <input type="text" id="customCourse" placeholder="Course name">
+                <input type="date" id="customDue">
+                <button type="submit" class="btn btn-primary btn-small">Add</button>
+            </form>
+        </div>
+    </main>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/assignments.js"></script>
+    <script>
+        function goToAssignment(sectionId, assignmentId, event) {
+            // Don't navigate if clicking the checkbox
+            if (event.target.classList.contains('assignment-checkbox')) return;
+            window.location.href = '/assignment?section=' + sectionId + '&id=' + assignmentId;
+        }
+        
+        function toggleOverdue() {
+            const list = document.getElementById('overdue-list');
+            list.style.display = list.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function toggleComplete(id, el) {
+            el.classList.toggle('checked');
+            el.closest('.assignment-item').classList.toggle('completed');
+            
+            // Save to cookie
+            const completed = getCookie('completedAssignments') || [];
+            if (el.classList.contains('checked')) {
+                if (!completed.includes(id)) completed.push(id);
+            } else {
+                const index = completed.indexOf(id);
+                if (index > -1) completed.splice(index, 1);
+            }
+            setCookie('completedAssignments', completed);
+            
+            // Update day completion stats
+            updateDayCompletions();
+        }
+        
+        function formatTime(minutes) {
+            if (minutes < 60) return minutes + ' min';
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return hours + 'h' + (mins > 0 ? ' ' + mins + 'm' : '');
+        }
+        
+        function updateDayCompletions() {
+            // Update day headers
+            const dayCompletions = document.querySelectorAll('.day-completion');
+            let totalCompleted = 0;
+            let totalRemaining = 0;
+            let totalRemainingTime = 0;
+            
+            dayCompletions.forEach(dayComp => {
+                const dayKey = dayComp.dataset.day;
+                const total = parseInt(dayComp.dataset.total);
+                const dayAssignments = document.querySelectorAll(`.assignment-item[data-day="${dayKey}"]`);
+                let completedCount = 0;
+                let remainingTime = 0;
+                
+                dayAssignments.forEach(item => {
+                    const itemTime = parseInt(item.dataset.time) || 15;
+                    if (item.classList.contains('completed')) {
+                        completedCount++;
+                    } else {
+                        remainingTime += itemTime;
+                    }
+                });
+                
+                totalCompleted += completedCount;
+                totalRemaining += (total - completedCount);
+                totalRemainingTime += remainingTime;
+                
+                const percent = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+                const fill = dayComp.querySelector('.completion-fill');
+                const text = dayComp.querySelector('.completion-text');
+                
+                fill.style.width = percent + '%';
+                text.textContent = completedCount + '/' + total + ' (' + percent + '%)';
+                
+                if (percent === 100) {
+                    fill.classList.add('complete');
+                    text.classList.add('complete');
+                } else {
+                    fill.classList.remove('complete');
+                    text.classList.remove('complete');
+                }
+                
+                // Update day time display (remaining time only)
+                const dayHeader = dayComp.closest('.day-header');
+                const dayTime = dayHeader ? dayHeader.querySelector('.day-time') : null;
+                if (dayTime) {
+                    dayTime.innerHTML = `
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        ~${formatTime(remainingTime)}
+                    `;
+                }
+            });
+            
+            // Update total section stats
+            const totalTimeEl = document.getElementById('total-time');
+            const totalCompEl = document.getElementById('total-completion');
+            
+            if (totalTimeEl) {
+                totalTimeEl.querySelector('span').textContent = '~' + formatTime(totalRemainingTime);
+            }
+            
+            if (totalCompEl) {
+                const totalAll = parseInt(totalCompEl.dataset.total);
+                const percent = totalAll > 0 ? Math.round((totalCompleted / totalAll) * 100) : 0;
+                const fill = totalCompEl.querySelector('.completion-fill');
+                const text = totalCompEl.querySelector('.completion-text');
+                
+                fill.style.width = percent + '%';
+                text.textContent = totalCompleted + '/' + totalAll + ' (' + percent + '%)';
+                
+                if (percent === 100) {
+                    fill.classList.add('complete');
+                    text.classList.add('complete');
+                } else {
+                    fill.classList.remove('complete');
+                    text.classList.remove('complete');
+                }
+            }
+        }
+        
+        // Load completed state on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const completed = getCookie('completedAssignments') || [];
+            completed.forEach(id => {
+                const checkbox = document.getElementById('check-' + id) || document.getElementById('check-overdue-' + id);
+                if (checkbox) {
+                    checkbox.classList.add('checked');
+                    checkbox.closest('.assignment-item').classList.add('completed');
+                }
+            });
+            
+            // Update day completions after loading state
+            updateDayCompletions();
+        });
+        
+        function addCustomAssignment(e) {
+            e.preventDefault();
+            const title = document.getElementById('customTitle').value;
+            const course = document.getElementById('customCourse').value || 'Custom';
+            const due = document.getElementById('customDue').value;
+            
+            // Save to cookies
+            const customs = getCookie('customAssignments') || [];
+            customs.push({
+                id: 'custom-' + Date.now(),
+                title,
+                course,
+                due: due ? new Date(due).toISOString() : null
+            });
+            setCookie('customAssignments', customs);
+            
+            showToast('Custom assignment added!', 'success');
+            
+            // Clear form
+            document.getElementById('customTitle').value = '';
+            document.getElementById('customCourse').value = '';
+            document.getElementById('customDue').value = '';
+            
+            // Reload to show
+            location.reload();
+        }
+    </script>
+</body>
+</html>

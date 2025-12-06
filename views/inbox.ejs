@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inbox - Schoology Pro Max</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/logo.png">
+    <%- include('partials/theme') %>
+    <style>
+        .inbox-page {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: var(--space-6);
+        }
+        
+        .inbox-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-6);
+        }
+        
+        .inbox-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .inbox-actions {
+            display: flex;
+            gap: var(--space-3);
+        }
+        
+        .mark-all-read-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .mark-all-read-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .refresh-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            background: var(--accent-primary);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background: var(--accent-primary-hover);
+        }
+        
+        .refresh-btn.loading svg {
+            animation: spin 1s linear infinite;
+        }
+        
+        .notification-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+        
+        .notification-item {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-4);
+            padding: var(--space-4);
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .notification-item:hover {
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+        
+        .notification-item.unread {
+            background: linear-gradient(135deg, rgba(0, 113, 227, 0.03) 0%, rgba(99, 102, 241, 0.03) 100%);
+            border-color: rgba(0, 113, 227, 0.2);
+        }
+        
+        .notification-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .notification-icon.new-assignment {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+            color: #6366f1;
+        }
+        
+        .notification-icon.updated {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(234, 88, 12, 0.15) 100%);
+            color: #f59e0b;
+        }
+        
+        .notification-icon.graded {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
+            color: #22c55e;
+        }
+        
+        .notification-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            font-size: 0.9375rem;
+            color: var(--text-primary);
+            margin-bottom: var(--space-1);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .notification-title .unread-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .notification-meta {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-2);
+        }
+        
+        .notification-course {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+        
+        .notification-time {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .notification-grade {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
+            padding: var(--space-1) var(--space-2);
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: var(--space-2);
+        }
+        
+        .empty-inbox {
+            text-align: center;
+            padding: var(--space-12);
+            color: var(--text-tertiary);
+        }
+        
+        .empty-inbox-icon {
+            font-size: 3rem;
+            margin-bottom: var(--space-4);
+            opacity: 0.5;
+        }
+        
+        .empty-inbox-text {
+            font-size: 1rem;
+            margin-bottom: var(--space-2);
+        }
+        
+        .empty-inbox-subtext {
+            font-size: 0.875rem;
+        }
+        
+        .notification-section {
+            margin-bottom: var(--space-6);
+        }
+        
+        .section-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-3);
+            padding-left: var(--space-2);
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/nav', { active: 'inbox' }) %>
+    
+    <main class="container">
+        <div class="inbox-page">
+            <div class="inbox-header">
+                <h1 class="inbox-title">📬 Inbox</h1>
+                <div class="inbox-actions">
+                    <button class="mark-all-read-btn" onclick="markAllRead()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 11 12 14 22 4"></polyline>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                        </svg>
+                        Mark All Read
+                    </button>
+                    <button class="refresh-btn" onclick="refreshNotifications()" id="refresh-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <div id="notification-container">
+                <div class="empty-inbox">
+                    <div class="empty-inbox-icon">📭</div>
+                    <p class="empty-inbox-text">Loading notifications...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/app.js"></script>
+    <script>
+        let notifications = [];
+        
+        async function loadNotifications() {
+            try {
+                const response = await fetch('/api/notifications');
+                const data = await response.json();
+                
+                if (data.notifications) {
+                    notifications = data.notifications;
+                    renderNotifications();
+                    const unreadCount = notifications.filter(n => !n.read).length;
+                    updateNavBadge(unreadCount);
+                }
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+            }
+        }
+        
+        function renderNotifications() {
+            const container = document.getElementById('notification-container');
+            
+            if (notifications.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-inbox">
+                        <div class="empty-inbox-icon">📭</div>
+                        <p class="empty-inbox-text">No notifications yet</p>
+                        <p class="empty-inbox-subtext">You'll see notifications here when new assignments are posted or graded.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Group by today, yesterday, this week, older
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            
+            const groups = {
+                today: [],
+                yesterday: [],
+                thisWeek: [],
+                older: []
+            };
+            
+            notifications.forEach(n => {
+                const date = new Date(n.timestamp);
+                if (date >= today) {
+                    groups.today.push(n);
+                } else if (date >= yesterday) {
+                    groups.yesterday.push(n);
+                } else if (date >= weekAgo) {
+                    groups.thisWeek.push(n);
+                } else {
+                    groups.older.push(n);
+                }
+            });
+            
+            let html = '';
+            
+            if (groups.today.length > 0) {
+                html += `<div class="notification-section">
+                    <div class="section-header">Today</div>
+                    <div class="notification-list">${groups.today.map(renderNotification).join('')}</div>
+                </div>`;
+            }
+            
+            if (groups.yesterday.length > 0) {
+                html += `<div class="notification-section">
+                    <div class="section-header">Yesterday</div>
+                    <div class="notification-list">${groups.yesterday.map(renderNotification).join('')}</div>
+                </div>`;
+            }
+            
+            if (groups.thisWeek.length > 0) {
+                html += `<div class="notification-section">
+                    <div class="section-header">This Week</div>
+                    <div class="notification-list">${groups.thisWeek.map(renderNotification).join('')}</div>
+                </div>`;
+            }
+            
+            if (groups.older.length > 0) {
+                html += `<div class="notification-section">
+                    <div class="section-header">Older</div>
+                    <div class="notification-list">${groups.older.map(renderNotification).join('')}</div>
+                </div>`;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function renderNotification(n) {
+            const isGraded = n.type === 'graded';
+            const isUpdated = n.type === 'updated';
+            let iconClass = 'new-assignment';
+            if (isGraded) iconClass = 'graded';
+            else if (isUpdated) iconClass = 'updated';
+            
+            let icon = '';
+            if (isGraded) {
+                icon = `
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+            `;
+            } else if (isUpdated) {
+                icon = `
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+            `;
+            } else {
+                icon = `
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+            `;
+            }
+            
+            const timeAgo = getTimeAgo(new Date(n.timestamp));
+            const gradeHtml = isGraded && n.grade !== undefined ? 
+                `<span class="notification-grade">📊 ${n.grade}${n.maxPoints ? '/' + n.maxPoints : ''}</span>` : '';
+            
+            let metaText = 'New assignment posted';
+            if (isGraded) metaText = 'Assignment graded';
+            else if (isUpdated) metaText = 'Assignment updated';
+            
+            return `
+                <a href="/assignment?section=${n.sectionId}&id=${n.assignmentId}" 
+                   class="notification-item ${n.read ? '' : 'unread'}" 
+                   onclick="markAsRead('${n.id}')">
+                    <div class="notification-icon ${iconClass}">${icon}</div>
+                    <div class="notification-content">
+                        <div class="notification-title">
+                            ${!n.read ? '<span class="unread-dot"></span>' : ''}
+                            ${escapeHtml(n.title)}
+                            ${gradeHtml}
+                        </div>
+                        <div class="notification-meta">
+                            ${metaText}
+                        </div>
+                        <div class="notification-course">${escapeHtml(n.courseName || '')}</div>
+                    </div>
+                    <div class="notification-time">${timeAgo}</div>
+                </a>
+            `;
+        }
+        
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            if (days < 7) return `${days}d ago`;
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        async function markAsRead(id) {
+            try {
+                await fetch('/api/notifications/read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notificationId: id })
+                });
+            } catch (error) {
+                console.error('Error marking as read:', error);
+            }
+        }
+        
+        async function markAllRead() {
+            try {
+                await fetch('/api/notifications/read-all', { method: 'POST' });
+                notifications = notifications.map(n => ({ ...n, read: true }));
+                renderNotifications();
+                updateNavBadge(0);
+                showToast('All notifications marked as read', 'success');
+            } catch (error) {
+                console.error('Error marking all as read:', error);
+            }
+        }
+        
+        async function refreshNotifications() {
+            const btn = document.getElementById('refresh-btn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/notifications/refresh', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.notifications) {
+                    notifications = data.notifications;
+                    renderNotifications();
+                    updateNavBadge(data.unreadCount || notifications.filter(n => !n.read).length);
+                    showToast(`Found ${data.newCount} new notification${data.newCount !== 1 ? 's' : ''}`, 'success');
+                }
+            } catch (error) {
+                console.error('Error refreshing:', error);
+                showToast('Error refreshing notifications', 'error');
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+        
+        function updateNavBadge(count) {
+            const badge = document.querySelector('.inbox-badge');
+            if (badge) {
+                if (count > 0) {
+                    badge.style.display = 'flex';
+                    badge.textContent = count > 9 ? '9+' : count;
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+        
+        // Load on page load
+        loadNotifications();
+    </script>
+</body>
+</html>
