@@ -18,12 +18,5 @@
       "src": "/(.*)",
       "dest": "/server.js"
     }
-  ],
-  "env": {
-    "SCHOOLOGY_CONSUMER_KEY": "@schoology-consumer-key",
-    "SCHOOLOGY_CONSUMER_SECRET": "@schoology-consumer-secret",
-    "SCHOOLOGY_DOMAIN": "@schoology-domain",
-    "SESSION_SECRET": "@session-secret",
-    "GEMINI_API_KEY": "@gemini-api-key"
-  }
+  ]
 }
