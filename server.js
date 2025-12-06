@@ -2788,13 +2788,9 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
             debugLog('QUIZ-START', '✓ Already appears to be in assessment');
         }
         
-        // Take screenshot of slides-container only
-        debugLog('QUIZ-START', 'Taking screenshot of slides-container...');
-        const screenshot = await takeQuizScreenshot(quizPage);
-        debugLog('QUIZ-START', `✓ Screenshot taken, size: ${screenshot.length} bytes`);
-        
-        const screenshotBase64 = screenshot.toString('base64');
-        debugLog('QUIZ-START', `✓ Screenshot encoded to base64, length: ${screenshotBase64.length}`);
+        // Extract quiz content instead of screenshot
+        debugLog('QUIZ-START', 'Extracting quiz content...');
+        const content = await extractQuizContent(quizPage);
         
         // Check for navigation buttons
         debugLog('QUIZ-START', 'Checking navigation buttons...');
@@ -2805,7 +2801,7 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
         
         res.json({
             success: true,
-            screenshot: screenshotBase64,
+            content: content,
             canGoBack: navState.canGoBack,
             canGoNext: navState.canGoNext,
             isReview: navState.isReview,
@@ -2859,11 +2855,9 @@ app.post('/api/quiz/next', requireBrowserFeatures, async (req, res) => {
         await quizPage.waitForTimeout(2000);
         debugLog('QUIZ-NEXT', `✓ After click, URL: ${quizPage.url()}`);
         
-        // Take screenshot of slides-container only
-        debugLog('QUIZ-NEXT', 'Taking screenshot of slides-container...');
-        const screenshot = await takeQuizScreenshot(quizPage);
-        const screenshotBase64 = screenshot.toString('base64');
-        debugLog('QUIZ-NEXT', `✓ Screenshot taken, size: ${screenshot.length} bytes`);
+        // Extract quiz content
+        debugLog('QUIZ-NEXT', 'Extracting quiz content...');
+        const content = await extractQuizContent(quizPage);
         
         // Check for navigation buttons
         const navState = await checkNavButtons(quizPage);
@@ -2871,7 +2865,7 @@ app.post('/api/quiz/next', requireBrowserFeatures, async (req, res) => {
         
         res.json({
             success: true,
-            screenshot: screenshotBase64,
+            content: content,
             canGoBack: navState.canGoBack,
             canGoNext: navState.canGoNext,
             isReview: navState.isReview,
@@ -2920,11 +2914,9 @@ app.post('/api/quiz/prev', requireBrowserFeatures, async (req, res) => {
         await quizPage.waitForTimeout(2000);
         debugLog('QUIZ-PREV', `✓ After click, URL: ${quizPage.url()}`);
         
-        // Take screenshot of slides-container only
-        debugLog('QUIZ-PREV', 'Taking screenshot of slides-container...');
-        const screenshot = await takeQuizScreenshot(quizPage);
-        const screenshotBase64 = screenshot.toString('base64');
-        debugLog('QUIZ-PREV', `✓ Screenshot taken, size: ${screenshot.length} bytes`);
+        // Extract quiz content
+        debugLog('QUIZ-PREV', 'Extracting quiz content...');
+        const content = await extractQuizContent(quizPage);
         
         // Check for navigation buttons
         const navState = await checkNavButtons(quizPage);
@@ -2932,7 +2924,7 @@ app.post('/api/quiz/prev', requireBrowserFeatures, async (req, res) => {
         
         res.json({
             success: true,
-            screenshot: screenshotBase64,
+            content: content,
             canGoBack: navState.canGoBack,
             canGoNext: navState.canGoNext,
             isReview: navState.isReview,
@@ -3696,6 +3688,74 @@ async function takeQuizScreenshot(page) {
     // Last resort: full page screenshot
     debugLog('SCREENSHOT', '✗ No container found, taking full viewport screenshot');
     return await page.screenshot({ type: 'png', fullPage: false });
+}
+
+// Helper function to extract quiz content (HTML + images)
+async function extractQuizContent(page) {
+    debugLog('EXTRACT', 'Extracting quiz content...');
+    
+    // Define selectors to try
+    const selectors = ['.slides-container', '.assessment-content', '.quiz-content', '.question-container', 'main'];
+    
+    try {
+        const content = await page.evaluate(async (selectors) => {
+            // Find the container
+            let container = null;
+            for (const s of selectors) {
+                const el = document.querySelector(s);
+                if (el) {
+                    container = el;
+                    break;
+                }
+            }
+            
+            if (!container) return { html: '<div class="error-content">Could not find quiz content container.</div>', text: '' };
+            
+            // Clone the container so we don't modify the actual page
+            const clone = container.cloneNode(true);
+            
+            // Process images to base64
+            const images = clone.querySelectorAll('img');
+            for (const img of images) {
+                try {
+                    const src = img.src;
+                    if (src && !src.startsWith('data:')) {
+                        // Fetch the image data
+                        const response = await fetch(src);
+                        const blob = await response.blob();
+                        
+                        // Convert to base64
+                        await new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                img.src = reader.result;
+                                resolve();
+                            };
+                            reader.readAsDataURL(blob);
+                        });
+                    }
+                } catch (e) {
+                    console.error('Failed to convert image:', e);
+                    // Keep original src if failed
+                }
+            }
+            
+            // Remove scripts, iframes, styles, and navigation buttons
+            const unwanted = clone.querySelectorAll('script, iframe, style, .submit-button, .next-button, .prev-button, button');
+            unwanted.forEach(el => el.remove());
+            
+            return {
+                html: clone.innerHTML,
+                text: clone.innerText
+            };
+        }, selectors);
+        
+        debugLog('EXTRACT', `✓ Extracted content (${content.html.length} chars)`);
+        return content;
+    } catch (e) {
+        debugLog('EXTRACT', `✗ Failed to extract content: ${e.message}`);
+        return { html: `<div class="error-content">Failed to extract content: ${e.message}</div>`, text: '' };
+    }
 }
 
 // Helper function to check navigation button states

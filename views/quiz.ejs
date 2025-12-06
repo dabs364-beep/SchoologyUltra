@@ -115,12 +115,53 @@
             align-items: center;
             padding: var(--space-4);
             background: var(--bg-secondary);
+            overflow-y: auto;
+            max-height: 80vh;
         }
         
         .screenshot-image {
             max-width: 100%;
             border-radius: var(--radius-md);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .quiz-content-display {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            padding: var(--space-6);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+        
+        .quiz-content-display img {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--radius-sm);
+            margin: var(--space-2) 0;
+        }
+        
+        .quiz-content-display p {
+            margin-bottom: var(--space-3);
+            line-height: 1.6;
+        }
+        
+        .quiz-content-display .question-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: var(--space-4);
+        }
+        
+        .quiz-content-display .answer-options {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+        
+        .quiz-content-display input[type="radio"],
+        .quiz-content-display input[type="checkbox"] {
+            margin-right: var(--space-2);
         }
         
         .quiz-nav {
@@ -901,13 +942,13 @@
                     return;
                 }
                 
-                // Quiz started successfully - display screenshot
+                // Quiz started successfully - display content
                 quizActive = true;
                 canGoBack = data.canGoBack;
                 canGoNext = data.canGoNext;
                 
                 sessionInfo.textContent = data.isReview ? 'Last Question' : 'Quiz Active';
-                displayQuizScreenshot(data.screenshot, data.canGoBack, data.canGoNext, data.isReview);
+                renderQuizInterface(data);
                 
             } catch (error) {
                 viewerContent.innerHTML = `
@@ -919,26 +960,38 @@
             }
         }
         
-        function displayQuizScreenshot(screenshotBase64, canBack, canNext, isReview) {
+        function renderQuizInterface(data) {
             const viewerContent = document.getElementById('viewer-content');
+            const { content, screenshot, canGoBack, canGoNext, isReview } = data;
             
-            // canNext = true means there's a "Next" button on Schoology
-            // isReview = true means the button says "Review" (last question, no more next)
-            // When isReview is true, the Next button should be disabled and Submit should appear
+            // Show Submit button when we're on the last question (canGoNext is false or isReview is true)
+            const showSubmit = !canGoNext || isReview;
             
-            // Show Submit button when we're on the last question (canNext is false or isReview is true)
-            const showSubmit = !canNext || isReview;
-            
+            let contentHtml = '';
+            if (content && content.html) {
+                contentHtml = `
+                    <div class="screenshot-container">
+                        <div class="quiz-content-display">
+                            ${content.html}
+                        </div>
+                    </div>`;
+            } else if (screenshot) {
+                contentHtml = `
+                    <div class="screenshot-container">
+                        <img src="data:image/png;base64,${screenshot}" alt="Quiz Screenshot" class="screenshot-image" />
+                    </div>`;
+            } else {
+                contentHtml = `<div class="viewer-empty"><p>No content available.</p></div>`;
+            }
+
             viewerContent.innerHTML = `
-                <div class="screenshot-container">
-                    <img src="data:image/png;base64,${screenshotBase64}" alt="Quiz Screenshot" class="screenshot-image" />
-                </div>
+                ${contentHtml}
                 <div class="quiz-nav">
-                    <button class="nav-btn" id="prev-btn" onclick="navigatePrev()" ${canBack ? '' : 'disabled'}>
+                    <button class="nav-btn" id="prev-btn" onclick="navigatePrev()" ${canGoBack ? '' : 'disabled'}>
                         ← Previous
                     </button>
                     <span class="nav-status" id="nav-status">${isReview ? '📋 Last Question (Review)' : ''}</span>
-                    <button class="nav-btn" id="next-btn" onclick="navigateNext()" ${canNext ? '' : 'disabled'}>
+                    <button class="nav-btn" id="next-btn" onclick="navigateNext()" ${canGoNext ? '' : 'disabled'}>
                         Next →
                     </button>
                     ${showSubmit ? `
@@ -1008,6 +1061,58 @@
             }
         }
         
+        function initializeDragAndDrop() {
+            const dropZone = document.getElementById('image-drop-zone');
+            const fileInput = document.getElementById('context-image-input');
+            
+            if (!dropZone || !fileInput) return;
+            
+            // Click to upload
+            dropZone.onclick = (e) => {
+                if (e.target !== fileInput && !e.target.closest('.active-image-item')) {
+                    fileInput.click();
+                }
+            };
+            
+            fileInput.onchange = () => handleContextImages(fileInput);
+            
+            // Drag and drop events
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight(e) {
+                dropZone.classList.add('highlight');
+            }
+            
+            function unhighlight(e) {
+                dropZone.classList.remove('highlight');
+            }
+            
+            dropZone.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                // Create a fake input object to reuse handleContextImages
+                handleContextImages({ files: files });
+            }
+        }
+
         function handleContextImages(input) {
             const preview = document.getElementById('context-image-preview');
             const files = input.files;
@@ -1317,33 +1422,8 @@
                 canGoBack = data.canGoBack;
                 canGoNext = data.canGoNext;
                 
-                // Update screenshot
-                const screenshotImg = document.querySelector('.screenshot-image');
-                screenshotImg.src = `data:image/png;base64,${data.screenshot}`;
-                
-                // Update buttons - Next is disabled when isReview (last question)
-                prevBtn.disabled = !data.canGoBack;
-                nextBtn.disabled = !data.canGoNext;  // canGoNext is false when isReview
-                nextBtn.textContent = 'Next →';
-                nextBtn.classList.remove('loading');
-                navStatus.textContent = data.isReview ? '📋 Last Question (Review)' : '';
-                
-                // Show/hide Submit button based on whether we're on last question
-                const showSubmit = !data.canGoNext || data.isReview;
-                let submitBtn = document.getElementById('submit-btn');
-                if (showSubmit && !submitBtn) {
-                    // Add submit button
-                    const quizNav = document.querySelector('.quiz-nav');
-                    submitBtn = document.createElement('button');
-                    submitBtn.id = 'submit-btn';
-                    submitBtn.className = 'submit-quiz-btn';
-                    submitBtn.onclick = submitQuiz;
-                    submitBtn.innerHTML = '🚀 Submit Quiz';
-                    quizNav.appendChild(submitBtn);
-                } else if (!showSubmit && submitBtn) {
-                    // Remove submit button
-                    submitBtn.remove();
-                }
+                // Render interface
+                renderQuizInterface(data);
                 
                 // Update session info
                 document.getElementById('session-info').textContent = data.isReview ? 'Last Question' : 'Quiz Active';
@@ -1388,34 +1468,8 @@
                 canGoBack = data.canGoBack;
                 canGoNext = data.canGoNext;
                 
-                // Update screenshot
-                const screenshotImg = document.querySelector('.screenshot-image');
-                screenshotImg.src = `data:image/png;base64,${data.screenshot}`;
-                
-                // Update buttons
-                prevBtn.disabled = !data.canGoBack;
-                nextBtn.disabled = !data.canGoNext;  // canGoNext is false when isReview
-                prevBtn.textContent = '← Previous';
-                prevBtn.classList.remove('loading');
-                nextBtn.textContent = 'Next →';
-                navStatus.textContent = data.isReview ? '📋 Last Question (Review)' : '';
-                
-                // Show/hide Submit button based on whether we're on last question
-                const showSubmit = !data.canGoNext || data.isReview;
-                let submitBtn = document.getElementById('submit-btn');
-                if (showSubmit && !submitBtn) {
-                    // Add submit button
-                    const quizNav = document.querySelector('.quiz-nav');
-                    submitBtn = document.createElement('button');
-                    submitBtn.id = 'submit-btn';
-                    submitBtn.className = 'submit-quiz-btn';
-                    submitBtn.onclick = submitQuiz;
-                    submitBtn.innerHTML = '🚀 Submit Quiz';
-                    quizNav.appendChild(submitBtn);
-                } else if (!showSubmit && submitBtn) {
-                    // Remove submit button
-                    submitBtn.remove();
-                }
+                // Render interface
+                renderQuizInterface(data);
                 
                 // Update session info
                 document.getElementById('session-info').textContent = data.isReview ? 'Last Question' : 'Quiz Active';
@@ -1458,19 +1512,26 @@
                     return;
                 }
                 
-                // Update screenshot if available
-                if (data.screenshot) {
-                    const screenshotImg = document.querySelector('.screenshot-image');
-                    if (screenshotImg) {
-                        screenshotImg.src = `data:image/png;base64,${data.screenshot}`;
-                    }
+                // Update content if available
+                if (data.content || data.screenshot) {
+                    renderQuizInterface({
+                        ...data,
+                        canGoBack: false,
+                        canGoNext: false,
+                        isReview: true
+                    });
                 }
                 
                 // Show success
-                navStatus.textContent = '✅ Quiz Submitted!';
-                submitBtn.innerHTML = '✅ Submitted';
-                submitBtn.classList.remove('loading');
-                submitBtn.disabled = true;
+                const navStatus = document.getElementById('nav-status');
+                const submitBtn = document.getElementById('submit-btn');
+                
+                if (navStatus) navStatus.textContent = '✅ Quiz Submitted!';
+                if (submitBtn) {
+                    submitBtn.innerHTML = '✅ Submitted';
+                    submitBtn.classList.remove('loading');
+                    submitBtn.disabled = true;
+                }
                 
                 // Update session info
                 document.getElementById('session-info').textContent = 'Quiz Submitted';
@@ -1529,6 +1590,34 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+        
+        function updateQuizDisplay(data) {
+            const viewerContent = document.getElementById('viewer-content');
+            
+            if (data.content && data.content.html) {
+                // Display extracted content
+                viewerContent.innerHTML = `
+                    <div class="screenshot-container">
+                        <div class="quiz-content-display">
+                            ${data.content.html}
+                        </div>
+                    </div>
+                `;
+            } else if (data.screenshot) {
+                // Fallback to screenshot
+                viewerContent.innerHTML = `
+                    <div class="screenshot-container">
+                        <img src="data:image/png;base64,${data.screenshot}" class="screenshot-image" alt="Quiz Content">
+                    </div>
+                `;
+            } else {
+                viewerContent.innerHTML = `
+                    <div class="viewer-empty">
+                        <p>No content available to display.</p>
+                    </div>
+                `;
+            }
         }
         
         // Browser login functions
