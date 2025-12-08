@@ -1,902 +1,911 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= assignment.title %> - Quiz Viewer - Schoology Pro Max</title>
+    <title>
+        <%= assignment.title %> - Quiz Viewer - Schoology Pro Max
+    </title>
     <link rel="icon" type="image/png" href="/images/logo.png">
     <link rel="stylesheet" href="/css/style.css">
     <%- include('partials/theme') %>
-    <style>
-        .quiz-page {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-2);
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.875rem;
-            margin-bottom: var(--space-4);
-            transition: color var(--duration-fast) ease;
-        }
-        
-        .back-link:hover {
-            color: var(--accent-primary);
-        }
-        
-        .assignment-header {
-            background: var(--bg-card);
-            border-radius: var(--radius-lg);
-            padding: var(--space-5);
-            border: 1px solid var(--border-light);
-            margin-bottom: var(--space-4);
-        }
-        
-        .assignment-course {
-            font-size: 0.875rem;
-            color: var(--accent-primary);
-            font-weight: 500;
-            margin-bottom: var(--space-2);
-        }
-        
-        .assignment-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: var(--space-3);
-            line-height: 1.3;
-        }
-        
-        .assignment-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: var(--space-4);
-        }
-        
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-        
-        .meta-item svg {
-            color: var(--text-tertiary);
-        }
-        
-        .quiz-viewer {
-            background: var(--bg-card);
-            border-radius: var(--radius-xl);
-            border: 1px solid var(--border-light);
-            overflow: hidden;
-        }
-        
-        .viewer-header {
-            padding: var(--space-4) var(--space-5);
-            background: var(--bg-tertiary);
-            border-bottom: 1px solid var(--border-light);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: relative;
-        }
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .viewer-header h3 {
-            font-size: 0.9375rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        
-        .session-info {
-            font-size: 0.75rem;
-            color: var(--text-tertiary);
-            font-family: monospace;
-        }
-        
-        .viewer-content {
-            padding: 0;
-            min-height: 500px;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .screenshot-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: var(--space-4);
-            background: var(--bg-secondary);
-            overflow-y: auto;
-            max-height: 80vh;
-        }
-        
-        .screenshot-image {
-            max-width: 100%;
-            border-radius: var(--radius-md);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
+        <style>
+            .quiz-page {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
 
-        .quiz-content-display {
-            width: 100%;
-            max-width: 900px;
-            background: white;
-            padding: var(--space-6);
-            border-radius: var(--radius-lg);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            color: #333;
-        }
-        
-        .quiz-content-display img {
-            max-width: 100%;
-            height: auto;
-            border-radius: var(--radius-sm);
-            margin: var(--space-2) 0;
-        }
-        
-        .quiz-content-display p {
-            margin-bottom: var(--space-3);
-            line-height: 1.6;
-        }
-        
-        .quiz-content-display .question-text {
-            font-size: 1.1rem;
-            font-weight: 500;
-            margin-bottom: var(--space-4);
-        }
-        
-        .quiz-content-display .answer-options {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-2);
-        }
-        
-        .quiz-content-display input[type="radio"],
-        .quiz-content-display input[type="checkbox"] {
-            margin-right: var(--space-2);
-        }
-        
-        .quiz-nav {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--space-4);
-            padding: var(--space-4);
-            background: var(--bg-card);
-            border-top: 1px solid var(--border-light);
-        }
-        
-        .nav-btn {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            padding: var(--space-3) var(--space-5);
-            background: var(--accent-primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: 0.9375rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .nav-btn:hover:not(:disabled) {
-            background: var(--accent-primary-hover);
-        }
-        
-        .nav-btn:disabled {
-            background: var(--bg-tertiary);
-            color: var(--text-tertiary);
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-        
-        .nav-btn.loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-        
-        .nav-status {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            padding: 0 var(--space-4);
-        }
-        
-        .close-quiz-btn {
-            position: absolute;
-            top: var(--space-4);
-            right: var(--space-4);
-            background: var(--accent-danger);
-            color: white;
-            border: none;
-            border-radius: var(--radius-md);
-            padding: var(--space-2) var(--space-3);
-            font-size: 0.75rem;
-            cursor: pointer;
-        }
-        
-        .close-quiz-btn:hover {
-            background: #dc2626;
-        }
-        
-        .viewer-empty {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 500px;
-            color: var(--text-tertiary);
-            gap: var(--space-4);
-        }
-        
-        .viewer-empty-icon {
-            font-size: 3rem;
-            opacity: 0.5;
-        }
-        
-        .viewer-loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 500px;
-            gap: var(--space-4);
-        }
-        
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--border-light);
-            border-top-color: var(--accent-primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .quiz-iframe {
-            width: 100%;
-            min-height: 600px;
-            border: none;
-        }
-        
-        .error-content {
-            padding: var(--space-6);
-            background: rgba(239, 68, 68, 0.1);
-            border-radius: var(--radius-lg);
-            margin: var(--space-4);
-        }
-        
-        .error-content h4 {
-            color: var(--accent-danger);
-            margin-bottom: var(--space-3);
-        }
-        
-        .error-content pre {
-            font-size: 0.75rem;
-            background: var(--bg-secondary);
-            padding: var(--space-3);
-            border-radius: var(--radius-md);
-            overflow-x: auto;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-        
-        .raw-html-container {
-            padding: var(--space-4);
-        }
-        
-        @media (max-width: 900px) {
-            .quiz-container {
-                grid-template-columns: 1fr;
+            .back-link {
+                display: inline-flex;
+                align-items: center;
+                gap: var(--space-2);
+                color: var(--text-secondary);
+                text-decoration: none;
+                font-size: 0.875rem;
+                margin-bottom: var(--space-4);
+                transition: color var(--duration-fast) ease;
             }
-            
-            .selection-panel {
-                position: static;
+
+            .back-link:hover {
+                color: var(--accent-primary);
             }
-        }
-        
-        /* Browser Login Section */
-        .browser-login-card {
-            background: var(--bg-card);
-            border-radius: var(--radius-xl);
-            border: 1px solid var(--border-light);
-            padding: var(--space-5);
-            margin-bottom: var(--space-6);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: var(--space-4);
-        }
-        
-        .browser-login-card.authenticated {
-            border-color: var(--accent-success);
-            background: rgba(16, 185, 129, 0.05);
-        }
-        
-        .browser-login-card.browser-open {
-            border-color: var(--accent-warning);
-            background: rgba(245, 158, 11, 0.05);
-        }
-        
-        .browser-login-header {
-            display: flex;
-            align-items: center;
-            gap: var(--space-4);
-        }
-        
-        .browser-icon {
-            font-size: 2rem;
-        }
-        
-        .browser-login-header h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: var(--space-1);
-        }
-        
-        .browser-status {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-        
-        .browser-status.success {
-            color: var(--accent-success);
-        }
-        
-        .browser-status.warning {
-            color: var(--accent-warning);
-        }
-        
-        .browser-login-actions {
-            display: flex;
-            gap: var(--space-3);
-            flex-wrap: wrap;
-        }
-        
-        .browser-login-actions .btn {
-            font-size: 0.875rem;
-            padding: var(--space-2) var(--space-4);
-        }
-        
-        .btn-danger {
-            background: var(--accent-danger) !important;
-            color: white !important;
-        }
-        
-        .btn-danger:hover {
-            background: #dc2626 !important;
-        }
-        
-        /* Quiz Questions Display */
-        .quiz-questions {
-            padding: var(--space-5);
-        }
-        
-        .quiz-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: var(--space-6);
-            padding-bottom: var(--space-4);
-            border-bottom: 1px solid var(--border-light);
-        }
-        
-        .question-card {
-            background: var(--bg-secondary);
-            border-radius: var(--radius-lg);
-            padding: var(--space-5);
-            margin-bottom: var(--space-4);
-        }
-        
-        .question-header {
-            display: flex;
-            align-items: flex-start;
-            gap: var(--space-3);
-            margin-bottom: var(--space-4);
-        }
-        
-        .question-number {
-            background: var(--accent-primary);
-            color: white;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.875rem;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-        
-        .question-text {
-            font-size: 1rem;
-            line-height: 1.6;
-            color: var(--text-primary);
-        }
-        
-        .answer-choices {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-2);
-            margin-left: 40px;
-        }
-        
-        .answer-choice {
-            display: flex;
-            align-items: flex-start;
-            gap: var(--space-3);
-            padding: var(--space-3) var(--space-4);
-            background: var(--bg-card);
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-light);
-            transition: all 0.2s;
-        }
-        
-        .answer-choice:hover {
-            border-color: var(--accent-primary);
-            background: rgba(99, 102, 241, 0.05);
-        }
-        
-        .choice-letter {
-            background: var(--bg-tertiary);
-            color: var(--text-secondary);
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-        
-        .choice-text {
-            font-size: 0.9375rem;
-            line-height: 1.5;
-            color: var(--text-primary);
-        }
-        
-        .no-questions {
-            text-align: center;
-            padding: var(--space-8);
-            color: var(--text-tertiary);
-        }
-        
-        .no-questions-icon {
-            font-size: 3rem;
-            margin-bottom: var(--space-4);
-            opacity: 0.5;
-        }
-        
-        .raw-html-toggle {
-            margin-top: var(--space-6);
-            padding-top: var(--space-4);
-            border-top: 1px solid var(--border-light);
-        }
-        
-        .raw-html-toggle summary {
-            cursor: pointer;
-            font-size: 0.875rem;
-            color: var(--text-tertiary);
-        }
-        
-        .raw-html-content {
-            margin-top: var(--space-3);
-            max-height: 300px;
-            overflow: auto;
-            background: var(--bg-tertiary);
-            padding: var(--space-3);
-            border-radius: var(--radius-md);
-            font-family: monospace;
-            font-size: 0.75rem;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        
-        /* Ask AI Section */
-        .ai-section {
-            padding: var(--space-4);
-            border-top: 1px solid var(--border-light);
-            background: var(--bg-card);
-        }
-        
-        .ai-controls {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-3);
-        }
-        
-        .context-input-section {
-            background: var(--bg-tertiary);
-            border-radius: var(--radius-md);
-            padding: var(--space-3);
-        }
-        
-        .context-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: var(--space-2);
-        }
-        
-        .context-label {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-        }
-        
-        .context-scope-toggle {
-            display: flex;
-            gap: var(--space-2);
-        }
-        
-        .scope-btn {
-            padding: var(--space-1) var(--space-3);
-            font-size: 0.75rem;
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-sm);
-            background: var(--bg-card);
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .scope-btn.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-color: transparent;
-        }
-        
-        .context-textarea {
-            width: 100%;
-            min-height: 60px;
-            padding: var(--space-2);
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-sm);
-            background: var(--bg-card);
-            color: var(--text-primary);
-            font-size: 0.875rem;
-            resize: vertical;
-            font-family: inherit;
-        }
-        
-        .context-textarea::placeholder {
-            color: var(--text-tertiary);
-        }
-        
-        .context-textarea:focus {
-            outline: none;
-            border-color: var(--accent-primary);
-        }
-        
-        .context-image-section {
-            margin-top: var(--space-2);
-        }
-        
-        .context-image-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-1);
-            padding: var(--space-1) var(--space-2);
-            font-size: 0.75rem;
-            border: 1px dashed var(--border-light);
-            border-radius: var(--radius-sm);
-            background: transparent;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .context-image-btn:hover {
-            border-color: var(--accent-primary);
-            color: var(--accent-primary);
-        }
-        
-        .context-image-preview {
-            display: flex;
-            flex-wrap: wrap;
-            gap: var(--space-2);
-            margin-top: var(--space-2);
-        }
-        
-        .context-image-item {
-            position: relative;
-            width: 60px;
-            height: 60px;
-            border-radius: var(--radius-sm);
-            overflow: hidden;
-            border: 1px solid var(--border-light);
-        }
-        
-        .context-image-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .context-image-remove {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .ask-ai-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--space-2);
-            padding: var(--space-3) var(--space-5);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: 0.9375rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            width: 100%;
-        }
-        
-        .ask-ai-btn:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-        
-        .ask-ai-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .ask-ai-btn.loading {
-            opacity: 0.8;
-        }
-        
-        .ai-response {
-            margin-top: var(--space-4);
-            padding: var(--space-4);
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            border: 1px solid rgba(102, 126, 234, 0.3);
-            border-radius: var(--radius-lg);
-        }
-        
-        .ai-response-header {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            margin-bottom: var(--space-3);
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        
-        .ai-response-content {
-            font-size: 0.9375rem;
-            line-height: 1.7;
-            color: var(--text-primary);
-            white-space: pre-wrap;
-        }
-        
-        .ai-response-content p {
-            margin-bottom: var(--space-2);
-        }
-        
-        .ai-response-content strong {
-            color: var(--accent-primary);
-        }
-        
-        .ai-error {
-            background: rgba(239, 68, 68, 0.1);
-            border-color: rgba(239, 68, 68, 0.3);
-        }
-        
-        .ai-error .ai-response-header {
-            color: var(--accent-danger);
-        }
-        
-        .enter-answer-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--space-2);
-            margin-top: var(--space-3);
-            padding: var(--space-2) var(--space-4);
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            width: 100%;
-        }
-        
-        .enter-answer-btn:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-        }
-        
-        .enter-answer-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        /* Submit Quiz Button */
-        .submit-quiz-btn {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            padding: var(--space-3) var(--space-5);
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: 0.9375rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .submit-quiz-btn:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-        }
-        
-        .submit-quiz-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .submit-quiz-btn.loading {
-            opacity: 0.8;
-        }
-        
-        .start-quiz-btn {
-            width: 100%;
-            margin-top: var(--space-4);
-        }
-    </style>
+
+            .assignment-header {
+                background: var(--bg-card);
+                border-radius: var(--radius-lg);
+                padding: var(--space-5);
+                border: 1px solid var(--border-light);
+                margin-bottom: var(--space-4);
+            }
+
+            .assignment-course {
+                font-size: 0.875rem;
+                color: var(--accent-primary);
+                font-weight: 500;
+                margin-bottom: var(--space-2);
+            }
+
+            .assignment-title {
+                font-size: 1.5rem;
+                font-weight: 600;
+                color: var(--text-primary);
+                margin-bottom: var(--space-3);
+                line-height: 1.3;
+            }
+
+            .assignment-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: var(--space-4);
+            }
+
+            .meta-item {
+                display: flex;
+                align-items: center;
+                gap: var(--space-2);
+                font-size: 0.875rem;
+                color: var(--text-secondary);
+            }
+
+            .meta-item svg {
+                color: var(--text-tertiary);
+            }
+
+            .quiz-viewer {
+                background: var(--bg-card);
+                border-radius: var(--radius-xl);
+                border: 1px solid var(--border-light);
+                overflow: hidden;
+            }
+
+            .viewer-header {
+                padding: var(--space-4) var(--space-5);
+                background: var(--bg-tertiary);
+                border-bottom: 1px solid var(--border-light);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                position: relative;
+            }
+
+
+
+            .viewer-header h3 {
+                font-size: 0.9375rem;
+                font-weight: 600;
+                color: var(--text-primary);
+            }
+
+            .session-info {
+                font-size: 0.75rem;
+                color: var(--text-tertiary);
+                font-family: monospace;
+            }
+
+            .viewer-content {
+                padding: 0;
+                min-height: 500px;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .screenshot-container {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: var(--space-4);
+                background: var(--bg-secondary);
+                overflow-y: auto;
+                max-height: 80vh;
+            }
+
+            .screenshot-image {
+                max-width: 100%;
+                border-radius: var(--radius-md);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+
+            .quiz-content-display {
+                width: 100%;
+                max-width: 900px;
+                background: white;
+                padding: var(--space-6);
+                border-radius: var(--radius-lg);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                color: #333;
+            }
+
+            .quiz-content-display img {
+                max-width: 100%;
+                height: auto;
+                border-radius: var(--radius-sm);
+                margin: var(--space-2) 0;
+            }
+
+            .quiz-content-display p {
+                margin-bottom: var(--space-3);
+                line-height: 1.6;
+            }
+
+            .quiz-content-display .question-text {
+                font-size: 1.1rem;
+                font-weight: 500;
+                margin-bottom: var(--space-4);
+            }
+
+            .quiz-content-display .answer-options {
+                display: flex;
+                flex-direction: column;
+                gap: var(--space-2);
+            }
+
+            .quiz-content-display input[type="radio"],
+            .quiz-content-display input[type="checkbox"] {
+                margin-right: var(--space-2);
+            }
+
+            .quiz-nav {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--space-4);
+                padding: var(--space-4);
+                background: var(--bg-card);
+                border-top: 1px solid var(--border-light);
+            }
+
+            .nav-btn {
+                display: flex;
+                align-items: center;
+                gap: var(--space-2);
+                padding: var(--space-3) var(--space-5);
+                background: var(--accent-primary);
+                color: white;
+                border: none;
+                border-radius: var(--radius-md);
+                font-size: 0.9375rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .nav-btn:hover:not(:disabled) {
+                background: var(--accent-primary-hover);
+            }
+
+            .nav-btn:disabled {
+                background: var(--bg-tertiary);
+                color: var(--text-tertiary);
+                cursor: not-allowed;
+                opacity: 0.6;
+            }
+
+            .nav-btn.loading {
+                opacity: 0.7;
+                pointer-events: none;
+            }
+
+            .nav-status {
+                font-size: 0.875rem;
+                color: var(--text-secondary);
+                padding: 0 var(--space-4);
+            }
+
+            .close-quiz-btn {
+                position: absolute;
+                top: var(--space-4);
+                right: var(--space-4);
+                background: var(--accent-danger);
+                color: white;
+                border: none;
+                border-radius: var(--radius-md);
+                padding: var(--space-2) var(--space-3);
+                font-size: 0.75rem;
+                cursor: pointer;
+            }
+
+            .close-quiz-btn:hover {
+                background: #dc2626;
+            }
+
+            .viewer-empty {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 500px;
+                color: var(--text-tertiary);
+                gap: var(--space-4);
+            }
+
+            .viewer-empty-icon {
+                font-size: 3rem;
+                opacity: 0.5;
+            }
+
+            .viewer-loading {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 500px;
+                gap: var(--space-4);
+            }
+
+            .spinner {
+                width: 40px;
+                height: 40px;
+                border: 3px solid var(--border-light);
+                border-top-color: var(--accent-primary);
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .quiz-iframe {
+                width: 100%;
+                min-height: 600px;
+                border: none;
+            }
+
+            .error-content {
+                padding: var(--space-6);
+                background: rgba(239, 68, 68, 0.1);
+                border-radius: var(--radius-lg);
+                margin: var(--space-4);
+            }
+
+            .error-content h4 {
+                color: var(--accent-danger);
+                margin-bottom: var(--space-3);
+            }
+
+            .error-content pre {
+                font-size: 0.75rem;
+                background: var(--bg-secondary);
+                padding: var(--space-3);
+                border-radius: var(--radius-md);
+                overflow-x: auto;
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+
+            .raw-html-container {
+                padding: var(--space-4);
+            }
+
+            @media (max-width: 900px) {
+                .quiz-container {
+                    grid-template-columns: 1fr;
+                }
+
+                .selection-panel {
+                    position: static;
+                }
+            }
+
+            /* Browser Login Section */
+            .browser-login-card {
+                background: var(--bg-card);
+                border-radius: var(--radius-xl);
+                border: 1px solid var(--border-light);
+                padding: var(--space-5);
+                margin-bottom: var(--space-6);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: var(--space-4);
+            }
+
+            .browser-login-card.authenticated {
+                border-color: var(--accent-success);
+                background: rgba(16, 185, 129, 0.05);
+            }
+
+            .browser-login-card.browser-open {
+                border-color: var(--accent-warning);
+                background: rgba(245, 158, 11, 0.05);
+            }
+
+            .browser-login-header {
+                display: flex;
+                align-items: center;
+                gap: var(--space-4);
+            }
+
+            .browser-icon {
+                font-size: 2rem;
+            }
+
+            .browser-login-header h3 {
+                font-size: 1rem;
+                font-weight: 600;
+                margin-bottom: var(--space-1);
+            }
+
+            .browser-status {
+                font-size: 0.875rem;
+                color: var(--text-secondary);
+            }
+
+            .browser-status.success {
+                color: var(--accent-success);
+            }
+
+            .browser-status.warning {
+                color: var(--accent-warning);
+            }
+
+            .browser-login-actions {
+                display: flex;
+                gap: var(--space-3);
+                flex-wrap: wrap;
+            }
+
+            .browser-login-actions .btn {
+                font-size: 0.875rem;
+                padding: var(--space-2) var(--space-4);
+            }
+
+            .btn-danger {
+                background: var(--accent-danger) !important;
+                color: white !important;
+            }
+
+            .btn-danger:hover {
+                background: #dc2626 !important;
+            }
+
+            /* Quiz Questions Display */
+            .quiz-questions {
+                padding: var(--space-5);
+            }
+
+            .quiz-title {
+                font-size: 1.25rem;
+                font-weight: 600;
+                margin-bottom: var(--space-6);
+                padding-bottom: var(--space-4);
+                border-bottom: 1px solid var(--border-light);
+            }
+
+            .question-card {
+                background: var(--bg-secondary);
+                border-radius: var(--radius-lg);
+                padding: var(--space-5);
+                margin-bottom: var(--space-4);
+            }
+
+            .question-header {
+                display: flex;
+                align-items: flex-start;
+                gap: var(--space-3);
+                margin-bottom: var(--space-4);
+            }
+
+            .question-number {
+                background: var(--accent-primary);
+                color: white;
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.875rem;
+                font-weight: 600;
+                flex-shrink: 0;
+            }
+
+            .question-text {
+                font-size: 1rem;
+                line-height: 1.6;
+                color: var(--text-primary);
+            }
+
+            .answer-choices {
+                display: flex;
+                flex-direction: column;
+                gap: var(--space-2);
+                margin-left: 40px;
+            }
+
+            .answer-choice {
+                display: flex;
+                align-items: flex-start;
+                gap: var(--space-3);
+                padding: var(--space-3) var(--space-4);
+                background: var(--bg-card);
+                border-radius: var(--radius-md);
+                border: 1px solid var(--border-light);
+                transition: all 0.2s;
+            }
+
+            .answer-choice:hover {
+                border-color: var(--accent-primary);
+                background: rgba(99, 102, 241, 0.05);
+            }
+
+            .choice-letter {
+                background: var(--bg-tertiary);
+                color: var(--text-secondary);
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.75rem;
+                font-weight: 600;
+                flex-shrink: 0;
+            }
+
+            .choice-text {
+                font-size: 0.9375rem;
+                line-height: 1.5;
+                color: var(--text-primary);
+            }
+
+            .no-questions {
+                text-align: center;
+                padding: var(--space-8);
+                color: var(--text-tertiary);
+            }
+
+            .no-questions-icon {
+                font-size: 3rem;
+                margin-bottom: var(--space-4);
+                opacity: 0.5;
+            }
+
+            .raw-html-toggle {
+                margin-top: var(--space-6);
+                padding-top: var(--space-4);
+                border-top: 1px solid var(--border-light);
+            }
+
+            .raw-html-toggle summary {
+                cursor: pointer;
+                font-size: 0.875rem;
+                color: var(--text-tertiary);
+            }
+
+            .raw-html-content {
+                margin-top: var(--space-3);
+                max-height: 300px;
+                overflow: auto;
+                background: var(--bg-tertiary);
+                padding: var(--space-3);
+                border-radius: var(--radius-md);
+                font-family: monospace;
+                font-size: 0.75rem;
+                white-space: pre-wrap;
+                word-break: break-all;
+            }
+
+            /* Ask AI Section */
+            .ai-section {
+                padding: var(--space-4);
+                border-top: 1px solid var(--border-light);
+                background: var(--bg-card);
+            }
+
+            .ai-controls {
+                display: flex;
+                flex-direction: column;
+                gap: var(--space-3);
+            }
+
+            .context-input-section {
+                background: var(--bg-tertiary);
+                border-radius: var(--radius-md);
+                padding: var(--space-3);
+            }
+
+            .context-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: var(--space-2);
+            }
+
+            .context-label {
+                font-size: 0.875rem;
+                font-weight: 500;
+                color: var(--text-secondary);
+            }
+
+            .context-scope-toggle {
+                display: flex;
+                gap: var(--space-2);
+            }
+
+            .scope-btn {
+                padding: var(--space-1) var(--space-3);
+                font-size: 0.75rem;
+                border: 1px solid var(--border-light);
+                border-radius: var(--radius-sm);
+                background: var(--bg-card);
+                color: var(--text-secondary);
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .scope-btn.active {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border-color: transparent;
+            }
+
+            .context-textarea {
+                width: 100%;
+                min-height: 60px;
+                padding: var(--space-2);
+                border: 1px solid var(--border-light);
+                border-radius: var(--radius-sm);
+                background: var(--bg-card);
+                color: var(--text-primary);
+                font-size: 0.875rem;
+                resize: vertical;
+                font-family: inherit;
+            }
+
+            .context-textarea::placeholder {
+                color: var(--text-tertiary);
+            }
+
+            .context-textarea:focus {
+                outline: none;
+                border-color: var(--accent-primary);
+            }
+
+            .context-image-section {
+                margin-top: var(--space-2);
+            }
+
+            .context-image-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: var(--space-1);
+                padding: var(--space-1) var(--space-2);
+                font-size: 0.75rem;
+                border: 1px dashed var(--border-light);
+                border-radius: var(--radius-sm);
+                background: transparent;
+                color: var(--text-secondary);
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .context-image-btn:hover {
+                border-color: var(--accent-primary);
+                color: var(--accent-primary);
+            }
+
+            .context-image-preview {
+                display: flex;
+                flex-wrap: wrap;
+                gap: var(--space-2);
+                margin-top: var(--space-2);
+            }
+
+            .context-image-item {
+                position: relative;
+                width: 60px;
+                height: 60px;
+                border-radius: var(--radius-sm);
+                overflow: hidden;
+                border: 1px solid var(--border-light);
+            }
+
+            .context-image-item img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .context-image-remove {
+                position: absolute;
+                top: 2px;
+                right: 2px;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                background: rgba(0, 0, 0, 0.6);
+                color: white;
+                border: none;
+                cursor: pointer;
+                font-size: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .ask-ai-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--space-2);
+                padding: var(--space-3) var(--space-5);
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                border-radius: var(--radius-md);
+                font-size: 0.9375rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+                width: 100%;
+            }
+
+            .ask-ai-btn:hover:not(:disabled) {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+
+            .ask-ai-btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            .ask-ai-btn.loading {
+                opacity: 0.8;
+            }
+
+            .ai-response {
+                margin-top: var(--space-4);
+                padding: var(--space-4);
+                background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+                border: 1px solid rgba(102, 126, 234, 0.3);
+                border-radius: var(--radius-lg);
+            }
+
+            .ai-response-header {
+                display: flex;
+                align-items: center;
+                gap: var(--space-2);
+                margin-bottom: var(--space-3);
+                font-weight: 600;
+                color: var(--text-primary);
+            }
+
+            .ai-response-content {
+                font-size: 0.9375rem;
+                line-height: 1.7;
+                color: var(--text-primary);
+                white-space: pre-wrap;
+            }
+
+            .ai-response-content p {
+                margin-bottom: var(--space-2);
+            }
+
+            .ai-response-content strong {
+                color: var(--accent-primary);
+            }
+
+            .ai-error {
+                background: rgba(239, 68, 68, 0.1);
+                border-color: rgba(239, 68, 68, 0.3);
+            }
+
+            .ai-error .ai-response-header {
+                color: var(--accent-danger);
+            }
+
+            .enter-answer-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--space-2);
+                margin-top: var(--space-3);
+                padding: var(--space-2) var(--space-4);
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                border: none;
+                border-radius: var(--radius-md);
+                font-size: 0.875rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+                width: 100%;
+            }
+
+            .enter-answer-btn:hover:not(:disabled) {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            }
+
+            .enter-answer-btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            /* Submit Quiz Button */
+            .submit-quiz-btn {
+                display: flex;
+                align-items: center;
+                gap: var(--space-2);
+                padding: var(--space-3) var(--space-5);
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                color: white;
+                border: none;
+                border-radius: var(--radius-md);
+                font-size: 0.9375rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .submit-quiz-btn:hover:not(:disabled) {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+            }
+
+            .submit-quiz-btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            .submit-quiz-btn.loading {
+                opacity: 0.8;
+            }
+
+            .start-quiz-btn {
+                width: 100%;
+                margin-top: var(--space-4);
+            }
+        </style>
 </head>
+
 <body>
     <%- include('partials/nav', { active: 'courses' }) %>
-    
-    <main class="container">
-        <div class="quiz-page">
-            <a href="/assignment?section=<%= sectionId %>&id=<%= assignmentId %>" class="back-link">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="19" y1="12" x2="5" y2="12"></line>
-                    <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
-                Back to Assignment
-            </a>
-            
-            <!-- Assignment Info Header -->
-            <div class="assignment-header">
-                <div class="assignment-course"><%= section.course_title || section.section_title %></div>
-                <h1 class="assignment-title"><%= assignment.title %></h1>
-                
-                <div class="assignment-meta">
-                    <% if (assignment.due) { 
-                        const dueDate = new Date(assignment.due);
-                        const dueFormatted = dueDate.toLocaleDateString('en-US', { 
-                            weekday: 'short', 
-                            month: 'short', 
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit'
-                        });
-                    %>
-                    <div class="meta-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                        Due <%= dueFormatted %>
-                    </div>
-                    <% } %>
-                    
-                    <div class="meta-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                        </svg>
-                        <%= assignment.max_points || 0 %> points
-                    </div>
-                </div>
-            </div>
 
-            <!-- Browser Login Section -->
-            <div class="browser-login-card" id="browser-login-card">
-                <div class="browser-login-header">
-                    <span class="browser-icon">🔐</span>
-                    <div>
-                        <h3>Browser Authentication</h3>
-                        <p class="browser-status" id="browser-status">Checking status...</p>
+        <main class="container">
+            <div class="quiz-page">
+                <a href="/assignment?section=<%= sectionId %>&id=<%= assignmentId %>" class="back-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Back to Assignment
+                </a>
+
+                <!-- Assignment Info Header -->
+                <div class="assignment-header">
+                    <div class="assignment-course">
+                        <%= section.course_title || section.section_title %>
+                    </div>
+                    <h1 class="assignment-title">
+                        <%= assignment.title %>
+                    </h1>
+
+                    <div class="assignment-meta">
+                        <% if (assignment.due) { const dueDate=new Date(assignment.due); const
+                            dueFormatted=dueDate.toLocaleDateString('en-US', { weekday: 'short' , month: 'short' ,
+                            day: 'numeric' , hour: 'numeric' , minute: '2-digit' }); %>
+                            <div class="meta-item">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                Due <%= dueFormatted %>
+                            </div>
+                            <% } %>
+
+                                <div class="meta-item">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon
+                                            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                                        </polygon>
+                                    </svg>
+                                    <%= assignment.max_points || 0 %> points
+                                </div>
                     </div>
                 </div>
-                <div class="browser-login-actions">
-                    <button class="btn btn-secondary" id="start-login-btn" onclick="startBrowserLogin()">
-                        Start Browser Login
-                    </button>
-                    <button class="btn btn-secondary" id="check-login-btn" onclick="checkBrowserLogin()" style="display: none;">
-                        Check Login Status
-                    </button>
-                    <button class="btn btn-secondary btn-danger" id="close-browser-btn" onclick="closeBrowser()" style="display: none;">
-                        Close Browser
-                    </button>
-                </div>
-            </div>
-            
-            <div class="quiz-viewer">
-                <div class="viewer-header">
-                    <h3 id="viewer-title">Quiz Content</h3>
-                    <span class="session-info" id="session-info"></span>
-                </div>
-                <div class="viewer-content" id="viewer-content">
-                    <div class="viewer-empty">
-                        <span class="viewer-empty-icon">📝</span>
-                        <p>Click the button below to start the quiz</p>
-                        <button class="btn btn-primary start-quiz-btn" id="start-quiz-btn" onclick="fetchQuiz()">
-                            Start Quiz
+
+                <!-- Browser Login Section -->
+                <div class="browser-login-card" id="browser-login-card">
+                    <div class="browser-login-header">
+                        <span class="browser-icon">🔐</span>
+                        <div>
+                            <h3>Browser Authentication</h3>
+                            <p class="browser-status" id="browser-status">Checking status...</p>
+                        </div>
+                    </div>
+                    <div class="browser-login-actions">
+                        <button class="btn btn-secondary" id="start-login-btn" onclick="startBrowserLogin()">
+                            Start Browser Login
+                        </button>
+                        <button class="btn btn-secondary" id="check-login-btn" onclick="checkBrowserLogin()"
+                            style="display: none;">
+                            Check Login Status
+                        </button>
+                        <button class="btn btn-secondary btn-danger" id="close-browser-btn" onclick="closeBrowser()"
+                            style="display: none;">
+                            Close Browser
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
-    </main>
 
-    <script src="/js/app.js"></script>
-    <script>
-        // Quiz is automatically selected from URL params
-        const selectedSectionId = '<%= sectionId %>';
-        const selectedCourseId = '<%= courseId %>';
-        const selectedAssignmentId = '<%= assignmentId %>';
-        const selectedAssignmentTitle = '<%= assignment.title.replace(/'/g, "\\'") %>';
-        
-        // Quiz state
-        let quizActive = false;
-        let canGoBack = false;
-        let canGoNext = false;
-        
-        async function fetchQuiz() {
-            const viewerContent = document.getElementById('viewer-content');
-            const viewerTitle = document.getElementById('viewer-title');
-            const sessionInfo = document.getElementById('session-info');
-            const startBtn = document.getElementById('start-quiz-btn');
-            
-            viewerTitle.textContent = selectedAssignmentTitle || 'Loading...';
-            if (startBtn) {
-                startBtn.disabled = true;
-                startBtn.textContent = 'Starting Quiz...';
-            }
-            
-            viewerContent.innerHTML = `
+                <div class="quiz-viewer">
+                    <div class="viewer-header">
+                        <h3 id="viewer-title">Quiz Content</h3>
+                        <span class="session-info" id="session-info"></span>
+                    </div>
+                    <div class="viewer-content" id="viewer-content">
+                        <div class="viewer-empty">
+                            <span class="viewer-empty-icon">📝</span>
+                            <p>Click the button below to start the quiz</p>
+                            <button class="btn btn-primary start-quiz-btn" id="start-quiz-btn" onclick="fetchQuiz()">
+                                Start Quiz
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <script src="/js/app.js"></script>
+        <script>
+            // Quiz is automatically selected from URL params
+            const selectedSectionId = '<%= sectionId %>';
+            const selectedCourseId = '<%= courseId %>';
+            const selectedAssignmentId = '<%= assignmentId %>';
+            const selectedAssignmentTitle = `<%= assignment.title.replace(/'/g, "\\'") %>`;
+
+            // Quiz state
+            let quizActive = false;
+            let canGoBack = false;
+            let canGoNext = false;
+
+            async function fetchQuiz() {
+                const viewerContent = document.getElementById('viewer-content');
+                const viewerTitle = document.getElementById('viewer-title');
+                const sessionInfo = document.getElementById('session-info');
+                const startBtn = document.getElementById('start-quiz-btn');
+
+                viewerTitle.textContent = selectedAssignmentTitle || 'Loading...';
+                if (startBtn) {
+                    startBtn.disabled = true;
+                    startBtn.textContent = 'Starting Quiz...';
+                }
+
+                viewerContent.innerHTML = `
                 <div class="viewer-loading">
                     <div class="spinner"></div>
                     <p>Opening quiz in browser...</p>
@@ -905,21 +914,21 @@
                     </p>
                 </div>
             `;
-            
-            try {
-                const response = await fetch('/api/quiz/start', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        courseId: selectedCourseId,
-                        assignmentId: selectedAssignmentId
-                    })
-                });
-                const data = await response.json();
-                
-                // Handle not logged in
-                if (!data.success && (data.needsLogin || (data.error && data.error.includes('not logged in')))) {
-                    viewerContent.innerHTML = `
+
+                try {
+                    const response = await fetch('/api/quiz/start', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            courseId: selectedCourseId,
+                            assignmentId: selectedAssignmentId
+                        })
+                    });
+                    const data = await response.json();
+
+                    // Handle not logged in
+                    if (!data.success && (data.needsLogin || (data.error && data.error.includes('not logged in')))) {
+                        viewerContent.innerHTML = `
                         <div class="error-content">
                             <h4>🔐 Browser Login Required</h4>
                             <p>${data.error || 'Please complete browser authentication first.'}</p>
@@ -928,63 +937,117 @@
                             </p>
                         </div>
                     `;
-                    return;
-                }
-                
-                // Handle errors
-                if (!data.success) {
-                    viewerContent.innerHTML = `
+                        return;
+                    }
+
+                    // Handle errors
+                    if (!data.success) {
+                        viewerContent.innerHTML = `
                         <div class="error-content">
                             <h4>Error</h4>
                             <p>${data.error || 'Unknown error occurred'}</p>
                         </div>
                     `;
-                    return;
-                }
-                
-                // Quiz started successfully - display content
-                quizActive = true;
-                canGoBack = data.canGoBack;
-                canGoNext = data.canGoNext;
-                
-                sessionInfo.textContent = data.isReview ? 'Last Question' : 'Quiz Active';
-                renderQuizInterface(data);
-                
-            } catch (error) {
-                viewerContent.innerHTML = `
+                        return;
+                    }
+
+                    // Quiz started successfully - display content
+                    quizActive = true;
+                    canGoBack = data.canGoBack;
+                    canGoNext = data.canGoNext;
+
+                    sessionInfo.textContent = data.isReview ? 'Last Question' : 'Quiz Active';
+                    renderQuizInterface(data);
+
+                } catch (error) {
+                    viewerContent.innerHTML = `
                     <div class="error-content">
                         <h4>Request Error</h4>
                         <p>${error.message}</p>
                     </div>
                 `;
+                }
             }
-        }
-        
-        function renderQuizInterface(data) {
-            const viewerContent = document.getElementById('viewer-content');
-            const { content, screenshot, canGoBack, canGoNext, isReview } = data;
-            
-            // Show Submit button when we're on the last question (canGoNext is false or isReview is true)
-            const showSubmit = !canGoNext || isReview;
-            
-            let contentHtml = '';
-            if (content && content.html) {
-                contentHtml = `
-                    <div class="screenshot-container">
-                        <div class="quiz-content-display">
-                            ${content.html}
+
+            function renderQuizInterface(data) {
+                const viewerContent = document.getElementById('viewer-content');
+                const { content, screenshot, canGoBack, canGoNext, isReview } = data;
+
+                // Show Submit button when we're on the last question (canGoNext is false or isReview is true)
+                const showSubmit = !canGoNext || isReview;
+
+                let contentHtml = '';
+                if (content && content.html) {
+                    // Process HTML to look better
+                    let processedHtml = content.html;
+
+                    // Extract points (support decimals and alternate labels)
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = processedHtml;
+                    const plainText = (tempDiv.textContent || '').trim();
+                    const pointsMatch = plainText.match(/(?:Possible\s*Points|Points\s*Possible)\s*:?\s*([\d.,]+)/i);
+                    const pointsValue = pointsMatch ? pointsMatch[1].replace(/,/g, '') : '';
+
+                    // Remove the original "Possible Points" text from text nodes only (don't touch HTML tags)
+                    const walker = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT, null);
+                    let textNode;
+                    while ((textNode = walker.nextNode())) {
+                        // Remove "Possible Points: X" or "Points Possible: X" from text content
+                        textNode.textContent = textNode.textContent
+                            .replace(/(?:Possible\s*Points|Points\s*Possible)\s*:?\s*[\d.,]+/gi, '')
+                            .replace(/(?:Possible\s*Points|Points\s*Possible)\s*:?\s*$/gi, '')
+                            // Also catch standalone ": X" or just ":" that might be in a separate text node
+                            .replace(/^\s*:\s*[\d.,]*\s*$/g, '')
+                            // Remove lines that are just numbers (leftover points)
+                            .replace(/^\s*[\d.,]+\s*$/g, function (match) {
+                                return match.trim().length < 5 ? '' : match;
+                            });
+                    }
+                    processedHtml = tempDiv.innerHTML;
+
+                    // Use question number from server (extracted from pagination on full page)
+                    let questionNumber = 'Question';
+                    if (content.questionNumber) {
+                        questionNumber = 'Question ' + content.questionNumber;
+                        console.log('[PAGE ACTIVE] Using server-provided question number:', content.questionNumber);
+                    } else {
+                        // Fallback: look for "Question X" in the plain text
+                        const qMatch = plainText.match(/Question\s+(\d+)/i);
+                        if (qMatch) {
+                            questionNumber = 'Question ' + qMatch[1];
+                        }
+                        console.log('[PAGE ACTIVE] Fallback question number:', questionNumber);
+                    }
+
+                    // Wrap the content in a styled container
+                    processedHtml = `
+                    <div class="question-container">
+                        <div class="question-header">
+                            <span class="question-label">${questionNumber}</span>
+                            <span class="question-points-label">
+                                ${pointsValue ? pointsValue + ' Points' : 'Points'}
+                            </span>
                         </div>
+                        <div class="question-body">
+                            ${processedHtml}
+                        </div>
+                    </div>
+                `;
+
+                    contentHtml = `
+                    <div class="screenshot-container">
+                        ${processedHtml}
                     </div>`;
-            } else if (screenshot) {
-                contentHtml = `
+                } else if (screenshot) {
+                    contentHtml = `
                     <div class="screenshot-container">
                         <img src="data:image/png;base64,${screenshot}" alt="Quiz Screenshot" class="screenshot-image" />
                     </div>`;
-            } else {
-                contentHtml = `<div class="viewer-empty"><p>No content available.</p></div>`;
-            }
+                } else {
+                    contentHtml = `<div class="viewer-empty"><p>No content available.</p></div>`;
+                }
 
-            viewerContent.innerHTML = `
+                viewerContent.innerHTML = `
                 ${contentHtml}
                 <div class="quiz-nav">
                     <button class="nav-btn" id="prev-btn" onclick="navigatePrev()" ${canGoBack ? '' : 'disabled'}>
@@ -1026,240 +1089,366 @@
                     <div id="ai-response-container"></div>
                 </div>
             `;
-            
-            // Add close button to header
-            const viewerHeader = document.querySelector('.viewer-header');
-            if (!document.getElementById('close-quiz-btn')) {
-                const closeBtn = document.createElement('button');
-                closeBtn.id = 'close-quiz-btn';
-                closeBtn.className = 'close-quiz-btn';
-                closeBtn.textContent = '✕ Close Quiz';
-                closeBtn.onclick = closeQuizSession;
-                viewerHeader.appendChild(closeBtn);
-            }
-        }
-        
-        // Context storage
-        let contextScope = 'question';
-        let contextImages = []; // Base64 images
-        let quizContext = ''; // Context for whole quiz
-        
-        function setContextScope(scope) {
-            contextScope = scope;
-            document.querySelectorAll('.scope-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.scope === scope);
-            });
-            
-            // Restore the appropriate context text
-            const contextText = document.getElementById('context-text');
-            if (contextText) {
-                if (scope === 'quiz') {
-                    contextText.value = quizContext;
-                } else {
-                    contextText.value = '';
-                }
-            }
-        }
-        
-        function initializeDragAndDrop() {
-            const dropZone = document.getElementById('image-drop-zone');
-            const fileInput = document.getElementById('context-image-input');
-            
-            if (!dropZone || !fileInput) return;
-            
-            // Click to upload
-            dropZone.onclick = (e) => {
-                if (e.target !== fileInput && !e.target.closest('.active-image-item')) {
-                    fileInput.click();
-                }
-            };
-            
-            fileInput.onchange = () => handleContextImages(fileInput);
-            
-            // Drag and drop events
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, preventDefaults, false);
-            });
-            
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropZone.addEventListener(eventName, highlight, false);
-            });
-            
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, unhighlight, false);
-            });
-            
-            function highlight(e) {
-                dropZone.classList.add('highlight');
-            }
-            
-            function unhighlight(e) {
-                dropZone.classList.remove('highlight');
-            }
-            
-            dropZone.addEventListener('drop', handleDrop, false);
-            
-            function handleDrop(e) {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                
-                // Create a fake input object to reuse handleContextImages
-                handleContextImages({ files: files });
-            }
-        }
 
-        function handleContextImages(input) {
-            const preview = document.getElementById('context-image-preview');
-            const files = input.files;
-            
-            // Supported formats by Gemini API
-            const supportedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
-            
-            for (const file of files) {
-                const fileName = file.name.toLowerCase();
-                const isHEIC = fileName.endsWith('.heic') || fileName.endsWith('.heif') || 
-                               file.type === 'image/heic' || file.type === 'image/heif';
-                
-                if (isHEIC) {
-                    showToast('HEIC/HEIF files are not supported. Please convert to JPEG or PNG first.', 'error');
-                    continue;
+                // Add close button to header
+                const viewerHeader = document.querySelector('.viewer-header');
+                if (!document.getElementById('close-quiz-btn')) {
+                    const closeBtn = document.createElement('button');
+                    closeBtn.id = 'close-quiz-btn';
+                    closeBtn.className = 'close-quiz-btn';
+                    closeBtn.textContent = '✕ Close Quiz';
+                    closeBtn.onclick = closeQuizSession;
+                    viewerHeader.appendChild(closeBtn);
                 }
-                
-                // Check if it's a supported image type
-                if (!supportedTypes.includes(file.type) && file.type !== '') {
-                    showToast(`Unsupported image format: ${file.type}. Use PNG, JPEG, WebP, or GIF.`, 'error');
-                    continue;
-                }
-                
-                // Use FileReader for supported formats
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const dataUrl = e.target.result;
-                    const base64 = dataUrl.split(',')[1];
-                    
-                    // Normalize MIME type
-                    let mimeType = file.type;
-                    if (!mimeType || mimeType === '') {
-                        // Try to detect from data URL
-                        const match = dataUrl.match(/^data:(image\/[^;]+);/);
-                        mimeType = match ? match[1] : 'image/jpeg';
+
+                // Inject custom styles for the integrated look
+                if (!document.getElementById('quiz-integrated-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'quiz-integrated-styles';
+                    style.textContent = `
+                    .question-container {
+                        background: var(--bg-card);
+                        border: 1px solid var(--border-light);
+                        border-radius: var(--radius-md);
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                        overflow: hidden;
+                        color: var(--text-primary);
                     }
-                    if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
                     
-                    contextImages.push({
-                        base64: base64,
-                        mimeType: mimeType
-                    });
+                    .question-header {
+                        background: var(--bg-tertiary);
+                        padding: var(--space-3) var(--space-4);
+                        border-bottom: 1px solid var(--border-light);
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        font-weight: 600;
+                        color: var(--text-secondary);
+                        font-size: 0.9rem;
+                    }
                     
-                    const idx = contextImages.length - 1;
-                    const item = document.createElement('div');
-                    item.className = 'context-image-item';
-                    item.innerHTML = `
+                    .question-label {
+                        color: var(--accent-primary);
+                    }
+                    
+                    .question-body {
+                        padding: var(--space-5);
+                        color: var(--text-primary);
+                    }
+                    
+                    /* Style extracted elements to look native */
+                    .question-body img {
+                        max-width: 100%;
+                        height: auto;
+                        display: block;
+                        margin: 1rem 0;
+                        border-radius: var(--radius-sm);
+                    }
+
+                    .question-body p {
+                        margin-bottom: 1rem;
+                        line-height: 1.6;
+                        color: var(--text-primary);
+                    }
+                    
+                    .question-body .question-text {
+                        font-size: 1.1rem;
+                        font-weight: 500;
+                        margin-bottom: 1.5rem;
+                        color: var(--text-primary);
+                    }
+                    
+                    /* Style inputs */
+                    .question-body input[type="text"],
+                    .question-body textarea {
+                        width: 100%;
+                        padding: 0.75rem;
+                        border: 1px solid var(--border-light);
+                        border-radius: var(--radius-sm);
+                        font-size: 1rem;
+                        transition: border-color 0.2s;
+                        margin-top: 0.5rem;
+                        background: var(--bg-card);
+                        color: var(--text-primary);
+                    }
+                    
+                    .question-body input[type="text"]:focus,
+                    .question-body textarea:focus {
+                        outline: none;
+                        border-color: var(--accent-primary);
+                        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+                    }
+                    
+                    /* Style radio/checkbox containers */
+                    .question-body .answer-option {
+                        display: flex;
+                        align-items: flex-start;
+                        padding: 0.75rem;
+                        border: 1px solid transparent;
+                        border-radius: var(--radius-sm);
+                        margin-bottom: 0.5rem;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                    }
+                    
+                    .question-body .answer-option:hover {
+                        background: var(--bg-tertiary);
+                    }
+                    
+                    .question-body input[type="radio"],
+                    .question-body input[type="checkbox"] {
+                        margin-top: 0.25rem;
+                        margin-right: 0.75rem;
+                        transform: scale(1.2);
+                    }
+                `;
+                    document.head.appendChild(style);
+                }
+
+                // Attach interactive handlers to make the extracted content interactive
+                const questionBody = document.querySelector('.question-body');
+                if (questionBody) {
+                    attachInteractiveHandlers(questionBody);
+                }
+            }
+
+            // Context storage - separate contexts for quiz and question
+            let contextScope = 'question';
+            let contextImages = []; // Base64 images
+            let quizContext = ''; // Context for whole quiz
+            let questionContext = ''; // Context for current question
+
+            function setContextScope(scope) {
+                const contextText = document.getElementById('context-text');
+
+                // Save current context before switching
+                if (contextText) {
+                    if (contextScope === 'quiz') {
+                        quizContext = contextText.value;
+                    } else {
+                        questionContext = contextText.value;
+                    }
+                }
+
+                contextScope = scope;
+                document.querySelectorAll('.scope-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.scope === scope);
+                });
+
+                // Restore the appropriate context text
+                if (contextText) {
+                    if (scope === 'quiz') {
+                        contextText.value = quizContext;
+                        contextText.placeholder = 'Add context that applies to all questions in this quiz...';
+                    } else {
+                        contextText.value = questionContext;
+                        contextText.placeholder = 'Add context specific to this question only...';
+                    }
+                }
+            }
+
+            function initializeDragAndDrop() {
+                const dropZone = document.getElementById('image-drop-zone');
+                const fileInput = document.getElementById('context-image-input');
+
+                if (!dropZone || !fileInput) return;
+
+                // Click to upload
+                dropZone.onclick = (e) => {
+                    if (e.target !== fileInput && !e.target.closest('.active-image-item')) {
+                        fileInput.click();
+                    }
+                };
+
+                fileInput.onchange = () => handleContextImages(fileInput);
+
+                // Drag and drop events
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, preventDefaults, false);
+                });
+
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, highlight, false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, unhighlight, false);
+                });
+
+                function highlight(e) {
+                    dropZone.classList.add('highlight');
+                }
+
+                function unhighlight(e) {
+                    dropZone.classList.remove('highlight');
+                }
+
+                dropZone.addEventListener('drop', handleDrop, false);
+
+                function handleDrop(e) {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+
+                    // Create a fake input object to reuse handleContextImages
+                    handleContextImages({ files: files });
+                }
+            }
+
+            function handleContextImages(input) {
+                const preview = document.getElementById('context-image-preview');
+                const files = input.files;
+
+                // Supported formats by Gemini API
+                const supportedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
+
+                for (const file of files) {
+                    const fileName = file.name.toLowerCase();
+                    const isHEIC = fileName.endsWith('.heic') || fileName.endsWith('.heif') ||
+                        file.type === 'image/heic' || file.type === 'image/heif';
+
+                    if (isHEIC) {
+                        showToast('HEIC/HEIF files are not supported. Please convert to JPEG or PNG first.', 'error');
+                        continue;
+                    }
+
+                    // Check if it's a supported image type
+                    if (!supportedTypes.includes(file.type) && file.type !== '') {
+                        showToast(`Unsupported image format: ${file.type}. Use PNG, JPEG, WebP, or GIF.`, 'error');
+                        continue;
+                    }
+
+                    // Use FileReader for supported formats
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const dataUrl = e.target.result;
+                        const base64 = dataUrl.split(',')[1];
+
+                        // Normalize MIME type
+                        let mimeType = file.type;
+                        if (!mimeType || mimeType === '') {
+                            // Try to detect from data URL
+                            const match = dataUrl.match(/^data:(image\/[^;]+);/);
+                            mimeType = match ? match[1] : 'image/jpeg';
+                        }
+                        if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
+
+                        contextImages.push({
+                            base64: base64,
+                            mimeType: mimeType
+                        });
+
+                        const idx = contextImages.length - 1;
+                        const item = document.createElement('div');
+                        item.className = 'context-image-item';
+                        item.innerHTML = `
                         <img src="${dataUrl}" alt="Context image">
                         <button class="context-image-remove" onclick="removeContextImage(${idx}, this.parentElement)">×</button>
                     `;
-                    preview.appendChild(item);
-                };
-                reader.onerror = function() {
-                    showToast('Could not read image: ' + file.name, 'error');
-                };
-                reader.readAsDataURL(file);
+                        preview.appendChild(item);
+                    };
+                    reader.onerror = function () {
+                        showToast('Could not read image: ' + file.name, 'error');
+                    };
+                    reader.readAsDataURL(file);
+                }
+
+                input.value = '';
             }
-            
-            input.value = '';
-        }
-        
-        function removeContextImage(idx, element) {
-            contextImages[idx] = null; // Mark as removed
-            element.remove();
-        }
-        
-        async function askAI() {
-            const askBtn = document.getElementById('ask-ai-btn');
-            const responseContainer = document.getElementById('ai-response-container');
-            const contextText = document.getElementById('context-text');
-            
-            // Save quiz context if in quiz scope
-            if (contextScope === 'quiz' && contextText) {
-                quizContext = contextText.value;
+
+            function removeContextImage(idx, element) {
+                contextImages[idx] = null; // Mark as removed
+                element.remove();
             }
-            
-            // Gather context data
-            const userContext = contextText ? contextText.value.trim() : '';
-            const activeImages = contextImages.filter(img => img !== null);
-            
-            askBtn.disabled = true;
-            askBtn.classList.add('loading');
-            askBtn.innerHTML = '⏳ Analyzing...';
-            
-            responseContainer.innerHTML = `
+
+            async function askAI() {
+                const askBtn = document.getElementById('ask-ai-btn');
+                const responseContainer = document.getElementById('ai-response-container');
+                const contextText = document.getElementById('context-text');
+
+                // Save current context before sending
+                if (contextText) {
+                    if (contextScope === 'quiz') {
+                        quizContext = contextText.value;
+                    } else {
+                        questionContext = contextText.value;
+                    }
+                }
+
+                // Gather context data - combine both quiz and question context
+                const activeImages = contextImages.filter(img => img !== null);
+
+                askBtn.disabled = true;
+                askBtn.classList.add('loading');
+                askBtn.innerHTML = '⏳ Analyzing...';
+
+                responseContainer.innerHTML = `
                 <div class="ai-response">
                     <div class="ai-response-header">🤖 AI is thinking...</div>
                     <div class="ai-response-content">Analyzing the question and finding the answer...</div>
                 </div>
             `;
-            
-            try {
-                const response = await fetch('/api/quiz/ask-ai', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        context: userContext,
-                        contextImages: activeImages,
-                        contextScope: contextScope
-                    })
-                });
-                const data = await response.json();
-                
-                if (!data.success) {
-                    responseContainer.innerHTML = `
+
+                try {
+                    const response = await fetch('/api/quiz/ask-ai', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            quizContext: quizContext.trim(),
+                            questionContext: questionContext.trim(),
+                            contextImages: activeImages
+                        })
+                    });
+                    const data = await response.json();
+
+                    if (!data.success) {
+                        responseContainer.innerHTML = `
                         <div class="ai-response ai-error">
                             <div class="ai-response-header">❌ Error</div>
                             <div class="ai-response-content">${escapeHtml(data.error)}</div>
                         </div>
                     `;
-                    askBtn.disabled = false;
-                    askBtn.classList.remove('loading');
-                    askBtn.innerHTML = '✨ Ask AI to Solve & Input Answers';
-                    return;
-                }
-                
-                // Store parsed answers for the enter button
-                window.currentParsedAnswers = data.parsedAnswers || [];
-                
-                // Format the response with basic markdown-like formatting
-                const formattedResponse = formatAIResponse(data.response);
-                
-                responseContainer.innerHTML = `
+                        askBtn.disabled = false;
+                        askBtn.classList.remove('loading');
+                        askBtn.innerHTML = '✨ Ask AI to Solve & Input Answers';
+                        return;
+                    }
+
+                    // Store parsed answers for the enter button
+                    window.currentParsedAnswers = data.parsedAnswers || [];
+
+                    // Format the response with basic markdown-like formatting
+                    const formattedResponse = formatAIResponse(data.response);
+
+                    responseContainer.innerHTML = `
                     <div class="ai-response">
                         <div class="ai-response-header">✨ AI Answer</div>
                         <div class="ai-response-content">${formattedResponse}</div>
                         <div id="enter-status"></div>
                     </div>
                 `;
-                
-                // Automatically enter answers if we have parsed answers
-                if (window.currentParsedAnswers.length > 0) {
-                    askBtn.innerHTML = '⏳ Entering answers...';
-                    
-                    const enterStatus = document.getElementById('enter-status');
-                    enterStatus.innerHTML = '<div style="margin-top: 0.75rem; color: var(--text-tertiary);">Entering answers on the quiz page...</div>';
-                    
-                    try {
-                        const enterResponse = await fetch('/api/quiz/enter-answers', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ answers: window.currentParsedAnswers })
-                        });
-                        const enterData = await enterResponse.json();
-                        
-                        if (enterData.success) {
-                            enterStatus.innerHTML = `
+
+                    // Automatically enter answers if we have parsed answers
+                    if (window.currentParsedAnswers.length > 0) {
+                        askBtn.innerHTML = '⏳ Entering answers...';
+
+                        const enterStatus = document.getElementById('enter-status');
+                        enterStatus.innerHTML = '<div style="margin-top: 0.75rem; color: var(--text-tertiary);">Entering answers on the quiz page...</div>';
+
+                        try {
+                            const enterResponse = await fetch('/api/quiz/enter-answers', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ answers: window.currentParsedAnswers })
+                            });
+                            const enterData = await enterResponse.json();
+
+                            if (enterData.success) {
+                                enterStatus.innerHTML = `
                                 <div style="margin-top: 0.75rem; color: var(--accent-success);">
                                     ✓ Answers entered successfully!
                                 </div>
@@ -1267,18 +1456,18 @@
                                     ${enterData.log ? enterData.log.join('<br>') : ''}
                                 </div>
                             `;
-                            
-                            // Update the screenshot to show the filled answers
-                            if (enterData.screenshot) {
-                                const screenshotImg = document.querySelector('.screenshot-image');
-                                if (screenshotImg) {
-                                    screenshotImg.src = `data:image/png;base64,${enterData.screenshot}`;
+
+                                // Update the screenshot to show the filled answers
+                                if (enterData.screenshot) {
+                                    const screenshotImg = document.querySelector('.screenshot-image');
+                                    if (screenshotImg) {
+                                        screenshotImg.src = `data:image/png;base64,${enterData.screenshot}`;
+                                    }
                                 }
-                            }
-                            
-                            showToast('Answers entered!', 'success');
-                        } else {
-                            enterStatus.innerHTML = `
+
+                                showToast('Answers entered!', 'success');
+                            } else {
+                                enterStatus.innerHTML = `
                                 <div style="margin-top: 0.75rem; color: var(--accent-warning);">
                                     ⚠ ${enterData.message || 'Could not enter answers automatically'}
                                 </div>
@@ -1289,9 +1478,9 @@
                                     📝 Retry Enter Answers
                                 </button>
                             `;
-                        }
-                    } catch (enterError) {
-                        enterStatus.innerHTML = `
+                            }
+                        } catch (enterError) {
+                            enterStatus.innerHTML = `
                             <div style="margin-top: 0.75rem; color: var(--accent-danger);">
                                 ❌ Error entering answers: ${escapeHtml(enterError.message)}
                             </div>
@@ -1299,46 +1488,301 @@
                                 📝 Retry Enter Answers
                             </button>
                         `;
+                        }
                     }
-                }
-                
-            } catch (error) {
-                responseContainer.innerHTML = `
+
+                } catch (error) {
+                    responseContainer.innerHTML = `
                     <div class="ai-response ai-error">
                         <div class="ai-response-header">❌ Error</div>
                         <div class="ai-response-content">${escapeHtml(error.message)}</div>
                     </div>
                 `;
-            } finally {
-                askBtn.disabled = false;
-                askBtn.classList.remove('loading');
-                askBtn.innerHTML = '✨ Ask AI to Solve & Input Answers';
+                } finally {
+                    askBtn.disabled = false;
+                    askBtn.classList.remove('loading');
+                    askBtn.innerHTML = '✨ Ask AI to Solve & Input Answers';
+                }
             }
-        }
-        
-        async function enterAnswers() {
-            if (!window.currentParsedAnswers || window.currentParsedAnswers.length === 0) {
-                showToast('No answers to enter', 'error');
-                return;
+
+            // Refresh the quiz content display (called after answers are entered or after user interactions)
+            async function refreshQuizContent() {
+                try {
+                    const response = await fetch('/api/quiz/content');
+                    const data = await response.json();
+
+                    if (!data.success || !data.content) {
+                        console.error('Failed to refresh content:', data.error);
+                        return false;
+                    }
+
+                    // Process and update the question body
+                    let processedHtml = data.content.html;
+
+                    // Extract and remove points text (same logic as renderQuizInterface)
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = processedHtml;
+                    const walker = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT, null);
+                    let textNode;
+                    while ((textNode = walker.nextNode())) {
+                        textNode.textContent = textNode.textContent
+                            .replace(/(?:Possible\s*Points|Points\s*Possible)\s*:?\s*[\d.,]+/gi, '')
+                            .replace(/(?:Possible\s*Points|Points\s*Possible)\s*:?\s*$/gi, '')
+                            .replace(/^\s*:\s*[\d.,]*\s*$/g, '')
+                            .replace(/^\s*[\d.,]+\s*$/g, function (match) {
+                                return match.trim().length < 5 ? '' : match;
+                            });
+                    }
+                    processedHtml = tempDiv.innerHTML;
+
+                    // Update the question body element
+                    const questionBody = document.querySelector('.question-body');
+                    if (questionBody) {
+                        questionBody.innerHTML = processedHtml;
+                        // Re-attach interactive handlers
+                        attachInteractiveHandlers(questionBody);
+                        console.log('[REFRESH] Quiz content updated');
+                    }
+
+                    return true;
+                } catch (error) {
+                    console.error('Error refreshing content:', error);
+                    return false;
+                }
             }
-            
-            const enterBtn = document.getElementById('enter-answer-btn');
-            const enterStatus = document.getElementById('enter-status');
-            
-            enterBtn.disabled = true;
-            enterBtn.innerHTML = '⏳ Entering...';
-            enterStatus.innerHTML = '<div style="margin-top: 0.75rem; color: var(--text-tertiary);">Entering answers on the quiz page...</div>';
-            
-            try {
-                const response = await fetch('/api/quiz/enter-answers', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ answers: window.currentParsedAnswers })
+
+            // Attach event handlers to make extracted content interactive
+            function attachInteractiveHandlers(container) {
+                // Radio buttons
+                const radios = Array.from(container.querySelectorAll('input[type="radio"]'));
+                radios.forEach((radio, index) => {
+                    radio.addEventListener('change', async (e) => {
+                        await syncClickToQuiz('radio', index);
+                    });
                 });
-                const data = await response.json();
-                
-                if (data.success) {
-                    enterStatus.innerHTML = `
+
+                // Checkboxes
+                const checkboxes = Array.from(container.querySelectorAll('input[type="checkbox"]'));
+                checkboxes.forEach((checkbox, index) => {
+                    checkbox.addEventListener('change', async (e) => {
+                        await syncClickToQuiz('checkbox', index);
+                    });
+                });
+
+                // Text inputs
+                const textInputs = Array.from(container.querySelectorAll('input[type="text"], textarea'));
+                textInputs.forEach((input, index) => {
+                    input.addEventListener('blur', async (e) => {
+                        await syncTextToQuiz('text', index, e.target.value);
+                    });
+                });
+
+                // Select dropdowns
+                const selects = Array.from(container.querySelectorAll('select'));
+                selects.forEach((select, index) => {
+                    select.addEventListener('change', async (e) => {
+                        await syncSelectToQuiz(index, e.target.value);
+                    });
+                });
+
+                // Drag-drop for Learnosity questions
+                const dragItems = container.querySelectorAll('.lrn_btn_drag');
+                const dropZones = container.querySelectorAll('.lrn_dropzone');
+
+                if (dragItems.length > 0 && dropZones.length > 0) {
+                    console.log('[DRAG] Found', dragItems.length, 'drag items and', dropZones.length, 'drop zones');
+
+                    // Make drag items draggable
+                    dragItems.forEach((item, idx) => {
+                        item.setAttribute('draggable', 'true');
+                        item.style.cursor = 'grab';
+
+                        item.addEventListener('dragstart', (e) => {
+                            e.dataTransfer.setData('text/plain', item.textContent.trim());
+                            e.dataTransfer.setData('dragIndex', idx.toString());
+                            item.style.opacity = '0.5';
+                        });
+
+                        item.addEventListener('dragend', (e) => {
+                            item.style.opacity = '1';
+                        });
+                    });
+
+                    // Setup drop zones
+                    dropZones.forEach((zone, dropIdx) => {
+                        zone.style.border = '2px dashed var(--border-light)';
+                        zone.style.minHeight = '40px';
+                        zone.style.transition = 'all 0.2s ease';
+
+                        zone.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            zone.style.borderColor = 'var(--accent-primary)';
+                            zone.style.background = 'rgba(var(--accent-primary-rgb), 0.1)';
+                        });
+
+                        zone.addEventListener('dragleave', (e) => {
+                            zone.style.borderColor = 'var(--border-light)';
+                            zone.style.background = '';
+                        });
+
+                        zone.addEventListener('drop', async (e) => {
+                            e.preventDefault();
+                            zone.style.borderColor = 'var(--border-light)';
+                            zone.style.background = '';
+
+                            const dragText = e.dataTransfer.getData('text/plain');
+                            console.log('[DRAG] Dropped "' + dragText + '" into zone', dropIdx);
+
+                            // Update the zone visually
+                            zone.textContent = dragText;
+                            zone.style.borderStyle = 'solid';
+                            zone.style.padding = '8px';
+
+                            // Sync to actual quiz
+                            await syncDragDropToQuiz(dragText, dropIdx);
+                        });
+                    });
+                }
+            }
+
+            // Helper to generate a unique selector for an element
+            function getElementSelector(element) {
+                if (element.id) return `#${element.id}`;
+                if (element.name) return `[name="${element.name}"]`;
+
+                // Generate path-based selector
+                const path = [];
+                let current = element;
+                while (current && current !== document.body) {
+                    let selector = current.tagName.toLowerCase();
+                    if (current.className) {
+                        selector += '.' + current.className.split(' ').filter(c => c).join('.');
+                    }
+                    const siblings = current.parentElement?.querySelectorAll(`:scope > ${current.tagName.toLowerCase()}`);
+                    if (siblings && siblings.length > 1) {
+                        const index = Array.from(siblings).indexOf(current);
+                        selector += `:nth-of-type(${index + 1})`;
+                    }
+                    path.unshift(selector);
+                    current = current.parentElement;
+                }
+                return path.join(' > ');
+            }
+
+            // Sync a click (radio/checkbox) to the actual quiz
+            async function syncClickToQuiz(type, index) {
+                try {
+                    console.log('[SYNC] Clicking element:', type, index);
+                    const response = await fetch('/api/quiz/click-element', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type, index })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        console.log('[SYNC] Click success');
+                        // Refresh to ensure state is synced
+                        await refreshQuizContent();
+                    } else {
+                        console.error('[SYNC] Click failed:', data.error);
+                        showToast('Failed to sync click: ' + data.error, 'error');
+                    }
+                } catch (error) {
+                    console.error('[SYNC] Error syncing click:', error);
+                }
+            }
+
+            // Sync text input
+            async function syncTextToQuiz(type, index, text) {
+                try {
+                    console.log('[SYNC] Typing text:', type, index, text);
+                    const response = await fetch('/api/quiz/type-text', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type, index, text })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        console.log('[SYNC] Type success');
+                        // Refresh to ensure state is synced
+                        await refreshQuizContent();
+                    } else {
+                        console.error('[SYNC] Type failed:', data.error);
+                        showToast('Failed to sync text: ' + data.error, 'error');
+                    }
+                } catch (error) {
+                    console.error('[SYNC] Error syncing type:', error);
+                }
+            }
+
+            // Sync select option
+            async function syncSelectToQuiz(index, value) {
+                try {
+                    console.log('[SYNC] Selecting option:', index, value);
+                    const response = await fetch('/api/quiz/select-option', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ index, value })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        console.log('[SYNC] Select success');
+                        // Refresh to ensure state is synced
+                        await refreshQuizContent();
+                    } else {
+                        console.error('[SYNC] Select failed:', data.error);
+                        showToast('Failed to sync select: ' + data.error, 'error');
+                    }
+                } catch (error) {
+                    console.error('[SYNC] Error syncing select:', error);
+                }
+            }
+
+            // Sync drag-drop to the actual quiz
+            async function syncDragDropToQuiz(dragText, dropIndex) {
+                try {
+                    console.log('[SYNC] Drag-drop:', dragText, 'to zone', dropIndex);
+                    const response = await fetch('/api/quiz/drag-drop', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ dragText, dropIndex })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        console.log('[SYNC] Drag-drop synced successfully:', data.message);
+                        showToast('Item placed!', 'success');
+                    } else {
+                        console.error('[SYNC] Drag-drop failed:', data.error);
+                        showToast('Failed to place item', 'error');
+                    }
+                } catch (error) {
+                    console.error('[SYNC] Error syncing drag-drop:', error);
+                }
+            }
+
+            async function enterAnswers() {
+                if (!window.currentParsedAnswers || window.currentParsedAnswers.length === 0) {
+                    showToast('No answers to enter', 'error');
+                    return;
+                }
+
+                const enterBtn = document.getElementById('enter-answer-btn');
+                const enterStatus = document.getElementById('enter-status');
+
+                enterBtn.disabled = true;
+                enterBtn.innerHTML = '⏳ Entering...';
+                enterStatus.innerHTML = '<div style="margin-top: 0.75rem; color: var(--text-tertiary);">Entering answers on the quiz page...</div>';
+
+                try {
+                    const response = await fetch('/api/quiz/enter-answers', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ answers: window.currentParsedAnswers })
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        enterStatus.innerHTML = `
                         <div style="margin-top: 0.75rem; color: var(--accent-success);">
                             ✓ Answers entered successfully!
                         </div>
@@ -1346,18 +1790,21 @@
                             ${data.log ? data.log.join('<br>') : ''}
                         </div>
                     `;
-                    
-                    // Update the screenshot to show the filled answers
-                    if (data.screenshot) {
-                        const screenshotImg = document.querySelector('.screenshot-image');
-                        if (screenshotImg) {
-                            screenshotImg.src = `data:image/png;base64,${data.screenshot}`;
+
+                        // Update the screenshot to show the filled answers
+                        if (data.screenshot) {
+                            const screenshotImg = document.querySelector('.screenshot-image');
+                            if (screenshotImg) {
+                                screenshotImg.src = `data:image/png;base64,${data.screenshot}`;
+                            }
                         }
-                    }
-                    
-                    showToast('Answers entered!', 'success');
-                } else {
-                    enterStatus.innerHTML = `
+
+                        // Also refresh the extracted content to show updated state
+                        await refreshQuizContent();
+
+                        showToast('Answers entered!', 'success');
+                    } else {
+                        enterStatus.innerHTML = `
                         <div style="margin-top: 0.75rem; color: var(--accent-warning);">
                             ⚠ ${data.message || 'Could not enter answers automatically'}
                         </div>
@@ -1365,392 +1812,469 @@
                             ${data.log ? data.log.join('<br>') : 'You may need to enter the answer manually.'}
                         </div>
                     `;
-                }
-            } catch (error) {
-                enterStatus.innerHTML = `
+                    }
+                } catch (error) {
+                    enterStatus.innerHTML = `
                     <div style="margin-top: 0.75rem; color: var(--accent-danger);">
                         ❌ Error: ${escapeHtml(error.message)}
                     </div>
                 `;
-            } finally {
-                enterBtn.disabled = false;
-                enterBtn.innerHTML = '📝 Enter Answer' + (window.currentParsedAnswers.length > 1 ? 's' : '') + ' Automatically';
+                } finally {
+                    enterBtn.disabled = false;
+                    enterBtn.innerHTML = '📝 Enter Answer' + (window.currentParsedAnswers.length > 1 ? 's' : '') + ' Automatically';
+                }
             }
-        }
-        
-        function formatAIResponse(text) {
-            // Escape HTML first
-            let formatted = escapeHtml(text);
-            
-            // Bold text between ** **
-            formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-            
-            // Convert newlines to <br>
-            formatted = formatted.replace(/\n/g, '<br>');
-            
-            return formatted;
-        }
-        
-        async function navigateNext() {
-            if (!quizActive) return;
-            
-            const nextBtn = document.getElementById('next-btn');
-            const prevBtn = document.getElementById('prev-btn');
-            const navStatus = document.getElementById('nav-status');
-            
-            nextBtn.disabled = true;
-            prevBtn.disabled = true;
-            nextBtn.classList.add('loading');
-            nextBtn.textContent = 'Loading...';
-            navStatus.textContent = '⏳ Navigating...';
-            
-            try {
-                const response = await fetch('/api/quiz/next', { method: 'POST' });
-                const data = await response.json();
-                
-                if (!data.success) {
-                    showToast(data.error || 'Failed to navigate', 'error');
-                    navStatus.textContent = '❌ Navigation failed';
+
+            function formatAIResponse(text) {
+                // Escape HTML first
+                let formatted = escapeHtml(text);
+
+                // Bold text between ** **
+                formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+                // Convert newlines to <br>
+                formatted = formatted.replace(/\n/g, '<br>');
+
+                return formatted;
+            }
+
+            async function navigateNext() {
+                if (!quizActive) return;
+
+                const nextBtn = document.getElementById('next-btn');
+                const prevBtn = document.getElementById('prev-btn');
+                const navStatus = document.getElementById('nav-status');
+
+                nextBtn.disabled = true;
+                prevBtn.disabled = true;
+                nextBtn.classList.add('loading');
+                nextBtn.textContent = 'Loading...';
+                navStatus.textContent = '⏳ Navigating...';
+
+                try {
+                    const response = await fetch('/api/quiz/next', { method: 'POST' });
+                    const data = await response.json();
+
+                    if (!data.success) {
+                        showToast(data.error || 'Failed to navigate', 'error');
+                        navStatus.textContent = '❌ Navigation failed';
+                        nextBtn.textContent = 'Next →';
+                        nextBtn.classList.remove('loading');
+                        nextBtn.disabled = !canGoNext;
+                        prevBtn.disabled = !canGoBack;
+                        return;
+                    }
+
+                    // Update state
+                    canGoBack = data.canGoBack;
+                    canGoNext = data.canGoNext;
+
+                    // Save quiz context if we're in quiz scope BEFORE re-rendering
+                    const currentContextText = document.getElementById('context-text');
+                    if (currentContextText && contextScope === 'quiz') {
+                        quizContext = currentContextText.value;
+                    }
+
+                    // Clear question-specific context when navigating (quiz context persists)
+                    questionContext = '';
+
+                    // Render interface (this rebuilds the textarea)
+                    renderQuizInterface(data);
+
+                    // AFTER render: Restore quiz context to the new textarea
+                    contextScope = 'quiz';
+                    const newContextText = document.getElementById('context-text');
+                    if (newContextText) {
+                        newContextText.value = quizContext;
+                        newContextText.placeholder = 'Add context that applies to all questions in this quiz...';
+                    }
+                    // Update scope buttons to show quiz is active
+                    document.querySelectorAll('.scope-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.scope === 'quiz');
+                    });
+
+                    // Restore image previews (contextImages array persists, but UI needs to be rebuilt)
+                    const imagePreview = document.getElementById('context-image-preview');
+                    if (imagePreview && contextImages.length > 0) {
+                        let previewHtml = '';
+                        contextImages.forEach((imgData, idx) => {
+                            if (imgData) {
+                                previewHtml += `
+                                    <div class="context-image-item active-image-item">
+                                        <img src="${imgData}" alt="Context image ${idx + 1}">
+                                        <button class="context-image-remove" onclick="removeContextImage(${idx}, this.parentElement)">×</button>
+                                    </div>
+                                `;
+                            }
+                        });
+                        imagePreview.innerHTML = previewHtml;
+                    }
+
+                    // Update session info
+                    document.getElementById('session-info').textContent = data.isReview ? 'Last Question' : 'Quiz Active';
+
+                } catch (error) {
+                    showToast('Error: ' + error.message, 'error');
                     nextBtn.textContent = 'Next →';
                     nextBtn.classList.remove('loading');
                     nextBtn.disabled = !canGoNext;
                     prevBtn.disabled = !canGoBack;
-                    return;
                 }
-                
-                // Update state
-                canGoBack = data.canGoBack;
-                canGoNext = data.canGoNext;
-                
-                // Render interface
-                renderQuizInterface(data);
-                
-                // Update session info
-                document.getElementById('session-info').textContent = data.isReview ? 'Last Question' : 'Quiz Active';
-                
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
-                nextBtn.textContent = 'Next →';
-                nextBtn.classList.remove('loading');
-                nextBtn.disabled = !canGoNext;
-                prevBtn.disabled = !canGoBack;
             }
-        }
-        
-        async function navigatePrev() {
-            if (!quizActive) return;
-            
-            const nextBtn = document.getElementById('next-btn');
-            const prevBtn = document.getElementById('prev-btn');
-            const navStatus = document.getElementById('nav-status');
-            
-            nextBtn.disabled = true;
-            prevBtn.disabled = true;
-            prevBtn.classList.add('loading');
-            prevBtn.textContent = 'Loading...';
-            navStatus.textContent = '⏳ Navigating...';
-            
-            try {
-                const response = await fetch('/api/quiz/prev', { method: 'POST' });
-                const data = await response.json();
-                
-                if (!data.success) {
-                    showToast(data.error || 'Failed to navigate', 'error');
-                    navStatus.textContent = '❌ Navigation failed';
+
+            async function navigatePrev() {
+                if (!quizActive) return;
+
+                const nextBtn = document.getElementById('next-btn');
+                const prevBtn = document.getElementById('prev-btn');
+                const navStatus = document.getElementById('nav-status');
+
+                nextBtn.disabled = true;
+                prevBtn.disabled = true;
+                prevBtn.classList.add('loading');
+                prevBtn.textContent = 'Loading...';
+                navStatus.textContent = '⏳ Navigating...';
+
+                try {
+                    const response = await fetch('/api/quiz/prev', { method: 'POST' });
+                    const data = await response.json();
+
+                    if (!data.success) {
+                        showToast(data.error || 'Failed to navigate', 'error');
+                        navStatus.textContent = '❌ Navigation failed';
+                        prevBtn.textContent = '← Previous';
+                        prevBtn.classList.remove('loading');
+                        nextBtn.disabled = !canGoNext;
+                        prevBtn.disabled = !canGoBack;
+                        return;
+                    }
+
+                    // Update state
+                    canGoBack = data.canGoBack;
+                    canGoNext = data.canGoNext;
+
+                    // Save quiz context if we're in quiz scope BEFORE re-rendering
+                    const currentContextText = document.getElementById('context-text');
+                    if (currentContextText && contextScope === 'quiz') {
+                        quizContext = currentContextText.value;
+                    }
+
+                    // Clear question-specific context when navigating (quiz context persists)
+                    questionContext = '';
+
+                    // Render interface (this rebuilds the textarea)
+                    renderQuizInterface(data);
+
+                    // AFTER render: Restore quiz context to the new textarea
+                    contextScope = 'quiz';
+                    const newContextText = document.getElementById('context-text');
+                    if (newContextText) {
+                        newContextText.value = quizContext;
+                        newContextText.placeholder = 'Add context that applies to all questions in this quiz...';
+                    }
+                    // Update scope buttons to show quiz is active
+                    document.querySelectorAll('.scope-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.scope === 'quiz');
+                    });
+
+                    // Restore image previews (contextImages array persists, but UI needs to be rebuilt)
+                    const imagePreview = document.getElementById('context-image-preview');
+                    if (imagePreview && contextImages.length > 0) {
+                        let previewHtml = '';
+                        contextImages.forEach((imgData, idx) => {
+                            if (imgData) {
+                                previewHtml += `
+                                    <div class="context-image-item active-image-item">
+                                        <img src="${imgData}" alt="Context image ${idx + 1}">
+                                        <button class="context-image-remove" onclick="removeContextImage(${idx}, this.parentElement)">×</button>
+                                    </div>
+                                `;
+                            }
+                        });
+                        imagePreview.innerHTML = previewHtml;
+                    }
+
+                    // Update session info
+                    document.getElementById('session-info').textContent = data.isReview ? 'Last Question' : 'Quiz Active';
+
+                } catch (error) {
+                    showToast('Error: ' + error.message, 'error');
                     prevBtn.textContent = '← Previous';
                     prevBtn.classList.remove('loading');
                     nextBtn.disabled = !canGoNext;
                     prevBtn.disabled = !canGoBack;
+                }
+            }
+
+            async function submitQuiz() {
+                if (!quizActive) return;
+
+                // Confirm before submitting
+                if (!confirm('Are you sure you want to submit this quiz? This action cannot be undone.')) {
                     return;
                 }
-                
-                // Update state
-                canGoBack = data.canGoBack;
-                canGoNext = data.canGoNext;
-                
-                // Render interface
-                renderQuizInterface(data);
-                
-                // Update session info
-                document.getElementById('session-info').textContent = data.isReview ? 'Last Question' : 'Quiz Active';
-                
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
-                prevBtn.textContent = '← Previous';
-                prevBtn.classList.remove('loading');
-                nextBtn.disabled = !canGoNext;
-                prevBtn.disabled = !canGoBack;
-            }
-        }
-        
-        async function submitQuiz() {
-            if (!quizActive) return;
-            
-            // Confirm before submitting
-            if (!confirm('Are you sure you want to submit this quiz? This action cannot be undone.')) {
-                return;
-            }
-            
-            const submitBtn = document.getElementById('submit-btn');
-            const navStatus = document.getElementById('nav-status');
-            
-            submitBtn.disabled = true;
-            submitBtn.classList.add('loading');
-            submitBtn.innerHTML = '⏳ Submitting...';
-            navStatus.textContent = '🚀 Submitting quiz...';
-            
-            try {
-                const response = await fetch('/api/quiz/submit', { method: 'POST' });
-                const data = await response.json();
-                
-                if (!data.success) {
-                    showToast(data.error || 'Failed to submit', 'error');
-                    navStatus.textContent = '❌ Submission failed';
-                    submitBtn.innerHTML = '🚀 Submit Quiz';
-                    submitBtn.classList.remove('loading');
-                    submitBtn.disabled = false;
-                    return;
-                }
-                
-                // Update content if available
-                if (data.content || data.screenshot) {
-                    renderQuizInterface({
-                        ...data,
-                        canGoBack: false,
-                        canGoNext: false,
-                        isReview: true
-                    });
-                }
-                
-                // Show success
-                const navStatus = document.getElementById('nav-status');
+
                 const submitBtn = document.getElementById('submit-btn');
-                
-                if (navStatus) navStatus.textContent = '✅ Quiz Submitted!';
-                if (submitBtn) {
-                    submitBtn.innerHTML = '✅ Submitted';
-                    submitBtn.classList.remove('loading');
-                    submitBtn.disabled = true;
-                }
-                
-                // Update session info
-                document.getElementById('session-info').textContent = 'Quiz Submitted';
-                
-                showToast('Quiz submitted successfully!', 'success');
-                
-                // Show submission log
-                if (data.log && data.log.length > 0) {
-                    const aiContainer = document.getElementById('ai-response-container');
-                    aiContainer.innerHTML = `
+                const navStatus = document.getElementById('nav-status');
+
+                submitBtn.disabled = true;
+                submitBtn.classList.add('loading');
+                submitBtn.innerHTML = '⏳ Submitting...';
+                navStatus.textContent = '🚀 Submitting quiz...';
+
+                try {
+                    const response = await fetch('/api/quiz/submit', { method: 'POST' });
+                    const data = await response.json();
+
+                    if (!data.success) {
+                        showToast(data.error || 'Failed to submit', 'error');
+                        navStatus.textContent = '❌ Submission failed';
+                        submitBtn.innerHTML = '🚀 Submit Quiz';
+                        submitBtn.classList.remove('loading');
+                        submitBtn.disabled = false;
+                        return;
+                    }
+
+                    // Update content if available
+                    if (data.content || data.screenshot) {
+                        renderQuizInterface({
+                            ...data,
+                            canGoBack: false,
+                            canGoNext: false,
+                            isReview: true
+                        });
+                    }
+
+                    // Show success
+                    const navStatus = document.getElementById('nav-status');
+                    const submitBtn = document.getElementById('submit-btn');
+
+                    if (navStatus) navStatus.textContent = '✅ Quiz Submitted!';
+                    if (submitBtn) {
+                        submitBtn.innerHTML = '✅ Submitted';
+                        submitBtn.classList.remove('loading');
+                        submitBtn.disabled = true;
+                    }
+
+                    // Update session info
+                    document.getElementById('session-info').textContent = 'Quiz Submitted';
+
+                    showToast('Quiz submitted successfully!', 'success');
+
+                    // Show submission log
+                    if (data.log && data.log.length > 0) {
+                        const aiContainer = document.getElementById('ai-response-container');
+                        aiContainer.innerHTML = `
                         <div class="ai-response" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);">
                             <div class="ai-response-header" style="color: var(--accent-success);">✅ Submission Log</div>
                             <div class="ai-response-content">${data.log.join('<br>')}</div>
                         </div>
                     `;
+                    }
+
+                } catch (error) {
+                    showToast('Error: ' + error.message, 'error');
+                    navStatus.textContent = '❌ Submission failed';
+                    submitBtn.innerHTML = '🚀 Submit Quiz';
+                    submitBtn.classList.remove('loading');
+                    submitBtn.disabled = false;
                 }
-                
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
-                navStatus.textContent = '❌ Submission failed';
-                submitBtn.innerHTML = '🚀 Submit Quiz';
-                submitBtn.classList.remove('loading');
-                submitBtn.disabled = false;
             }
-        }
-        
-        async function closeQuizSession() {
-            try {
-                await fetch('/api/quiz/close', { method: 'POST' });
-            } catch (e) {
-                // Ignore errors
-            }
-            
-            quizActive = false;
-            canGoBack = false;
-            canGoNext = false;
-            
-            // Remove close button
-            const closeBtn = document.getElementById('close-quiz-btn');
-            if (closeBtn) closeBtn.remove();
-            
-            // Reset viewer
-            document.getElementById('viewer-content').innerHTML = `
+
+            async function closeQuizSession() {
+                try {
+                    await fetch('/api/quiz/close', { method: 'POST' });
+                } catch (e) {
+                    // Ignore errors
+                }
+
+                quizActive = false;
+                canGoBack = false;
+                canGoNext = false;
+
+                // Remove close button
+                const closeBtn = document.getElementById('close-quiz-btn');
+                if (closeBtn) closeBtn.remove();
+
+                // Reset viewer
+                document.getElementById('viewer-content').innerHTML = `
                 <div class="viewer-empty">
                     <span class="viewer-empty-icon">📝</span>
                     <p>Select a course and assignment to view quiz content</p>
                 </div>
             `;
-            document.getElementById('viewer-title').textContent = 'Quiz Content';
-            document.getElementById('session-info').textContent = '';
-            
-            showToast('Quiz session closed', 'success');
-        }
-        
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        function updateQuizDisplay(data) {
-            const viewerContent = document.getElementById('viewer-content');
-            
-            if (data.content && data.content.html) {
-                // Display extracted content
-                viewerContent.innerHTML = `
+                document.getElementById('viewer-title').textContent = 'Quiz Content';
+                document.getElementById('session-info').textContent = '';
+
+                showToast('Quiz session closed', 'success');
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function updateQuizDisplay(data) {
+                const viewerContent = document.getElementById('viewer-content');
+
+                if (data.content && data.content.html) {
+                    // Display extracted content
+                    viewerContent.innerHTML = `
                     <div class="screenshot-container">
                         <div class="quiz-content-display">
                             ${data.content.html}
                         </div>
                     </div>
                 `;
-            } else if (data.screenshot) {
-                // Fallback to screenshot
-                viewerContent.innerHTML = `
+                } else if (data.screenshot) {
+                    // Fallback to screenshot
+                    viewerContent.innerHTML = `
                     <div class="screenshot-container">
                         <img src="data:image/png;base64,${data.screenshot}" class="screenshot-image" alt="Quiz Content">
                     </div>
                 `;
-            } else {
-                viewerContent.innerHTML = `
+                } else {
+                    viewerContent.innerHTML = `
                     <div class="viewer-empty">
                         <p>No content available to display.</p>
                     </div>
                 `;
-            }
-        }
-        
-        // Browser login functions
-        async function checkBrowserStatus() {
-            try {
-                const response = await fetch('/api/browser/status');
-                const data = await response.json();
-                
-                const card = document.getElementById('browser-login-card');
-                const status = document.getElementById('browser-status');
-                const startBtn = document.getElementById('start-login-btn');
-                const checkBtn = document.getElementById('check-login-btn');
-                const closeBtn = document.getElementById('close-browser-btn');
-                
-                card.classList.remove('authenticated', 'browser-open');
-                
-                // Check if browser features are disabled (Vercel deployment)
-                if (data.disabled) {
-                    status.className = 'browser-status warning';
-                    status.innerHTML = '⚠️ Quiz Viewer is unavailable on Vercel deployment.<br><small>Run the app locally for quiz features.</small>';
-                    startBtn.style.display = 'none';
-                    checkBtn.style.display = 'none';
-                    closeBtn.style.display = 'none';
-                    return;
                 }
-                
-                if (data.loggedIn) {
-                    card.classList.add('authenticated');
-                    status.className = 'browser-status success';
-                    status.textContent = '✓ Logged in - ready to load quizzes';
-                    startBtn.textContent = 'Re-authenticate';
-                    startBtn.style.display = 'inline-flex';
-                    checkBtn.style.display = 'none';
-                    closeBtn.style.display = data.browserOpen ? 'inline-flex' : 'none';
-                } else if (data.browserOpen) {
-                    card.classList.add('browser-open');
-                    status.className = 'browser-status warning';
-                    status.textContent = '⏳ Browser open - complete login in the browser window';
-                    startBtn.style.display = 'none';
-                    checkBtn.style.display = 'inline-flex';
-                    closeBtn.style.display = 'inline-flex';
-                } else {
-                    status.className = 'browser-status';
-                    status.textContent = 'Not authenticated - browser login required for quiz access';
-                    startBtn.textContent = 'Start Browser Login';
-                    startBtn.style.display = 'inline-flex';
-                    checkBtn.style.display = 'none';
-                    closeBtn.style.display = 'none';
-                }
-            } catch (error) {
-                console.error('Error checking browser status:', error);
             }
-        }
-        
-        async function startBrowserLogin() {
-            const startBtn = document.getElementById('start-login-btn');
-            const status = document.getElementById('browser-status');
-            
-            // Check for cookie input if we're on Vercel (or just always allow it)
-            const cookieInput = prompt("Optional: Paste your Schoology 'SESS...' cookie to skip login (Required for Vercel).\n\nYou can paste either:\n1. The full cookie string (e.g. 'SESS...=12345...')\n2. Just the value (e.g. '12345...')");
-            
-            startBtn.disabled = true;
-            startBtn.textContent = 'Opening browser...';
-            
-            try {
-                const response = await fetch('/api/browser/login', { 
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ schoologyCookie: cookieInput })
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    if (data.alreadyLoggedIn) {
-                        showToast('Browser authenticated successfully!', 'success');
-                    } else {
-                        showToast('Browser opened! Complete Google SSO login, then click "Check Login Status"', 'success');
+
+            // Browser login functions
+            async function checkBrowserStatus() {
+                try {
+                    const response = await fetch('/api/browser/status');
+                    const data = await response.json();
+
+                    const card = document.getElementById('browser-login-card');
+                    const status = document.getElementById('browser-status');
+                    const startBtn = document.getElementById('start-login-btn');
+                    const checkBtn = document.getElementById('check-login-btn');
+                    const closeBtn = document.getElementById('close-browser-btn');
+
+                    card.classList.remove('authenticated', 'browser-open');
+
+                    // Check if browser features are disabled (Vercel deployment)
+                    if (data.disabled) {
+                        status.className = 'browser-status warning';
+                        status.innerHTML = '⚠️ Quiz Viewer is unavailable on Vercel deployment.<br><small>Run the app locally for quiz features.</small>';
+                        startBtn.style.display = 'none';
+                        checkBtn.style.display = 'none';
+                        closeBtn.style.display = 'none';
+                        return;
                     }
+
+                    if (data.loggedIn) {
+                        card.classList.add('authenticated');
+                        status.className = 'browser-status success';
+                        status.textContent = '✓ Logged in - ready to load quizzes';
+                        startBtn.textContent = 'Re-authenticate';
+                        startBtn.style.display = 'inline-flex';
+                        checkBtn.style.display = 'none';
+                        closeBtn.style.display = data.browserOpen ? 'inline-flex' : 'none';
+                    } else if (data.browserOpen) {
+                        card.classList.add('browser-open');
+                        status.className = 'browser-status warning';
+                        status.textContent = '⏳ Browser open - complete login in the browser window';
+                        startBtn.style.display = 'none';
+                        checkBtn.style.display = 'inline-flex';
+                        closeBtn.style.display = 'inline-flex';
+                    } else {
+                        status.className = 'browser-status';
+                        status.textContent = 'Not authenticated - browser login required for quiz access';
+                        startBtn.textContent = 'Start Browser Login';
+                        startBtn.style.display = 'inline-flex';
+                        checkBtn.style.display = 'none';
+                        closeBtn.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Error checking browser status:', error);
+                }
+            }
+
+            async function startBrowserLogin() {
+                const startBtn = document.getElementById('start-login-btn');
+                const status = document.getElementById('browser-status');
+
+                // Check for cookie input if we're on Vercel (or just always allow it)
+                const cookieInput = prompt("Optional: Paste your Schoology 'SESS...' cookie to skip login (Required for Vercel).\n\nYou can paste either:\n1. The full cookie string (e.g. 'SESS...=12345...')\n2. Just the value (e.g. '12345...')");
+
+                startBtn.disabled = true;
+                startBtn.textContent = 'Opening browser...';
+
+                try {
+                    const response = await fetch('/api/browser/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ schoologyCookie: cookieInput })
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        if (data.alreadyLoggedIn) {
+                            showToast('Browser authenticated successfully!', 'success');
+                        } else {
+                            showToast('Browser opened! Complete Google SSO login, then click "Check Login Status"', 'success');
+                        }
+                        await checkBrowserStatus();
+                    } else {
+                        showToast('Error: ' + data.error, 'error');
+                    }
+                } catch (error) {
+                    showToast('Error starting browser: ' + error.message, 'error');
+                } finally {
+                    startBtn.disabled = false;
+                    startBtn.textContent = 'Start Browser Login';
+                }
+            }
+
+            async function checkBrowserLogin() {
+                const checkBtn = document.getElementById('check-login-btn');
+                const status = document.getElementById('browser-status');
+
+                checkBtn.disabled = true;
+                checkBtn.textContent = 'Checking...';
+
+                try {
+                    const response = await fetch('/api/browser/check-login', { method: 'POST' });
+                    const data = await response.json();
+
+                    if (data.loggedIn) {
+                        showToast('Successfully logged in! Cookies extracted.', 'success');
+                    } else {
+                        showToast(data.message || 'Not logged in yet', 'warning');
+                    }
+
                     await checkBrowserStatus();
-                } else {
-                    showToast('Error: ' + data.error, 'error');
+                } catch (error) {
+                    showToast('Error checking login: ' + error.message, 'error');
+                } finally {
+                    checkBtn.disabled = false;
+                    checkBtn.textContent = 'Check Login Status';
                 }
-            } catch (error) {
-                showToast('Error starting browser: ' + error.message, 'error');
-            } finally {
-                startBtn.disabled = false;
-                startBtn.textContent = 'Start Browser Login';
             }
-        }
-        
-        async function checkBrowserLogin() {
-            const checkBtn = document.getElementById('check-login-btn');
-            const status = document.getElementById('browser-status');
-            
-            checkBtn.disabled = true;
-            checkBtn.textContent = 'Checking...';
-            
-            try {
-                const response = await fetch('/api/browser/check-login', { method: 'POST' });
-                const data = await response.json();
-                
-                if (data.loggedIn) {
-                    showToast('Successfully logged in! Cookies extracted.', 'success');
-                } else {
-                    showToast(data.message || 'Not logged in yet', 'warning');
+
+            async function closeBrowser() {
+                try {
+                    const response = await fetch('/api/browser/close', { method: 'POST' });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showToast('Browser closed', 'success');
+                    }
+
+                    await checkBrowserStatus();
+                } catch (error) {
+                    showToast('Error closing browser: ' + error.message, 'error');
                 }
-                
-                await checkBrowserStatus();
-            } catch (error) {
-                showToast('Error checking login: ' + error.message, 'error');
-            } finally {
-                checkBtn.disabled = false;
-                checkBtn.textContent = 'Check Login Status';
             }
-        }
-        
-        async function closeBrowser() {
-            try {
-                const response = await fetch('/api/browser/close', { method: 'POST' });
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast('Browser closed', 'success');
-                }
-                
-                await checkBrowserStatus();
-            } catch (error) {
-                showToast('Error closing browser: ' + error.message, 'error');
-            }
-        }
-        
-        // Check browser status on page load
-        checkBrowserStatus();
-    </script>
+
+            // Check browser status on page load
+            checkBrowserStatus();
+        </script>
 </body>
+
 </html>

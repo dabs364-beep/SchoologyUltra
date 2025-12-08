@@ -113,14 +113,14 @@ function getCachedData(userId, cacheKey) {
     if (!apiCache[userId]) return null;
     const cached = apiCache[userId][cacheKey];
     if (!cached) return null;
-    
+
     const now = Date.now();
     if (now - cached.timestamp > cached.ttl) {
         // Cache expired
         delete apiCache[userId][cacheKey];
         return null;
     }
-    
+
     debugLog('CACHE', `✓ Cache hit: ${cacheKey}`);
     return cached.data;
 }
@@ -157,29 +157,29 @@ async function fetchAllSectionsOptimized(userId, accessToken) {
     const cacheKey = 'sections';
     const cached = getCachedData(userId, cacheKey);
     if (cached) return cached;
-    
+
     let allSections = [];
     let start = 0;
     const limit = 50;
     let hasMore = true;
-    
+
     while (hasMore) {
         const sectionsUrl = `${config.apiBase}/users/${userId}/sections?start=${start}&limit=${limit}`;
         debugLog('API', `Fetching sections: ${sectionsUrl}`);
         const sectionsData = await makeOAuthRequest('GET', sectionsUrl, accessToken);
-        
+
         const sections = sectionsData.section || [];
         allSections = allSections.concat(sections);
-        
+
         if (sections.length < limit || (sectionsData.links && !sectionsData.links.next)) {
             hasMore = false;
         } else {
             start += limit;
         }
-        
+
         if (start > 500) hasMore = false;
     }
-    
+
     setCacheData(userId, cacheKey, allSections, CACHE_TTL.sections);
     return allSections;
 }
@@ -189,11 +189,11 @@ async function fetchAllGradesOptimized(userId, accessToken) {
     const cacheKey = 'grades';
     const cached = getCachedData(userId, cacheKey);
     if (cached) return cached;
-    
+
     const gradesUrl = `${config.apiBase}/users/${userId}/grades`;
     debugLog('API', `Fetching all grades: ${gradesUrl}`);
     const gradesData = await makeOAuthRequest('GET', gradesUrl, accessToken);
-    
+
     setCacheData(userId, cacheKey, gradesData, CACHE_TTL.grades);
     return gradesData;
 }
@@ -201,11 +201,11 @@ async function fetchAllGradesOptimized(userId, accessToken) {
 // Fetch assignments for multiple sections in parallel
 async function fetchAssignmentsForSectionsParallel(sectionIds, accessToken, maxConcurrent = 5) {
     const results = {};
-    
+
     // Process in batches to avoid overwhelming the API
     for (let i = 0; i < sectionIds.length; i += maxConcurrent) {
         const batch = sectionIds.slice(i, i + maxConcurrent);
-        
+
         const batchPromises = batch.map(async (sectionId) => {
             try {
                 const assignments = await fetchAllAssignments(sectionId, accessToken);
@@ -214,9 +214,9 @@ async function fetchAssignmentsForSectionsParallel(sectionIds, accessToken, maxC
                 return { sectionId, assignments: [], error: e.message };
             }
         });
-        
+
         const batchResults = await Promise.all(batchPromises);
-        
+
         for (const result of batchResults) {
             results[result.sectionId] = {
                 assignments: result.assignments,
@@ -224,17 +224,17 @@ async function fetchAssignmentsForSectionsParallel(sectionIds, accessToken, maxC
             };
         }
     }
-    
+
     return results;
 }
 
 // Fetch grading categories for multiple sections in parallel
 async function fetchCategoriesForSectionsParallel(sectionIds, accessToken, maxConcurrent = 5) {
     const results = {};
-    
+
     for (let i = 0; i < sectionIds.length; i += maxConcurrent) {
         const batch = sectionIds.slice(i, i + maxConcurrent);
-        
+
         const batchPromises = batch.map(async (sectionId) => {
             try {
                 const categoriesUrl = `${config.apiBase}/sections/${sectionId}/grading_categories`;
@@ -244,9 +244,9 @@ async function fetchCategoriesForSectionsParallel(sectionIds, accessToken, maxCo
                 return { sectionId, categories: [], error: e.message };
             }
         });
-        
+
         const batchResults = await Promise.all(batchPromises);
-        
+
         for (const result of batchResults) {
             results[result.sectionId] = {
                 categories: result.categories,
@@ -254,7 +254,7 @@ async function fetchCategoriesForSectionsParallel(sectionIds, accessToken, maxCo
             };
         }
     }
-    
+
     return results;
 }
 
@@ -276,12 +276,12 @@ function parseGradesIntoMap(gradesData) {
     const gradesMap = {};
     const sectionGrades = {};
     const sectionGradeData = {};
-    
+
     if (gradesData && gradesData.section) {
         for (const sec of gradesData.section) {
             const sectionId = sec.section_id;
             let finalGrade = null;
-            
+
             // Extract final_grade
             if (sec.final_grade !== undefined && sec.final_grade !== null && sec.final_grade !== '') {
                 if (Array.isArray(sec.final_grade) && sec.final_grade.length > 0) {
@@ -295,10 +295,10 @@ function parseGradesIntoMap(gradesData) {
                     if (!isNaN(parsed)) finalGrade = parsed;
                 }
             }
-            
+
             sectionGrades[sectionId] = finalGrade;
             sectionGradeData[sectionId] = sec;
-            
+
             // Parse individual assignment grades
             const periods = sec.period || [];
             for (const period of periods) {
@@ -311,7 +311,7 @@ function parseGradesIntoMap(gradesData) {
             }
         }
     }
-    
+
     return { gradesMap, sectionGrades, sectionGradeData };
 }
 
@@ -321,7 +321,7 @@ function loadSchedule(userId) {
     if (IS_VERCEL) {
         return scheduleCache[userId] || {};
     }
-    
+
     try {
         if (fs && fs.existsSync(SCHEDULE_PATH)) {
             const data = JSON.parse(fs.readFileSync(SCHEDULE_PATH, 'utf8'));
@@ -340,12 +340,12 @@ function saveSchedule(userId, schedule) {
         scheduleCache[userId] = {};
     }
     scheduleCache[userId] = schedule;
-    
+
     // On Vercel, skip filesystem write
     if (IS_VERCEL) {
         return;
     }
-    
+
     try {
         if (fs) {
             fs.writeFileSync(SCHEDULE_PATH, JSON.stringify(scheduleCache, null, 2));
@@ -359,7 +359,7 @@ function saveSchedule(userId, schedule) {
 function getClassStartTime(userId, sectionId, dayOfWeek) {
     const schedule = scheduleCache[userId] || {};
     const dayBlocks = schedule[dayOfWeek] || [];
-    
+
     for (const block of dayBlocks) {
         if (block.sectionId === sectionId) {
             return {
@@ -382,11 +382,11 @@ function estimateAssignmentTime(assignment) {
     const type = assignment.type || 'assignment';
     const maxPoints = parseFloat(assignment.max_points) || 0;
     const description = (assignment.description || '').toLowerCase();
-    
+
     let baseMinutes = 15; // Default base time
     let multiplier = 1.0;
     let confidence = 'medium';
-    
+
     // === TYPE-BASED ESTIMATION ===
     if (type === 'assessment' || type === 'assessment_v2') {
         // Quiz/Test
@@ -395,7 +395,7 @@ function estimateAssignmentTime(assignment) {
     } else if (type === 'discussion') {
         baseMinutes = 20;
     }
-    
+
     // === KEYWORD-BASED ADJUSTMENTS ===
     const keywords = {
         // High-effort keywords (long tasks)
@@ -409,7 +409,7 @@ function estimateAssignmentTime(assignment) {
         'writing': { add: 20, mult: 1.2 },
         'analysis': { add: 25, mult: 1.2 },
         'analyze': { add: 25, mult: 1.2 },
-        
+
         // Medium-effort keywords
         'frq': { add: 20, mult: 1.1 },
         'free response': { add: 20, mult: 1.1 },
@@ -421,7 +421,7 @@ function estimateAssignmentTime(assignment) {
         'assignment': { add: 5, mult: 1.0 },
         'problems': { add: 15, mult: 1.0 },
         'exercises': { add: 10, mult: 1.0 },
-        
+
         // Low-effort keywords (quick tasks)
         'quiz': { add: 0, mult: 0.8 },
         'check': { add: -5, mult: 0.7 },
@@ -431,25 +431,25 @@ function estimateAssignmentTime(assignment) {
         'sign': { add: -10, mult: 0.4 },
         'acknowledgment': { add: -10, mult: 0.3 },
         'form': { add: -10, mult: 0.5 },
-        
+
         // Reading-based
         'reading': { add: 20, mult: 1.0 },
         'read': { add: 15, mult: 1.0 },
         'chapter': { add: 25, mult: 1.1 },
         'article': { add: 15, mult: 1.0 },
-        
+
         // Test/Exam related
         'test': { add: 30, mult: 1.3 },
         'exam': { add: 40, mult: 1.4 },
         'final': { add: 50, mult: 1.5 },
         'midterm': { add: 45, mult: 1.4 },
         'unit': { add: 15, mult: 1.1 },
-        
+
         // Video-based
         'video': { add: 15, mult: 0.9 },
         'watch': { add: 10, mult: 0.8 },
         'edpuzzle': { add: 15, mult: 0.9 },
-        
+
         // Coding/Tech
         'code': { add: 25, mult: 1.2 },
         'coding': { add: 25, mult: 1.2 },
@@ -458,7 +458,7 @@ function estimateAssignmentTime(assignment) {
         'java': { add: 20, mult: 1.1 },
         'python': { add: 20, mult: 1.1 },
     };
-    
+
     // Check title and description for keywords
     let keywordMatches = [];
     for (const [keyword, adjustment] of Object.entries(keywords)) {
@@ -466,7 +466,7 @@ function estimateAssignmentTime(assignment) {
             keywordMatches.push({ keyword, ...adjustment });
         }
     }
-    
+
     // Apply the most impactful keyword adjustment
     if (keywordMatches.length > 0) {
         // Sort by impact (add value)
@@ -476,7 +476,7 @@ function estimateAssignmentTime(assignment) {
         multiplier *= primary.mult;
         confidence = 'high';
     }
-    
+
     // === SUBJECT-BASED ADJUSTMENTS ===
     const subjectMultipliers = {
         'ap ': 1.3,
@@ -494,14 +494,14 @@ function estimateAssignmentTime(assignment) {
         'pe': 0.7,
         'health': 0.8,
     };
-    
+
     for (const [subject, mult] of Object.entries(subjectMultipliers)) {
         if (courseName.includes(subject)) {
             multiplier *= mult;
             break;
         }
     }
-    
+
     // === POINT-BASED ADJUSTMENTS ===
     // More points generally = more work
     if (maxPoints > 0) {
@@ -519,13 +519,13 @@ function estimateAssignmentTime(assignment) {
             multiplier *= 1.4; // Big assignment
         }
     }
-    
+
     // Calculate final time
     let estimatedMinutes = Math.round(baseMinutes * multiplier);
-    
+
     // Clamp to reasonable bounds
     estimatedMinutes = Math.max(5, Math.min(180, estimatedMinutes));
-    
+
     // Format the time string
     let timeString;
     if (estimatedMinutes < 60) {
@@ -535,7 +535,7 @@ function estimateAssignmentTime(assignment) {
         const mins = estimatedMinutes % 60;
         timeString = mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
     }
-    
+
     return {
         minutes: estimatedMinutes,
         display: timeString,
@@ -557,7 +557,7 @@ function loadNotifications(userId) {
     if (IS_VERCEL) {
         return notificationsCache[userId] || { notifications: [], knownAssignments: {}, knownGrades: {} };
     }
-    
+
     try {
         if (fs && fs.existsSync(NOTIFICATIONS_PATH)) {
             const data = JSON.parse(fs.readFileSync(NOTIFICATIONS_PATH, 'utf8'));
@@ -575,7 +575,7 @@ function saveNotifications() {
     if (IS_VERCEL) {
         return;
     }
-    
+
     try {
         if (fs) {
             fs.writeFileSync(NOTIFICATIONS_PATH, JSON.stringify(notificationsCache, null, 2));
@@ -590,23 +590,23 @@ function addNotification(userId, notification) {
     if (!notificationsCache[userId]) {
         notificationsCache[userId] = { notifications: [], knownAssignments: {}, knownGrades: {} };
     }
-    
+
     // Check for duplicates
     const exists = notificationsCache[userId].notifications.some(
         n => n.assignmentId === notification.assignmentId && n.type === notification.type
     );
-    
+
     if (!exists) {
         notification.id = crypto.randomBytes(8).toString('hex');
         notification.read = false;
         notification.timestamp = new Date().toISOString();
         notificationsCache[userId].notifications.unshift(notification);
-        
+
         // Keep only last 100 notifications
         if (notificationsCache[userId].notifications.length > 100) {
             notificationsCache[userId].notifications = notificationsCache[userId].notifications.slice(0, 100);
         }
-        
+
         saveNotifications();
         return true;
     }
@@ -666,7 +666,7 @@ function generateTimestamp() {
 }
 
 function percentEncode(str) {
-    return encodeURIComponent(str).replace(/[!'()*]/g, function(c) {
+    return encodeURIComponent(str).replace(/[!'()*]/g, function (c) {
         return '%' + c.charCodeAt(0).toString(16).toUpperCase();
     });
 }
@@ -675,17 +675,17 @@ function generateSignatureBaseString(method, url, params) {
     // Parse URL to get base URL and query parameters
     const urlObj = new URL(url);
     const baseUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
-    
+
     // Include query parameters from the URL in the signature
     const allParams = { ...params };
     urlObj.searchParams.forEach((value, key) => {
         allParams[key] = value;
     });
-    
+
     // Sort parameters alphabetically and build param string
     const sortedKeys = Object.keys(allParams).sort();
     const paramString = sortedKeys.map(key => `${percentEncode(key)}=${percentEncode(allParams[key])}`).join('&');
-    
+
     return `${method.toUpperCase()}&${percentEncode(baseUrl)}&${percentEncode(paramString)}`;
 }
 
@@ -702,14 +702,14 @@ function buildAuthorizationHeader(params) {
         .sort()
         .map(key => `${percentEncode(key)}="${percentEncode(params[key])}"`)
         .join(', ');
-    
+
     return `OAuth realm="", ${headerParts}`;
 }
 
 function makeOAuthRequest(method, url, token = null, body = null) {
     return new Promise((resolve, reject) => {
         debugLog('OAUTH-REQUEST', `Starting ${method} request to: ${url}`);
-        
+
         const oauthParams = {
             oauth_consumer_key: config.consumerKey,
             oauth_nonce: generateNonce(),
@@ -717,12 +717,12 @@ function makeOAuthRequest(method, url, token = null, body = null) {
             oauth_timestamp: generateTimestamp(),
             oauth_version: '1.0'
         };
-        
+
         // Only include oauth_token if we have one
         if (token && token.oauth_token) {
             oauthParams.oauth_token = token.oauth_token;
         }
-        
+
         debugLog('OAUTH-REQUEST', 'OAuth parameters:', {
             oauth_consumer_key: oauthParams.oauth_consumer_key ? oauthParams.oauth_consumer_key.substring(0, 8) + '...' : 'NOT SET',
             oauth_nonce: oauthParams.oauth_nonce,
@@ -735,7 +735,7 @@ function makeOAuthRequest(method, url, token = null, body = null) {
         const tokenSecret = token ? token.oauth_token_secret : '';
         const baseString = generateSignatureBaseString(method, url, oauthParams);
         debugLog('OAUTH-REQUEST', 'Signature base string:', baseString.substring(0, 100) + '...');
-        
+
         oauthParams.oauth_signature = generateSignature(baseString, config.consumerSecret, tokenSecret);
         debugLog('OAUTH-REQUEST', 'Generated signature:', oauthParams.oauth_signature);
 
@@ -743,10 +743,10 @@ function makeOAuthRequest(method, url, token = null, body = null) {
         debugLog('OAUTH-REQUEST', 'Authorization header:', authHeader.substring(0, 80) + '...');
 
         const urlObj = new URL(url);
-        
+
         // Generate a mobile session cookie (mimics Schoology mobile app)
         const sessionCookie = `s_mobile=${crypto.randomBytes(16).toString('hex')}`;
-        
+
         const options = {
             hostname: urlObj.hostname,
             port: 443,
@@ -763,7 +763,7 @@ function makeOAuthRequest(method, url, token = null, body = null) {
                 'Accept-Encoding': 'gzip, deflate, br'
             }
         };
-        
+
         debugLog('OAUTH-REQUEST', 'Request headers:', {
             'User-Agent': options.headers['User-Agent'],
             'Cookie': options.headers['Cookie']
@@ -772,11 +772,11 @@ function makeOAuthRequest(method, url, token = null, body = null) {
         const req = https.request(options, (res) => {
             debugLog('OAUTH-RESPONSE', `Response status: ${res.statusCode} ${res.statusMessage}`);
             debugLog('OAUTH-RESPONSE', 'Response headers:', res.headers);
-            
+
             // Handle compressed responses
             let responseStream = res;
             const encoding = res.headers['content-encoding'];
-            
+
             if (encoding === 'gzip') {
                 responseStream = res.pipe(zlib.createGunzip());
             } else if (encoding === 'deflate') {
@@ -784,18 +784,18 @@ function makeOAuthRequest(method, url, token = null, body = null) {
             } else if (encoding === 'br') {
                 responseStream = res.pipe(zlib.createBrotliDecompress());
             }
-            
+
             let chunks = [];
             responseStream.on('data', chunk => chunks.push(chunk));
             responseStream.on('end', () => {
                 const data = Buffer.concat(chunks).toString('utf8');
                 debugLog('OAUTH-RESPONSE', `Response body (${data.length} bytes):`, data.substring(0, 500));
-                
+
                 // Handle redirects manually (need new nonce/timestamp for each)
                 if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
                     debugLog('OAUTH-RESPONSE', `Following redirect to: ${res.headers.location}`);
-                    const redirectUrl = res.headers.location.startsWith('http') 
-                        ? res.headers.location 
+                    const redirectUrl = res.headers.location.startsWith('http')
+                        ? res.headers.location
                         : `https://${urlObj.hostname}${res.headers.location}`;
                     makeOAuthRequest(method, redirectUrl, token, body)
                         .then(resolve)
@@ -853,7 +853,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'schoology-pro-max-secret',
     resave: false,
     saveUninitialized: false,
-    cookie: { 
+    cookie: {
         maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
         httpOnly: true,
         secure: IS_VERCEL, // Use secure cookies on Vercel (HTTPS)
@@ -901,8 +901,8 @@ app.get('/api/features', (req, res) => {
         browserFeatures: BROWSER_FEATURES_ENABLED,
         quizViewer: BROWSER_FEATURES_ENABLED,
         isVercel: IS_VERCEL,
-        message: IS_VERCEL 
-            ? 'Running on Vercel - some features like Quiz Viewer are unavailable' 
+        message: IS_VERCEL
+            ? 'Running on Vercel - some features like Quiz Viewer are unavailable'
             : 'All features available'
     });
 });
@@ -919,20 +919,20 @@ app.get('/', (req, res) => {
 app.get('/auth/schoology', async (req, res) => {
     debugLog('OAUTH-STEP1', '========== STEP 1: Starting OAuth Flow ==========');
     debugLog('OAUTH-STEP1', 'User initiated OAuth authentication');
-    
+
     try {
         const requestTokenUrl = `${config.apiBase}/oauth/request_token`;
         debugLog('OAUTH-STEP1', `Requesting token from: ${requestTokenUrl}`);
-        
+
         // Get request token
         const response = await makeOAuthRequest('GET', requestTokenUrl);
         debugLog('OAUTH-STEP1', 'Raw response from request_token:', response);
-        
+
         // Parse the query-string-formatted result
         const params = new URLSearchParams(response);
         const oauth_token = params.get('oauth_token');
         const oauth_token_secret = params.get('oauth_token_secret');
-        
+
         debugLog('OAUTH-STEP1', 'Parsed tokens:', {
             oauth_token: oauth_token ? oauth_token.substring(0, 12) + '...' : 'NULL',
             oauth_token_secret: oauth_token_secret ? oauth_token_secret.substring(0, 12) + '...' : 'NULL'
@@ -942,13 +942,13 @@ app.get('/auth/schoology', async (req, res) => {
             debugLog('OAUTH-STEP1', '✗ FAILED: Missing tokens in response');
             throw new Error('Failed to get request token from Schoology. Response: ' + response);
         }
-        
+
         debugLog('OAUTH-STEP1', '✓ Successfully obtained request token');
 
         // Store request token in encrypted cookie (works on serverless/Vercel)
         const tokenData = JSON.stringify({ oauth_token, oauth_token_secret });
         const encryptedToken = encryptToken(tokenData);
-        
+
         // Use 'lax' sameSite - we're on the same domain, just different routes
         res.cookie('oauth_request_token', encryptedToken, {
             httpOnly: true,
@@ -957,27 +957,27 @@ app.get('/auth/schoology', async (req, res) => {
             maxAge: 10 * 60 * 1000, // 10 minutes - just for OAuth flow
             path: '/' // Ensure cookie is available on all paths
         });
-        
+
         // Also store in session as backup for local development
         req.session.requestToken = {
             oauth_token,
             oauth_token_secret
         };
-        
+
         debugLog('OAUTH-STEP1', '✓ Request token stored in cookie and session');
 
         // Schoology doesn't like localhost callbacks - they get blocked by CloudFront
         // Instead, we'll show user the authorize page with the Schoology URL to open
         const authUrl = `https://${config.domain}/oauth/authorize?oauth_token=${encodeURIComponent(oauth_token)}`;
-        
+
         debugLog('OAUTH-STEP2', '========== STEP 2: Showing Authorization Page ==========');
         debugLog('OAUTH-STEP2', `Authorization URL: ${authUrl}`);
         debugLog('OAUTH-STEP2', 'User will authorize on Schoology, then click complete');
-        
+
         // Pass encrypted token via query param as backup for serverless environments
         // where cookies might not persist between function invocations
         const stateToken = encodeURIComponent(encryptedToken);
-        
+
         // Render page that tells user to authorize
         res.render('authorize', { authUrl, stateToken });
     } catch (error) {
@@ -994,11 +994,11 @@ app.get('/auth/complete', async (req, res) => {
     debugLog('OAUTH-STEP3', 'User clicked Complete Login after authorizing on Schoology');
     debugLog('OAUTH-STEP3', 'Available cookies:', Object.keys(req.cookies || {}));
     debugLog('OAUTH-STEP3', 'State param present:', !!req.query.state);
-    
+
     try {
         // Try to get request token from multiple sources (in order of preference)
         let requestToken = null;
-        
+
         // 1. First try the state query parameter (most reliable for serverless)
         if (req.query.state) {
             const decrypted = decryptToken(decodeURIComponent(req.query.state));
@@ -1007,12 +1007,12 @@ app.get('/auth/complete', async (req, res) => {
                 debugLog('OAUTH-STEP3', '✓ Request token retrieved from state parameter');
             }
         }
-        
+
         // 2. Try cookie
         if (!requestToken) {
             const encryptedToken = req.cookies.oauth_request_token;
             debugLog('OAUTH-STEP3', 'Encrypted token from cookie:', encryptedToken ? 'present (' + encryptedToken.length + ' chars)' : 'NOT FOUND');
-            
+
             if (encryptedToken) {
                 const decrypted = decryptToken(encryptedToken);
                 debugLog('OAUTH-STEP3', 'Decryption result:', decrypted ? 'success' : 'FAILED');
@@ -1022,35 +1022,35 @@ app.get('/auth/complete', async (req, res) => {
                 }
             }
         }
-        
+
         // 3. Fall back to session (for local development)
         if (!requestToken) {
             requestToken = req.session.requestToken;
             debugLog('OAUTH-STEP3', 'Request token from session:', !!requestToken);
         }
-        
+
         debugLog('OAUTH-STEP3', 'RequestToken exists:', !!requestToken);
 
         if (!requestToken) {
             debugLog('OAUTH-STEP3', '✗ FAILED: No request token in cookie or session');
             return res.render('error', { message: 'No request token found. Please try logging in again.' });
         }
-        
+
         debugLog('OAUTH-STEP3', 'Using stored request token:', requestToken.oauth_token ? requestToken.oauth_token.substring(0, 12) + '...' : 'NULL');
 
         // Exchange request token for access token
         debugLog('OAUTH-STEP4', '========== STEP 4: Exchanging for Access Token ==========');
         const accessTokenUrl = `${config.apiBase}/oauth/access_token`;
         debugLog('OAUTH-STEP4', `Requesting access token from: ${accessTokenUrl}`);
-        
+
         const response = await makeOAuthRequest('GET', accessTokenUrl, requestToken);
         debugLog('OAUTH-STEP4', 'Raw response from access_token:', response);
-        
+
         // Parse access token
         const params = new URLSearchParams(response);
         const access_token = params.get('oauth_token');
         const access_token_secret = params.get('oauth_token_secret');
-        
+
         debugLog('OAUTH-STEP4', 'Parsed access tokens:', {
             access_token: access_token ? access_token.substring(0, 12) + '...' : 'NULL',
             access_token_secret: access_token_secret ? access_token_secret.substring(0, 12) + '...' : 'NULL'
@@ -1059,11 +1059,11 @@ app.get('/auth/complete', async (req, res) => {
         if (!access_token || !access_token_secret) {
             debugLog('OAUTH-STEP4', '✗ FAILED: Missing access tokens in response');
             debugLog('OAUTH-STEP4', 'This usually means the user has not authorized yet, or authorization expired');
-            return res.render('error', { 
-                message: 'Could not get access token. Please make sure you clicked "Allow" on Schoology, then try again. If this keeps happening, start the login process over.' 
+            return res.render('error', {
+                message: 'Could not get access token. Please make sure you clicked "Allow" on Schoology, then try again. If this keeps happening, start the login process over.'
             });
         }
-        
+
         debugLog('OAUTH-STEP4', '✓ Successfully obtained access token');
 
         // Store access token in session
@@ -1071,7 +1071,7 @@ app.get('/auth/complete', async (req, res) => {
             oauth_token: access_token,
             oauth_token_secret: access_token_secret
         };
-        
+
         // Also store in encrypted cookie for Vercel serverless persistence
         const accessTokenData = JSON.stringify({ oauth_token: access_token, oauth_token_secret: access_token_secret });
         res.cookie('access_token', encryptToken(accessTokenData), {
@@ -1080,7 +1080,7 @@ app.get('/auth/complete', async (req, res) => {
             sameSite: IS_VERCEL ? 'none' : 'lax',
             maxAge: 365 * 24 * 60 * 60 * 1000 // 1 year
         });
-        
+
         debugLog('OAUTH-STEP4', '✓ Access token stored in session and cookie');
 
         // Clear request token and awaiting flag
@@ -1105,11 +1105,11 @@ app.get('/auth/complete', async (req, res) => {
 app.get('/auth/callback', async (req, res) => {
     debugLog('OAUTH-STEP3', '========== STEP 3: OAuth Callback Received ==========');
     debugLog('OAUTH-STEP3', 'Query parameters:', req.query);
-    
+
     try {
         const { oauth_token } = req.query;
         const requestToken = req.session.requestToken;
-        
+
         debugLog('OAUTH-STEP3', 'Received oauth_token:', oauth_token ? oauth_token.substring(0, 12) + '...' : 'NULL');
         debugLog('OAUTH-STEP3', 'Session requestToken exists:', !!requestToken);
 
@@ -1117,7 +1117,7 @@ app.get('/auth/callback', async (req, res) => {
             debugLog('OAUTH-STEP3', '✗ FAILED: No request token in session');
             return res.render('error', { message: 'No request token found. Please try logging in again.' });
         }
-        
+
         debugLog('OAUTH-STEP3', 'Stored request token:', requestToken.oauth_token ? requestToken.oauth_token.substring(0, 12) + '...' : 'NULL');
 
         // If oauth_token provided, verify it matches
@@ -1127,22 +1127,22 @@ app.get('/auth/callback', async (req, res) => {
             debugLog('OAUTH-STEP3', `Received: ${oauth_token}`);
             return res.render('error', { message: 'Invalid OAuth token received.' });
         }
-        
+
         debugLog('OAUTH-STEP3', '✓ Token validation passed');
 
         // Exchange request token for access token
         debugLog('OAUTH-STEP4', '========== STEP 4: Exchanging for Access Token ==========');
         const accessTokenUrl = `${config.apiBase}/oauth/access_token`;
         debugLog('OAUTH-STEP4', `Requesting access token from: ${accessTokenUrl}`);
-        
+
         const response = await makeOAuthRequest('GET', accessTokenUrl, requestToken);
         debugLog('OAUTH-STEP4', 'Raw response from access_token:', response);
-        
+
         // Parse access token
         const params = new URLSearchParams(response);
         const access_token = params.get('oauth_token');
         const access_token_secret = params.get('oauth_token_secret');
-        
+
         debugLog('OAUTH-STEP4', 'Parsed access tokens:', {
             access_token: access_token ? access_token.substring(0, 12) + '...' : 'NULL',
             access_token_secret: access_token_secret ? access_token_secret.substring(0, 12) + '...' : 'NULL'
@@ -1152,7 +1152,7 @@ app.get('/auth/callback', async (req, res) => {
             debugLog('OAUTH-STEP4', '✗ FAILED: Missing access tokens in response');
             throw new Error('Failed to get access token from Schoology. Response: ' + response);
         }
-        
+
         debugLog('OAUTH-STEP4', '✓ Successfully obtained access token');
 
         // Store access token in session
@@ -1180,43 +1180,43 @@ app.get('/auth/callback', async (req, res) => {
 // Dashboard
 app.get('/dashboard', async (req, res) => {
     debugLog('DASHBOARD', 'Dashboard requested');
-    
+
     if (!req.session.accessToken) {
         debugLog('DASHBOARD', 'No access token, redirecting to home');
         return res.redirect('/');
     }
-    
+
     debugLog('DASHBOARD', 'Access token found, fetching user info');
 
     try {
         // Step 1: Get user ID from app-user-info endpoint
         const appUserInfoUrl = `${config.apiBase}/app-user-info`;
         debugLog('DASHBOARD', `Fetching app-user-info from: ${appUserInfoUrl}`);
-        
+
         const appUserInfo = await makeOAuthRequest('GET', appUserInfoUrl, req.session.accessToken);
         debugLog('DASHBOARD', '✓ app-user-info response:', appUserInfo);
-        
+
         const userId = appUserInfo.api_uid;
         if (!userId) {
             throw new Error('No user ID returned from app-user-info. Response: ' + JSON.stringify(appUserInfo));
         }
-        
+
         debugLog('DASHBOARD', `✓ Got user ID: ${userId}`);
-        
+
         // Step 2: Get full user details using the user ID
         const userUrl = `${config.apiBase}/users/${userId}`;
         debugLog('DASHBOARD', `Fetching full user details from: ${userUrl}`);
-        
+
         const user = await makeOAuthRequest('GET', userUrl, req.session.accessToken);
         debugLog('DASHBOARD', '✓ User data received:', {
             id: user.id,
             name: `${user.name_first} ${user.name_last}`,
             email: user.primary_email
         });
-        
+
         req.session.userId = user.id;
         req.session.userName = `${user.name_first} ${user.name_last}`;
-        
+
         // Store user ID in cookie for Vercel serverless persistence
         res.cookie('user_id', user.id, {
             httpOnly: true,
@@ -1224,14 +1224,14 @@ app.get('/dashboard', async (req, res) => {
             sameSite: IS_VERCEL ? 'none' : 'lax',
             maxAge: 365 * 24 * 60 * 60 * 1000 // 1 year
         });
-        
+
         // Step 3: PARALLEL FETCH - Get sections and grades simultaneously
         debugLog('DASHBOARD', '⚡ Starting parallel fetch for sections and grades...');
         const startTime = Date.now();
-        
+
         let sections = [];
         let allGradesData = null;
-        
+
         try {
             // Use Promise.all to fetch sections and grades in parallel
             const [sectionsResult, gradesResult] = await Promise.all([
@@ -1246,17 +1246,17 @@ app.get('/dashboard', async (req, res) => {
                     return null;
                 })
             ]);
-            
+
             sections = sectionsResult.slice(0, 20); // Limit to 20 for dashboard
             allGradesData = gradesResult;
-            
+
             debugLog('DASHBOARD', `⚡ Parallel fetch completed in ${Date.now() - startTime}ms`);
             debugLog('DASHBOARD', `✓ Found ${sections.length} sections`);
-            
+
             // Parse and attach final grades to sections
             if (allGradesData) {
                 const { sectionGrades } = parseGradesIntoMap(allGradesData);
-                
+
                 // Also check periods for final grade
                 if (allGradesData.section) {
                     for (const sec of allGradesData.section) {
@@ -1274,13 +1274,13 @@ app.get('/dashboard', async (req, res) => {
                         }
                     }
                 }
-                
+
                 // Attach grades to sections
                 sections = sections.map(s => ({
                     ...s,
                     final_grade: sectionGrades[s.id] !== undefined ? sectionGrades[s.id] : null
                 }));
-                
+
                 debugLog('DASHBOARD', `✓ Attached grades to ${Object.keys(sectionGrades).length} sections`);
             }
         } catch (e) {
@@ -1290,20 +1290,20 @@ app.get('/dashboard', async (req, res) => {
         // Load schedule to check for current class
         const schedule = loadSchedule(user.id);
         let currentClass = null;
-        
+
         // Check if there's a class currently happening
         const now = new Date();
         const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday, etc
-        
+
         // Only check Mon-Fri (1-5)
         if (dayOfWeek >= 1 && dayOfWeek <= 5) {
             const dayBlocks = schedule[dayOfWeek] || [];
             const currentMinutes = now.getHours() * 60 + now.getMinutes();
-            
+
             for (const block of dayBlocks) {
                 const blockStart = block.startHour * 60 + block.startMinute;
                 const blockEnd = blockStart + block.duration;
-                
+
                 if (currentMinutes >= blockStart && currentMinutes < blockEnd) {
                     // Found the current class
                     currentClass = {
@@ -1318,7 +1318,7 @@ app.get('/dashboard', async (req, res) => {
         }
 
         debugLog('DASHBOARD', '✓ Rendering dashboard');
-        res.render('dashboard', { 
+        res.render('dashboard', {
             user,
             sections,
             currentClass,
@@ -1327,14 +1327,14 @@ app.get('/dashboard', async (req, res) => {
     } catch (error) {
         debugLog('DASHBOARD', `✗ Error fetching user: ${error.message}`);
         debugLog('DASHBOARD', 'Showing error with token info for debugging');
-        
+
         // Show error with token details for debugging instead of redirecting
         const tokenInfo = req.session.accessToken ? {
             oauth_token: req.session.accessToken.oauth_token,
             oauth_token_secret: req.session.accessToken.oauth_token_secret
         } : null;
-        
-        res.render('error', { 
+
+        res.render('error', {
             message: `Failed to fetch user data: ${error.message}`,
             debugInfo: {
                 error: error.message,
@@ -1354,42 +1354,42 @@ async function fetchAllAssignments(sectionId, accessToken) {
     let start = 0;
     const limit = 50; // Schoology's max limit per request
     let hasMore = true;
-    
+
     while (hasMore) {
         const url = `${config.apiBase}/sections/${sectionId}/assignments?start=${start}&limit=${limit}`;
         debugLog('FETCH', `  Fetching assignments: ${url}`);
         const data = await makeOAuthRequest('GET', url, accessToken);
         debugLog('FETCH', `  Response keys: ${Object.keys(data).join(', ')}`);
-        
+
         // Handle the response format - assignments can be in 'assignment' key or top level
         const assignments = data.assignment || [];
         debugLog('FETCH', `  Found ${assignments.length} assignments in this page`);
-        
+
         // Log first assignment to see structure
         if (assignments.length > 0) {
             debugLog('FETCH', `  Sample assignment: ${JSON.stringify(assignments[0]).substring(0, 200)}...`);
         }
-        
+
         allAssignments = allAssignments.concat(assignments);
-        
+
         // Check if there are more pages
         if (assignments.length < limit) {
             hasMore = false;
         } else {
             start += limit;
         }
-        
+
         // Safety limit to prevent infinite loops
         if (start > 500) hasMore = false;
     }
-    
+
     return allAssignments;
 }
 
 // Assignments page
 app.get('/assignments', async (req, res) => {
     debugLog('ASSIGNMENTS', 'Assignments page requested');
-    
+
     if (!req.session.accessToken) {
         debugLog('ASSIGNMENTS', 'No access token, redirecting to home');
         return res.redirect('/');
@@ -1397,10 +1397,10 @@ app.get('/assignments', async (req, res) => {
 
     try {
         const startTime = Date.now();
-        
+
         // ⚡ PARALLEL FETCH: Get sections and grades simultaneously with caching
         debugLog('ASSIGNMENTS', '⚡ Starting parallel fetch for sections and grades...');
-        
+
         const [sections, gradesData] = await Promise.all([
             fetchAllSectionsOptimized(req.session.userId, req.session.accessToken),
             fetchAllGradesOptimized(req.session.userId, req.session.accessToken).catch(e => {
@@ -1408,23 +1408,23 @@ app.get('/assignments', async (req, res) => {
                 return null;
             })
         ]);
-        
+
         debugLog('ASSIGNMENTS', `✓ Found ${sections.length} sections`);
-        
+
         // Parse grades into lookup map
         const { gradesMap: allGrades } = gradesData ? parseGradesIntoMap(gradesData) : { gradesMap: {} };
         debugLog('ASSIGNMENTS', `✓ Fetched grades for ${Object.keys(allGrades).length} assignments`);
-        
+
         // ⚡ PARALLEL FETCH: Get assignments for all sections in parallel (up to 10)
         const sectionsToFetch = sections.slice(0, 10);
         debugLog('ASSIGNMENTS', `⚡ Fetching assignments for ${sectionsToFetch.length} sections in parallel...`);
-        
+
         const assignmentsResults = await fetchAssignmentsForSectionsParallel(
             sectionsToFetch.map(s => s.id),
             req.session.accessToken,
             5 // Max 5 concurrent requests
         );
-        
+
         // Combine all assignments
         let allAssignments = [];
         for (const section of sectionsToFetch) {
@@ -1433,7 +1433,7 @@ app.get('/assignments', async (req, res) => {
                 result.assignments.forEach(assignment => {
                     assignment.course_name = section.course_title || section.section_title;
                     assignment.section_id = section.id;
-                    
+
                     // Attach grade info if available
                     const gradeInfo = allGrades[assignment.id];
                     if (gradeInfo) {
@@ -1448,16 +1448,16 @@ app.get('/assignments', async (req, res) => {
                 debugLog('ASSIGNMENTS', `  ✗ Error for section ${section.id}: ${result.error}`);
             }
         }
-        
+
         debugLog('ASSIGNMENTS', `⚡ All assignments fetched in ${Date.now() - startTime}ms`);
 
         // Get current time for comparison
         const now = new Date();
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        
+
         // Helper to check if assignment has a valid due date
         const hasDueDate = (a) => a.due && a.due.trim() !== '';
-        
+
         // Helper to get effective date for assignment (due date, or last_updated if no due)
         const getEffectiveDate = (a) => {
             if (hasDueDate(a)) {
@@ -1468,12 +1468,12 @@ app.get('/assignments', async (req, res) => {
             }
             return new Date(0);
         };
-        
+
         // Helper to check if a submission exists for an assignment or quiz
         const checkSubmissionExists = async (sectionId, assignmentId, assignment) => {
             try {
                 const isQuiz = assignment.type === 'assessment' || assignment.type === 'assessment_v2';
-                
+
                 if (isQuiz) {
                     const gradeInfo = allGrades[assignmentId];
                     if (gradeInfo) {
@@ -1485,7 +1485,7 @@ app.get('/assignments', async (req, res) => {
                     }
                     return false;
                 }
-                
+
                 // For regular assignments, check the submissions endpoint
                 const submissionUrl = `${config.apiBase}/sections/${sectionId}/submissions/${assignmentId}/${req.session.userId}`;
                 const submissionData = await makeOAuthRequest('GET', submissionUrl, req.session.accessToken);
@@ -1495,26 +1495,26 @@ app.get('/assignments', async (req, res) => {
                         return true;
                     }
                 }
-                
+
                 // Check for LTI submission
                 const assignmentUrl = `${config.apiBase}/sections/${sectionId}/assignments/${assignmentId}`;
                 const fullAssignment = await makeOAuthRequest('GET', assignmentUrl, req.session.accessToken);
-                
+
                 if (fullAssignment && fullAssignment.assignment_type === 'lti_submission' && fullAssignment.completed == 1) {
                     return true;
                 }
-                
+
                 return false;
             } catch (e) {
                 return false;
             }
         };
-        
+
         // Separate upcoming and overdue assignments
         const upcomingAssignments = [];
         const overdueAssignments = [];
         const overdueCandidates = [];
-        
+
         allAssignments.forEach(a => {
             const gradeVal = a.grade;
             const hasGrade = gradeVal !== null && gradeVal !== undefined && gradeVal !== '';
@@ -1529,7 +1529,7 @@ app.get('/assignments', async (req, res) => {
             const isDropboxLocked = a.dropbox_locked == 1 || a.dropbox_locked === '1';
             // pending indicates there's a submission waiting for grading
             const hasPendingSubmission = a.pending !== null && a.pending !== undefined && a.pending !== '';
-            
+
             // Never overdue if: excused, has a grade, submission collected, or has pending submission
             if (isExcused) {
                 if (hasDue && !isPastDue) {
@@ -1547,7 +1547,7 @@ app.get('/assignments', async (req, res) => {
                 // Has submission waiting for grading - not overdue
                 return;
             }
-            
+
             // Candidate for overdue:
             // 1. Must be past due
             // 2. Not excused, graded, or collected (checked above)
@@ -1555,7 +1555,7 @@ app.get('/assignments', async (req, res) => {
             const isPotentiallyOverdue = isPastDue && (
                 isMissing || isSubmittable || isQuiz
             );
-            
+
             if (isPotentiallyOverdue) {
                 // If submittable or quiz, we need to check if there's actually a submission/attempt
                 if (isSubmittable || isQuiz) {
@@ -1569,7 +1569,7 @@ app.get('/assignments', async (req, res) => {
                 upcomingAssignments.push(a);
             }
         });
-        
+
         // Check submissions for overdue candidates (in parallel, batched)
         debugLog('ASSIGNMENTS', `Checking submissions for ${overdueCandidates.length} overdue candidates...`);
         const submissionChecks = await Promise.all(
@@ -1579,20 +1579,20 @@ app.get('/assignments', async (req, res) => {
                 return { assignment: a, hasSubmission };
             })
         );
-        
+
         // Add to overdue only if no submission exists
         for (const { assignment, hasSubmission } of submissionChecks) {
             if (!hasSubmission) {
                 overdueAssignments.push(assignment);
             }
         }
-        
+
         // Apply adjusted due times from schedule
         // Load schedule from disk first to ensure we have the latest
         loadSchedule(req.session.userId);
         const userSchedule = scheduleCache[req.session.userId] || {};
         const adjustedDueTimes = userSchedule.adjustedDueTimes || {};
-        
+
         const applyAdjustedDueTime = (assignment) => {
             const adjusted = adjustedDueTimes[assignment.id];
             if (adjusted) {
@@ -1602,17 +1602,17 @@ app.get('/assignments', async (req, res) => {
             }
             return assignment;
         };
-        
+
         // Apply to all assignments
         upcomingAssignments.forEach(applyAdjustedDueTime);
         overdueAssignments.forEach(applyAdjustedDueTime);
-        
+
         // Sort upcoming by effective date (soonest first)
         // Assignments without due dates use last_updated and are mixed in with others
         upcomingAssignments.sort((a, b) => {
             return getEffectiveDate(a) - getEffectiveDate(b);
         });
-        
+
         // Sort overdue by how overdue they are (most overdue first = oldest due date first)
         overdueAssignments.sort((a, b) => {
             return new Date(a.due) - new Date(b.due);
@@ -1624,8 +1624,8 @@ app.get('/assignments', async (req, res) => {
 
         debugLog('ASSIGNMENTS', `✓ Total: ${allAssignments.length}, Upcoming: ${upcomingAssignments.length}, Overdue: ${overdueAssignments.length}`);
         debugLog('ASSIGNMENTS', '✓ Rendering assignments page');
-        
-        res.render('assignments', { 
+
+        res.render('assignments', {
             upcomingAssignments: upcomingWithTime,
             overdueAssignments: overdueWithTime,
             sections,
@@ -1641,7 +1641,7 @@ app.get('/assignments', async (req, res) => {
 // Grades page
 app.get('/grades', async (req, res) => {
     debugLog('GRADES', 'Grades page requested');
-    
+
     if (!req.session.accessToken) {
         debugLog('GRADES', 'No access token, redirecting to home');
         return res.redirect('/');
@@ -1649,10 +1649,10 @@ app.get('/grades', async (req, res) => {
 
     try {
         const startTime = Date.now();
-        
+
         // ⚡ PARALLEL FETCH: Get sections and grades simultaneously with caching
         debugLog('GRADES', '⚡ Starting parallel fetch for sections and grades...');
-        
+
         const [allSections, allGradesData] = await Promise.all([
             fetchAllSectionsOptimized(req.session.userId, req.session.accessToken),
             fetchAllGradesOptimized(req.session.userId, req.session.accessToken).catch(e => {
@@ -1660,58 +1660,58 @@ app.get('/grades', async (req, res) => {
                 return null;
             })
         ]);
-        
+
         debugLog('GRADES', `⚡ Sections and grades fetched in ${Date.now() - startTime}ms`);
         debugLog('GRADES', `✓ Found ${allSections.length} total sections`);
-        
+
         // Parse final grades from the all-grades response
-        const { sectionGrades: sectionFinalGrades, sectionGradeData, gradesMap: globalGradesMap } = allGradesData 
-            ? parseGradesIntoMap(allGradesData) 
+        const { sectionGrades: sectionFinalGrades, sectionGradeData, gradesMap: globalGradesMap } = allGradesData
+            ? parseGradesIntoMap(allGradesData)
             : { sectionGrades: {}, sectionGradeData: {}, gradesMap: {} };
-        
+
         debugLog('GRADES', `✓ Parsed final grades for ${Object.keys(sectionFinalGrades).length} sections`);
-        
+
         // ⚡ PARALLEL FETCH: Get assignments and categories for all sections
         debugLog('GRADES', '⚡ Fetching assignments and categories in parallel...');
         const parallelStartTime = Date.now();
-        
+
         const sectionIds = allSections.map(s => s.id);
-        
+
         const [assignmentsResults, categoriesResults] = await Promise.all([
             fetchAssignmentsForSectionsParallel(sectionIds, req.session.accessToken, 5),
             fetchCategoriesForSectionsParallel(sectionIds, req.session.accessToken, 5)
         ]);
-        
+
         debugLog('GRADES', `⚡ Assignments and categories fetched in ${Date.now() - parallelStartTime}ms`);
-        
+
         // Process grades for each section
         let gradesData = [];
-        
+
         for (const section of allSections) {
             try {
                 debugLog('GRADES', `Processing section ${section.id}: ${section.course_title || section.section_title}`);
-                
+
                 // Get the final grade from our pre-fetched data
                 let finalGrade = sectionFinalGrades[section.id];
                 if (finalGrade === undefined || finalGrade === null || isNaN(finalGrade)) {
                     finalGrade = null;
                 }
-                
+
                 debugLog('GRADES', `  Final grade: ${finalGrade !== null ? finalGrade : 'N/A'}`);
-                
+
                 // Use pre-fetched grade data
-                const sectionGradesData = sectionGradeData[section.id] 
-                    ? { section: [sectionGradeData[section.id]] } 
+                const sectionGradesData = sectionGradeData[section.id]
+                    ? { section: [sectionGradeData[section.id]] }
                     : { section: [] };
-                
+
                 debugLog('GRADES', `  Has section grade data from user/grades: ${!!sectionGradeData[section.id]}`);
-                
+
                 // Get pre-fetched assignments
                 const assignmentResult = assignmentsResults[section.id];
                 const assignments = assignmentResult ? assignmentResult.assignments : [];
-                
+
                 debugLog('GRADES', `  Assignments found: ${assignments.length}`);
-                
+
                 // Create assignment lookup
                 const assignmentLookup = {};
                 assignments.forEach(a => {
@@ -1725,7 +1725,7 @@ app.get('/grades', async (req, res) => {
                 // Parse grades from API
                 let gradesList = [];
                 const sectionArray = sectionGradesData.section || [];
-                
+
                 for (const sec of sectionArray) {
                     // Use == for loose comparison to handle string vs number IDs
                     if (sec.section_id == section.id || sectionArray.length === 1) {
@@ -1736,19 +1736,19 @@ app.get('/grades', async (req, res) => {
                         }
                     }
                 }
-                
+
                 // If no grades found from user-level API and we have assignments, 
                 // try fetching section-specific grades
                 if (gradesList.length === 0 && assignments.length > 0 && !sectionGradeData[section.id]) {
                     debugLog('GRADES', `  No user-level grades, trying section-specific grades...`);
                     const sectionSpecificGrades = await fetchSectionGrades(section.id, req.session.accessToken);
-                    
+
                     if (sectionSpecificGrades) {
                         // Handle both wrapped {section: [...]} and unwrapped response formats
                         let sections = [];
                         if (sectionSpecificGrades.section) {
-                             sections = Array.isArray(sectionSpecificGrades.section) 
-                                ? sectionSpecificGrades.section 
+                            sections = Array.isArray(sectionSpecificGrades.section)
+                                ? sectionSpecificGrades.section
                                 : [sectionSpecificGrades.section];
                         } else if (sectionSpecificGrades.period) {
                             // Handle case where response IS the section object directly
@@ -1781,17 +1781,17 @@ app.get('/grades', async (req, res) => {
                         debugLog('GRADES', `  Found ${gradesList.length} grades from section-specific API`);
                     }
                 }
-                
+
                 // Create a map of assignment ID -> grade data for quick lookup
                 // Use String() for keys to ensure type matching (API might return numbers, assignments might have strings)
                 const gradesMap = {};
                 gradesList.forEach(g => {
                     gradesMap[String(g.assignment_id)] = g;
                 });
-                
+
                 debugLog('GRADES', `  Grades found: ${gradesList.length}`);
                 debugLog('GRADES', `  Grades mapped: ${Object.keys(gradesMap).length}`);
-                
+
                 let grades = [];
                 let totalPoints = 0;
                 let earnedPoints = 0;
@@ -1803,7 +1803,7 @@ app.get('/grades', async (req, res) => {
                         // Try local map first, then global map (handles linked sections)
                         const grade = gradesMap[String(assignment.id)] || globalGradesMap[String(assignment.id)];
                         const maxPoints = parseFloat((grade?.max_points) || assignment.max_points || 100);
-                        
+
                         if (grade) {
                             // If we found the grade via global map (linked section), try to recover final grade
                             if (finalGrade === null && grade._section_id && grade._section_id != section.id) {
@@ -1819,7 +1819,7 @@ app.get('/grades', async (req, res) => {
                                 earnedPoints += parseFloat(grade.grade);
                                 totalPoints += maxPoints;
                             }
-                            
+
                             grades.push({
                                 ...grade,
                                 title: assignment.title || 'Unknown Assignment',
@@ -1845,12 +1845,12 @@ app.get('/grades', async (req, res) => {
                     for (const grade of gradesList) {
                         const assignment = assignmentLookup[grade.assignment_id] || {};
                         const maxPoints = parseFloat(grade.max_points || assignment.max_points || 100);
-                        
+
                         if (grade.grade !== null && grade.grade !== undefined && grade.grade !== '' && grade.exception === 0) {
                             earnedPoints += parseFloat(grade.grade);
                             totalPoints += maxPoints;
                         }
-                        
+
                         grades.push({
                             ...grade,
                             title: assignment.title || 'Unknown Assignment',
@@ -1862,7 +1862,7 @@ app.get('/grades', async (req, res) => {
                 }
 
                 let percentage = finalGrade;
-                
+
                 // Group grades by category
                 const categoryLookup = {};
                 categories.forEach(cat => {
@@ -1872,7 +1872,7 @@ app.get('/grades', async (req, res) => {
                     };
                 });
                 categoryLookup[0] = { id: 0, title: 'Uncategorized', weight: null, grades: [] };
-                
+
                 grades.forEach(grade => {
                     const catId = grade.category || 0;
                     if (categoryLookup[catId]) {
@@ -1881,9 +1881,9 @@ app.get('/grades', async (req, res) => {
                         categoryLookup[0].grades.push(grade);
                     }
                 });
-                
+
                 const categoriesWithGrades = Object.values(categoryLookup).filter(cat => cat.grades.length > 0);
-                
+
                 gradesData.push({
                     section_id: section.id,
                     course_name: section.course_title || section.section_title,
@@ -1915,12 +1915,12 @@ app.get('/grades', async (req, res) => {
             }
             return a.percentage !== null ? -1 : 1;
         });
-        
+
         debugLog('GRADES', `⚡ Total processing time: ${Date.now() - startTime}ms`);
         debugLog('GRADES', `✓ Total courses processed: ${gradesData.length}`);
         debugLog('GRADES', '✓ Rendering grades page');
-        
-        res.render('grades', { 
+
+        res.render('grades', {
             gradesData: sortedGradesData,
             authenticated: true,
             userName: req.session.userName
@@ -1934,17 +1934,17 @@ app.get('/grades', async (req, res) => {
 // Helper function to recursively fetch folder contents
 async function fetchFolderContents(sectionId, folderId, accessToken, depth = 0) {
     if (depth > 5) return []; // Max depth to prevent infinite loops
-    
+
     try {
         const url = `${config.apiBase}/courses/${sectionId}/folder/${folderId}`;
         debugLog('COURSES', `  ${'  '.repeat(depth)}Fetching folder ${folderId}: ${url}`);
         const data = await makeOAuthRequest('GET', url, accessToken);
-        
+
         const items = [];
         // API returns 'folder-item' array, not 'content'
         const contents = data['folder-item'] || [];
         debugLog('COURSES', `  ${'  '.repeat(depth)}Found ${contents.length} items in folder ${folderId}`);
-        
+
         for (const item of contents) {
             const folderItem = {
                 id: item.id,
@@ -1957,15 +1957,15 @@ async function fetchFolderContents(sectionId, folderId, accessToken, depth = 0) 
                 due: item.due || null,
                 children: []
             };
-            
+
             // If it's a folder, recursively fetch its contents
             if (item.type === 'folder') {
                 folderItem.children = await fetchFolderContents(sectionId, item.id, accessToken, depth + 1);
             }
-            
+
             items.push(folderItem);
         }
-        
+
         return items;
     } catch (e) {
         debugLog('COURSES', `  ${'  '.repeat(depth)}✗ Error fetching folder ${folderId}: ${e.message}`);
@@ -1976,7 +1976,7 @@ async function fetchFolderContents(sectionId, folderId, accessToken, depth = 0) 
 // Courses page - shows course materials in folder structure
 app.get('/courses', async (req, res) => {
     debugLog('COURSES', 'Courses page requested');
-    
+
     if (!req.session.accessToken) {
         debugLog('COURSES', 'No access token, redirecting to home');
         return res.redirect('/');
@@ -1984,26 +1984,26 @@ app.get('/courses', async (req, res) => {
 
     try {
         const startTime = Date.now();
-        
+
         // ⚡ Use cached sections
         debugLog('COURSES', '⚡ Fetching sections with caching...');
         const allSections = await fetchAllSectionsOptimized(req.session.userId, req.session.accessToken);
         debugLog('COURSES', `✓ Found ${allSections.length} total sections`);
-        
+
         // Get selected section from query param, default to first section
         const selectedSectionId = req.query.section || (allSections.length > 0 ? allSections[0].id : null);
         const selectedSection = allSections.find(s => String(s.id) === String(selectedSectionId)) || allSections[0];
-        
+
         let folderContents = [];
         let upcomingAssignments = [];
         let overdueAssignments = [];
-        
+
         if (selectedSection) {
             debugLog('COURSES', `Selected section: ${selectedSection.course_title || selectedSection.section_title} (${selectedSection.id})`);
-            
+
             // ⚡ PARALLEL FETCH: Get folder contents, assignments, and grades simultaneously
             debugLog('COURSES', '⚡ Starting parallel fetch for folder contents, assignments, and grades...');
-            
+
             const [folderResult, assignmentsResult, gradesResult] = await Promise.all([
                 // Fetch folder contents
                 fetchFolderContents(selectedSection.id, 0, req.session.accessToken).catch(e => {
@@ -2021,26 +2021,26 @@ app.get('/courses', async (req, res) => {
                     return null;
                 })
             ]);
-            
+
             debugLog('COURSES', `⚡ Parallel fetch completed in ${Date.now() - startTime}ms`);
-            
+
             folderContents = folderResult;
             debugLog('COURSES', `✓ Retrieved ${folderContents.length} top-level items`);
-            
+
             const assignments = assignmentsResult;
-            
+
             // Parse grades into map
             let gradesMap = {};
             if (gradesResult) {
                 const { gradesMap: parsedMap } = parseGradesIntoMap(gradesResult);
                 gradesMap = parsedMap;
             }
-            
+
             const now = new Date();
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            
+
             const hasDueDate = (a) => a.due && a.due.trim() !== '';
-            
+
             for (const assignment of assignments) {
                 const gradeInfo = gradesMap[assignment.id];
                 const gradeVal = gradeInfo ? gradeInfo.grade : null;
@@ -2054,34 +2054,34 @@ app.get('/courses', async (req, res) => {
                 const isQuiz = assignment.type === 'assessment' || assignment.type === 'assessment_v2';
                 const isDropboxLocked = assignment.dropbox_locked == 1 || assignment.dropbox_locked === '1';
                 const hasPendingSubmission = gradeInfo && gradeInfo.pending !== null && gradeInfo.pending !== undefined && gradeInfo.pending !== '';
-                
+
                 if (isExcused || hasGrade || isDropboxLocked || hasPendingSubmission) {
                     if (hasDue && !isPastDue && !hasGrade && !isDropboxLocked) {
                         upcomingAssignments.push(assignment);
                     }
                     continue;
                 }
-                
+
                 const isOverdueAssignment = isPastDue && (
                     isMissing || isSubmittable || isQuiz
                 );
-                
+
                 if (isOverdueAssignment) {
                     overdueAssignments.push(assignment);
                 } else if (hasDue && !isPastDue) {
                     upcomingAssignments.push(assignment);
                 }
             }
-            
+
             upcomingAssignments.sort((a, b) => new Date(a.due) - new Date(b.due));
             overdueAssignments.sort((a, b) => new Date(a.due) - new Date(b.due));
-            
+
             debugLog('COURSES', `✓ Upcoming: ${upcomingAssignments.length}, Overdue: ${overdueAssignments.length}`);
         }
-        
+
         debugLog('COURSES', `⚡ Total processing time: ${Date.now() - startTime}ms`);
         debugLog('COURSES', '✓ Rendering courses page');
-        
+
         res.render('courses', {
             sections: allSections,
             selectedSection,
@@ -2100,7 +2100,7 @@ app.get('/courses', async (req, res) => {
 // Assignment detail page
 app.get('/assignment', async (req, res) => {
     debugLog('ASSIGNMENT', 'Assignment page requested');
-    
+
     if (!req.session.accessToken) {
         debugLog('ASSIGNMENT', 'No access token, redirecting to home');
         return res.redirect('/');
@@ -2108,7 +2108,7 @@ app.get('/assignment', async (req, res) => {
 
     const sectionId = req.query.section;
     const assignmentId = req.query.id;
-    
+
     if (!sectionId || !assignmentId) {
         return res.render('error', { message: 'Missing section or assignment ID' });
     }
@@ -2125,13 +2125,13 @@ app.get('/assignment', async (req, res) => {
         // Log full assignment JSON (truncated) for debugging
         const fullJson = JSON.stringify(assignment);
         debugLog('ASSIGNMENT', `  FULL assignment response (first 2000 chars): ${fullJson.substring(0, 2000)}`);
-        
+
         // Fetch section info for context
         const sectionUrl = `${config.apiBase}/sections/${sectionId}`;
         debugLog('ASSIGNMENT', `Fetching section from: ${sectionUrl}`);
         const section = await makeOAuthRequest('GET', sectionUrl, req.session.accessToken);
         debugLog('ASSIGNMENT', `✓ Section: ${section.course_title || section.section_title}`);
-        
+
         // Fetch grading categories to get category name
         let categoryName = 'Uncategorized';
         if (assignment.grading_category && assignment.grading_category !== '0') {
@@ -2147,7 +2147,7 @@ app.get('/assignment', async (req, res) => {
                 debugLog('ASSIGNMENT', `Could not fetch categories: ${e.message}`);
             }
         }
-        
+
         // Fetch user's grade for this assignment
         let userGrade = null;
         try {
@@ -2164,7 +2164,7 @@ app.get('/assignment', async (req, res) => {
         } catch (e) {
             debugLog('ASSIGNMENT', `Could not fetch grade: ${e.message}`);
         }
-        
+
         // Fetch user's submission for this assignment (if submittable)
         let userSubmission = null;
         const isSubmittable = assignment.allow_dropbox == 1 || assignment.allow_dropbox === '1';
@@ -2175,7 +2175,7 @@ app.get('/assignment', async (req, res) => {
                 debugLog('ASSIGNMENT', `Fetching submission from: ${submissionUrl}`);
                 const submissionData = await makeOAuthRequest('GET', submissionUrl, req.session.accessToken);
                 debugLog('ASSIGNMENT', `  Submission response: ${JSON.stringify(submissionData).substring(0, 500)}`);
-                
+
                 // Check if there's a revision (actual submission)
                 if (submissionData && submissionData.revision) {
                     const revisions = Array.isArray(submissionData.revision) ? submissionData.revision : [submissionData.revision];
@@ -2190,9 +2190,9 @@ app.get('/assignment', async (req, res) => {
                 // 404 means no submission - that's OK
             }
         }
-        
+
         debugLog('ASSIGNMENT', '✓ Rendering assignment page');
-        
+
         // Apply adjusted due time from schedule if available
         loadSchedule(req.session.userId);
         const userSchedule = scheduleCache[req.session.userId] || {};
@@ -2203,10 +2203,10 @@ app.get('/assignment', async (req, res) => {
             assignment.due = adjusted.adjustedDue;
             assignment.dueAdjusted = true;
         }
-        
+
         // Add time estimate
         const estimatedTime = estimateAssignmentTime(assignment);
-        
+
         res.render('assignment', {
             assignment,
             section,
@@ -2230,7 +2230,7 @@ app.get('/api/user', async (req, res) => {
         debugLog('API', 'Not authenticated');
         return res.status(401).json({ error: 'Not authenticated' });
     }
-    
+
     debugLog('API', `Returning user: ${req.session.userName}`);
     res.json({
         id: req.session.userId,
@@ -2262,12 +2262,12 @@ function requireBrowserFeatures(req, res, next) {
 // Helper to ensure browser is running (restoring from cookie if needed)
 async function ensureBrowser(req) {
     if (browserContext && isLoggedIn) return true;
-    
+
     const storedCookie = req.cookies.schoology_sess ? decryptToken(req.cookies.schoology_sess) : null;
     if (!storedCookie) return false;
-    
+
     debugLog('BROWSER', 'Restoring browser session from cookie...');
-    
+
     try {
         let launchOptions = {
             headless: false,
@@ -2284,20 +2284,20 @@ async function ensureBrowser(req) {
         }
 
         browserInstance = await chromium.launch(launchOptions);
-        
+
         let contextOptions = {
             viewport: { width: 1280, height: 800 },
             userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         };
-        
+
         browserContext = await browserInstance.newContext(contextOptions);
-        
+
         const cookies = [];
         const rawCookies = storedCookie.split(';');
-        
+
         for (const c of rawCookies) {
             if (!c || !c.trim()) continue;
-            
+
             if (c.includes('=')) {
                 const parts = c.trim().split('=');
                 const name = parts[0].trim();
@@ -2312,11 +2312,11 @@ async function ensureBrowser(req) {
                 cookies.push({ name, value: c.trim(), domain: '.schoology.com', path: '/' });
             }
         }
-        
+
         if (cookies.length > 0) {
             await browserContext.addCookies(cookies);
         }
-        
+
         isLoggedIn = true;
         return true;
     } catch (e) {
@@ -2328,24 +2328,24 @@ async function ensureBrowser(req) {
 // Helper to ensure quiz page is active (restoring from cookie URL if needed)
 async function ensureQuizPage(req) {
     if (quizPage) return true;
-    
+
     const url = req.cookies.current_assessment_url;
     if (!url) return false;
-    
+
     debugLog('QUIZ', 'Restoring quiz page from cookie URL...');
-    
+
     try {
         if (!browserContext) {
             const success = await ensureBrowser(req);
             if (!success) return false;
         }
-        
+
         quizPage = await browserContext.newPage();
         await quizPage.setViewportSize({ width: 1280, height: 800 });
-        
+
         await quizPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
         await quizPage.waitForTimeout(2000);
-        
+
         // Click Resume/Start
         const resumeButton = await quizPage.$('input[value*="Resume"], button:has-text("Resume"), a:has-text("Resume")');
         if (resumeButton) {
@@ -2358,7 +2358,7 @@ async function ensureQuizPage(req) {
                 await quizPage.waitForTimeout(3000);
             }
         }
-        
+
         return true;
     } catch (e) {
         debugLog('QUIZ', `Failed to restore page: ${e.message}`);
@@ -2376,10 +2376,10 @@ app.get('/api/browser/status', (req, res) => {
             message: 'Browser features are disabled on Vercel'
         });
     }
-    
+
     // Check if we have a stored cookie (for Vercel persistence)
     const storedCookie = req.cookies.schoology_sess ? decryptToken(req.cookies.schoology_sess) : null;
-    
+
     res.json({
         browserOpen: browserInstance !== null,
         loggedIn: isLoggedIn || !!storedCookie
@@ -2390,7 +2390,7 @@ app.get('/api/browser/status', (req, res) => {
 app.post('/api/browser/login', requireBrowserFeatures, express.json(), async (req, res) => {
     debugLog('BROWSER', 'Starting browser login...');
     const { schoologyCookie } = req.body;
-    
+
     try {
         // Close existing browser if any
         if (browserInstance) {
@@ -2409,10 +2409,10 @@ app.post('/api/browser/login', requireBrowserFeatures, express.json(), async (re
             browserContext = null;
             isLoggedIn = false;
         }
-        
+
         // Launch browser
         debugLog('BROWSER', `Launching browser (Vercel: ${IS_VERCEL})...`);
-        
+
         let launchOptions = {
             headless: false,
             args: ['--start-maximized']
@@ -2428,37 +2428,37 @@ app.post('/api/browser/login', requireBrowserFeatures, express.json(), async (re
         }
 
         browserInstance = await chromium.launch(launchOptions);
-        
+
         // Check if we have saved state to restore (only locally, not on Vercel)
         let contextOptions = {
             viewport: { width: 1280, height: 800 },
             userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         };
-        
+
         if (!IS_VERCEL && fs && fs.existsSync(BROWSER_STATE_PATH)) {
             debugLog('BROWSER', '✓ Found saved browser state, restoring...');
             contextOptions.storageState = BROWSER_STATE_PATH;
         }
-        
+
         browserContext = await browserInstance.newContext(contextOptions);
-        
+
         // If cookie provided (e.g. on Vercel), inject it
         if (schoologyCookie) {
             debugLog('BROWSER', 'Injecting provided Schoology cookie...');
-            
+
             const cookies = [];
             // Handle multiple cookies separated by semicolon
             const rawCookies = schoologyCookie.split(';');
-            
+
             for (const c of rawCookies) {
                 if (!c || !c.trim()) continue;
-                
+
                 if (c.includes('=')) {
                     // Format: name=value
                     const parts = c.trim().split('=');
                     const name = parts[0].trim();
                     const value = parts.slice(1).join('=').trim();
-                    
+
                     if (name && value) {
                         cookies.push({
                             name: name,
@@ -2474,7 +2474,7 @@ app.post('/api/browser/login', requireBrowserFeatures, express.json(), async (re
                     const domain = 'fuhsd.schoology.com';
                     const hash = crypto.createHash('md5').update(domain).digest('hex');
                     const name = 'SESS' + hash;
-                    
+
                     cookies.push({
                         name: name,
                         value: c.trim(),
@@ -2483,7 +2483,7 @@ app.post('/api/browser/login', requireBrowserFeatures, express.json(), async (re
                     });
                 }
             }
-            
+
             if (cookies.length > 0) {
                 debugLog('BROWSER', `Injecting ${cookies.length} cookies: ${cookies.map(c => c.name).join(', ')}`);
                 await browserContext.addCookies(cookies);
@@ -2492,32 +2492,32 @@ app.post('/api/browser/login', requireBrowserFeatures, express.json(), async (re
                 debugLog('BROWSER', '⚠️ No valid cookies found in input');
             }
         }
-        
+
         const page = await browserContext.newPage();
-        
+
         // Navigate to Schoology
         debugLog('BROWSER', 'Navigating to fuhsd.schoology.com...');
         await page.goto('https://fuhsd.schoology.com', { waitUntil: 'networkidle' });
-        
+
         // Check if already logged in from restored state or injected cookie
         const currentUrl = page.url();
-        if (currentUrl.includes('schoology.com') && 
-            !currentUrl.includes('login') && 
+        if (currentUrl.includes('schoology.com') &&
+            !currentUrl.includes('login') &&
             !currentUrl.includes('google.com') &&
             !currentUrl.includes('accounts.')) {
             isLoggedIn = true;
             debugLog('BROWSER', '✓ Already logged in!');
-            
+
             // Save the cookie for future serverless invocations
             if (schoologyCookie) {
-                res.cookie('schoology_sess', encryptToken(schoologyCookie), { 
-                    httpOnly: true, 
-                    secure: IS_VERCEL, 
+                res.cookie('schoology_sess', encryptToken(schoologyCookie), {
+                    httpOnly: true,
+                    secure: IS_VERCEL,
                     sameSite: 'lax',
                     maxAge: 24 * 60 * 60 * 1000 // 24 hours
                 });
             }
-            
+
             res.json({
                 success: true,
                 alreadyLoggedIn: true,
@@ -2526,12 +2526,12 @@ app.post('/api/browser/login', requireBrowserFeatures, express.json(), async (re
         } else {
             res.json({
                 success: true,
-                message: IS_VERCEL 
-                    ? 'Browser opened but login failed. Please provide a valid Schoology SESS cookie.' 
+                message: IS_VERCEL
+                    ? 'Browser opened but login failed. Please provide a valid Schoology SESS cookie.'
                     : 'Browser opened. Please complete Google SSO login in the browser window, then click "Check Login Status".'
             });
         }
-        
+
     } catch (error) {
         debugLog('BROWSER', `✗ Error starting browser: ${error.message}`);
         res.status(500).json({ error: error.message });
@@ -2541,31 +2541,31 @@ app.post('/api/browser/login', requireBrowserFeatures, express.json(), async (re
 // Check if login is complete
 app.post('/api/browser/check-login', requireBrowserFeatures, async (req, res) => {
     debugLog('BROWSER', 'Checking browser login status...');
-    
+
     if (!browserContext) {
-        return res.json({ 
-            success: false, 
-            loggedIn: false, 
-            message: 'Browser not started. Click "Start Browser Login" first.' 
+        return res.json({
+            success: false,
+            loggedIn: false,
+            message: 'Browser not started. Click "Start Browser Login" first.'
         });
     }
-    
+
     try {
         const pages = browserContext.pages();
         const currentPage = pages.length > 0 ? pages[pages.length - 1] : null;
         const currentUrl = currentPage ? currentPage.url() : 'unknown';
-        
+
         debugLog('BROWSER', `Current URL: ${currentUrl}`);
-        
+
         // Check if we're on Schoology (not on login page)
-        if (currentUrl.includes('schoology.com') && 
-            !currentUrl.includes('login') && 
+        if (currentUrl.includes('schoology.com') &&
+            !currentUrl.includes('login') &&
             !currentUrl.includes('google.com') &&
             !currentUrl.includes('accounts.')) {
-            
+
             isLoggedIn = true;
             debugLog('BROWSER', '✓ User is logged in!');
-            
+
             // Save browser state for persistence (only locally, not on Vercel)
             if (!IS_VERCEL && fs) {
                 try {
@@ -2575,7 +2575,7 @@ app.post('/api/browser/check-login', requireBrowserFeatures, async (req, res) =>
                     debugLog('BROWSER', `Could not save state: ${e.message}`);
                 }
             }
-            
+
             res.json({
                 success: true,
                 loggedIn: true,
@@ -2599,7 +2599,7 @@ app.post('/api/browser/check-login', requireBrowserFeatures, async (req, res) =>
 // Close the browser
 app.post('/api/browser/close', requireBrowserFeatures, async (req, res) => {
     debugLog('BROWSER', 'Closing browser...');
-    
+
     try {
         if (browserInstance) {
             await browserInstance.close();
@@ -2608,7 +2608,7 @@ app.post('/api/browser/close', requireBrowserFeatures, async (req, res) => {
             isLoggedIn = false;
             debugLog('BROWSER', '✓ Browser closed');
         }
-        
+
         res.json({ success: true, message: 'Browser closed' });
     } catch (error) {
         debugLog('BROWSER', `✗ Error closing browser: ${error.message}`);
@@ -2624,10 +2624,10 @@ let quizPage = null;
 app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, res) => {
     const { courseId, assignmentId } = req.body;
     debugLog('QUIZ-START', `=== Starting quiz for course: ${courseId}, assignment: ${assignmentId} ===`);
-    
+
     // Check for stored cookie if not logged in
     const storedCookie = req.cookies.schoology_sess ? decryptToken(req.cookies.schoology_sess) : null;
-    
+
     if ((!browserContext || !isLoggedIn) && !storedCookie) {
         debugLog('QUIZ-START', '✗ Browser not logged in and no stored cookie');
         return res.json({
@@ -2636,12 +2636,12 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
             needsLogin: true
         });
     }
-    
+
     try {
         // If browser not running but we have cookie, launch it (Vercel persistence)
         if ((!browserContext || !isLoggedIn) && storedCookie) {
             debugLog('QUIZ-START', 'Launching browser with stored cookie...');
-            
+
             let launchOptions = {
                 headless: false,
                 args: ['--start-maximized']
@@ -2657,22 +2657,22 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
             }
 
             browserInstance = await chromium.launch(launchOptions);
-            
+
             let contextOptions = {
                 viewport: { width: 1280, height: 800 },
                 userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             };
-            
+
             browserContext = await browserInstance.newContext(contextOptions);
-            
+
             // Inject cookie
             debugLog('QUIZ-START', 'Injecting stored Schoology cookie...');
             const cookies = [];
             const rawCookies = storedCookie.split(';');
-            
+
             for (const c of rawCookies) {
                 if (!c || !c.trim()) continue;
-                
+
                 if (c.includes('=')) {
                     const parts = c.trim().split('=');
                     const name = parts[0].trim();
@@ -2687,58 +2687,58 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
                     cookies.push({ name, value: c.trim(), domain: '.schoology.com', path: '/' });
                 }
             }
-            
+
             if (cookies.length > 0) {
                 await browserContext.addCookies(cookies);
                 debugLog('QUIZ-START', `✓ Injected ${cookies.length} cookies`);
             }
-            
+
             isLoggedIn = true;
         }
 
         // Close existing quiz page if any
         if (quizPage) {
             debugLog('QUIZ-START', 'Closing existing quiz page...');
-            try { await quizPage.close(); } catch (e) {}
+            try { await quizPage.close(); } catch (e) { }
             quizPage = null;
         }
-        
+
         // Create a new page for the quiz
         debugLog('QUIZ-START', 'Creating new page...');
         quizPage = await browserContext.newPage();
         debugLog('QUIZ-START', '✓ Page created');
-        
+
         // Set viewport for consistent screenshots
         await quizPage.setViewportSize({ width: 1280, height: 800 });
         debugLog('QUIZ-START', '✓ Viewport set to 1280x800');
-        
+
         // Navigate to the assessment page
         const assessmentUrl = `https://fuhsd.schoology.com/course/${courseId}/assessments/${assignmentId}`;
-        
+
         // Save URL for session restoration on Vercel
-        res.cookie('current_assessment_url', assessmentUrl, { 
-            httpOnly: true, 
-            secure: IS_VERCEL, 
+        res.cookie('current_assessment_url', assessmentUrl, {
+            httpOnly: true,
+            secure: IS_VERCEL,
             sameSite: 'lax',
-            maxAge: 24 * 60 * 60 * 1000 
+            maxAge: 24 * 60 * 60 * 1000
         });
-        
+
         debugLog('QUIZ-START', `Navigating to: ${assessmentUrl}`);
-        
+
         // Use domcontentloaded instead of networkidle to avoid timeout
         await quizPage.goto(assessmentUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
         debugLog('QUIZ-START', '✓ Initial navigation complete (domcontentloaded)');
-        
+
         // Wait a bit for dynamic content
         await quizPage.waitForTimeout(2000);
         debugLog('QUIZ-START', '✓ Waited 2s for dynamic content');
-        
+
         // Log current URL
         debugLog('QUIZ-START', `Current URL: ${quizPage.url()}`);
-        
+
         // Check for Resume or Start Attempt button
         let startedAssessment = false;
-        
+
         // Try to find and click Resume button first
         debugLog('QUIZ-START', 'Looking for Resume button...');
         const resumeButton = await quizPage.$('input[value*="Resume"], button:has-text("Resume"), a:has-text("Resume")');
@@ -2752,7 +2752,7 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
         } else {
             debugLog('QUIZ-START', '✗ No Resume button found');
         }
-        
+
         // If no resume, try Start Attempt
         if (!startedAssessment) {
             debugLog('QUIZ-START', 'Looking for Start button...');
@@ -2768,13 +2768,13 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
                 debugLog('QUIZ-START', '✗ No Start button found');
             }
         }
-        
+
         if (!startedAssessment) {
             debugLog('QUIZ-START', 'No start/resume button found, checking if already in assessment...');
             const pageContent = await quizPage.content();
             const hasQuestionContent = pageContent.includes('question') || pageContent.includes('cad-') || pageContent.includes('assessment');
             debugLog('QUIZ-START', `Has question content: ${hasQuestionContent}`);
-            
+
             if (!hasQuestionContent) {
                 debugLog('QUIZ-START', '✗ Not in assessment, returning error');
                 await quizPage.close();
@@ -2787,18 +2787,18 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
             }
             debugLog('QUIZ-START', '✓ Already appears to be in assessment');
         }
-        
+
         // Extract quiz content instead of screenshot
         debugLog('QUIZ-START', 'Extracting quiz content...');
         const content = await extractQuizContent(quizPage);
-        
+
         // Check for navigation buttons
         debugLog('QUIZ-START', 'Checking navigation buttons...');
         const navState = await checkNavButtons(quizPage);
         debugLog('QUIZ-START', `✓ Nav state: canGoBack=${navState.canGoBack}, canGoNext=${navState.canGoNext}, isReview=${navState.isReview}`);
-        
+
         debugLog('QUIZ-START', '=== Quiz started successfully ===');
-        
+
         res.json({
             success: true,
             content: content,
@@ -2807,12 +2807,12 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
             isReview: navState.isReview,
             currentUrl: quizPage.url()
         });
-        
+
     } catch (error) {
         debugLog('QUIZ-START', `✗ ERROR: ${error.message}`);
         debugLog('QUIZ-START', `Stack: ${error.stack}`);
         if (quizPage) {
-            try { await quizPage.close(); } catch (e) {}
+            try { await quizPage.close(); } catch (e) { }
             quizPage = null;
         }
         res.status(500).json({ success: false, error: error.message });
@@ -2822,10 +2822,10 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
 // Navigate to next question
 app.post('/api/quiz/next', requireBrowserFeatures, async (req, res) => {
     debugLog('QUIZ-NEXT', '=== Navigating to next question ===');
-    
+
     // Ensure we have a page (restore if needed)
     await ensureQuizPage(req);
-    
+
     if (!quizPage) {
         debugLog('QUIZ-NEXT', '✗ No active quiz page');
         return res.json({
@@ -2833,14 +2833,14 @@ app.post('/api/quiz/next', requireBrowserFeatures, async (req, res) => {
             error: 'No active quiz session. Please start a quiz first.'
         });
     }
-    
+
     try {
         debugLog('QUIZ-NEXT', `Current URL: ${quizPage.url()}`);
-        
+
         // Find and click the Next button
         debugLog('QUIZ-NEXT', 'Looking for Next button...');
         const nextButton = await quizPage.$('input[value="Next"], input[value*="Next"], button:has-text("Next"), a:has-text("Next")');
-        
+
         if (!nextButton) {
             debugLog('QUIZ-NEXT', '✗ No Next button found');
             return res.json({
@@ -2848,21 +2848,21 @@ app.post('/api/quiz/next', requireBrowserFeatures, async (req, res) => {
                 error: 'No Next button found on the page.'
             });
         }
-        
+
         debugLog('QUIZ-NEXT', '✓ Found Next button, clicking...');
         await nextButton.click();
         debugLog('QUIZ-NEXT', 'Waiting after click...');
         await quizPage.waitForTimeout(2000);
         debugLog('QUIZ-NEXT', `✓ After click, URL: ${quizPage.url()}`);
-        
+
         // Extract quiz content
         debugLog('QUIZ-NEXT', 'Extracting quiz content...');
         const content = await extractQuizContent(quizPage);
-        
+
         // Check for navigation buttons
         const navState = await checkNavButtons(quizPage);
         debugLog('QUIZ-NEXT', `✓ Nav state: canGoBack=${navState.canGoBack}, canGoNext=${navState.canGoNext}`);
-        
+
         res.json({
             success: true,
             content: content,
@@ -2871,7 +2871,7 @@ app.post('/api/quiz/next', requireBrowserFeatures, async (req, res) => {
             isReview: navState.isReview,
             currentUrl: quizPage.url()
         });
-        
+
     } catch (error) {
         debugLog('QUIZ-NEXT', `✗ ERROR: ${error.message}`);
         res.status(500).json({ success: false, error: error.message });
@@ -2881,10 +2881,10 @@ app.post('/api/quiz/next', requireBrowserFeatures, async (req, res) => {
 // Navigate to previous question
 app.post('/api/quiz/prev', requireBrowserFeatures, async (req, res) => {
     debugLog('QUIZ-PREV', '=== Navigating to previous question ===');
-    
+
     // Ensure we have a page (restore if needed)
     await ensureQuizPage(req);
-    
+
     if (!quizPage) {
         debugLog('QUIZ-PREV', '✗ No active quiz page');
         return res.json({
@@ -2892,14 +2892,14 @@ app.post('/api/quiz/prev', requireBrowserFeatures, async (req, res) => {
             error: 'No active quiz session. Please start a quiz first.'
         });
     }
-    
+
     try {
         debugLog('QUIZ-PREV', `Current URL: ${quizPage.url()}`);
-        
+
         // Find and click the Previous/Back button
         debugLog('QUIZ-PREV', 'Looking for Previous/Back button...');
         const prevButton = await quizPage.$('input[value="Previous"], input[value*="Previous"], input[value="Back"], input[value*="Back"], button:has-text("Previous"), button:has-text("Back"), a:has-text("Previous"), a:has-text("Back")');
-        
+
         if (!prevButton) {
             debugLog('QUIZ-PREV', '✗ No Previous/Back button found');
             return res.json({
@@ -2907,21 +2907,21 @@ app.post('/api/quiz/prev', requireBrowserFeatures, async (req, res) => {
                 error: 'No Previous/Back button found on the page.'
             });
         }
-        
+
         debugLog('QUIZ-PREV', '✓ Found Previous button, clicking...');
         await prevButton.click();
         debugLog('QUIZ-PREV', 'Waiting after click...');
         await quizPage.waitForTimeout(2000);
         debugLog('QUIZ-PREV', `✓ After click, URL: ${quizPage.url()}`);
-        
+
         // Extract quiz content
         debugLog('QUIZ-PREV', 'Extracting quiz content...');
         const content = await extractQuizContent(quizPage);
-        
+
         // Check for navigation buttons
         const navState = await checkNavButtons(quizPage);
         debugLog('QUIZ-PREV', `✓ Nav state: canGoBack=${navState.canGoBack}, canGoNext=${navState.canGoNext}`);
-        
+
         res.json({
             success: true,
             content: content,
@@ -2930,7 +2930,7 @@ app.post('/api/quiz/prev', requireBrowserFeatures, async (req, res) => {
             isReview: navState.isReview,
             currentUrl: quizPage.url()
         });
-        
+
     } catch (error) {
         debugLog('QUIZ-PREV', `✗ ERROR: ${error.message}`);
         res.status(500).json({ success: false, error: error.message });
@@ -2945,12 +2945,12 @@ app.get('/api/quiz/screenshot', requireBrowserFeatures, async (req, res) => {
             error: 'No active quiz session. Please start a quiz first.'
         });
     }
-    
+
     try {
         const screenshot = await quizPage.screenshot({ type: 'png', fullPage: false });
         const screenshotBase64 = screenshot.toString('base64');
         const navState = await checkNavButtons(quizPage);
-        
+
         res.json({
             success: true,
             screenshot: screenshotBase64,
@@ -2967,10 +2967,10 @@ app.get('/api/quiz/screenshot', requireBrowserFeatures, async (req, res) => {
 // Submit quiz - click Review, then Finish, then confirm
 app.post('/api/quiz/submit', requireBrowserFeatures, async (req, res) => {
     debugLog('QUIZ-SUBMIT', '=== Submitting quiz ===');
-    
+
     // Ensure we have a page (restore if needed)
     await ensureQuizPage(req);
-    
+
     if (!quizPage) {
         debugLog('QUIZ-SUBMIT', '✗ No active quiz page');
         return res.json({
@@ -2978,47 +2978,136 @@ app.post('/api/quiz/submit', requireBrowserFeatures, async (req, res) => {
             error: 'No active quiz. Please load a quiz first.'
         });
     }
-    
+
     try {
         const log = [];
-        
+
+        // Helper to find element across all frames
+        const findInFrames = async (page, selector) => {
+            // Check main page
+            let element = await page.$(selector);
+            if (element) return { element, frame: page.mainFrame() };
+
+            // Check all frames recursively
+            const frames = page.frames();
+            debugLog('QUIZ-SUBMIT', `Searching ${frames.length} frames for ${selector}...`);
+
+            for (const frame of frames) {
+                try {
+                    const el = await frame.$(selector);
+                    if (el) {
+                        // verify visibility
+                        const isVisible = await frame.evaluate((e) => {
+                            if (!e) return false;
+                            const style = window.getComputedStyle(e);
+                            return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+                        }, el);
+
+                        if (isVisible) {
+                            return { element: el, frame };
+                        }
+                    }
+                } catch (e) {
+                    // Start of frame access error handling
+                }
+            }
+            return null;
+        };
+
         // Step 1: Click Review button
         debugLog('QUIZ-SUBMIT', 'Looking for Review button...');
-        const reviewBtn = await quizPage.$('button[data-action="review"], button:has-text("Review"), .test-nav-review, [class*="review"]');
-        
-        if (reviewBtn) {
-            log.push('Found Review button, clicking...');
-            debugLog('QUIZ-SUBMIT', 'Clicking Review button...');
-            await reviewBtn.click();
-            await quizPage.waitForTimeout(2000);
-            log.push('✓ Clicked Review');
+
+        // Direct DOM evaluation to find the specific element and debug
+        const reviewClickResult = await quizPage.evaluate(async () => {
+            const selector = '.lrn_btn.test-review-screen';
+            const log = [];
+
+            // Try specific selector first
+            const el = document.querySelector(selector);
+            if (el) {
+                // Ensure visible
+                el.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
+                el.click();
+                return { success: true, msg: 'Found and clicked via specific selector' };
+            }
+
+            // DEBUG: List all buttons to see what's actually there
+            const allBtns = Array.from(document.querySelectorAll('.lrn_btn, button'));
+            const btnInfo = allBtns.map(b => ({
+                text: b.innerText.trim().substring(0, 20),
+                classes: b.className,
+                visible: b.offsetWidth > 0
+            }));
+
+            // Find anything that looks like "Review"
+            const reviewCandidates = allBtns.filter(b =>
+                b.innerText.toLowerCase().includes('review') ||
+                b.className.includes('review')
+            );
+
+            if (reviewCandidates.length > 0) {
+                // Try clicking the first visible candidate
+                for (const btn of reviewCandidates) {
+                    if (btn.offsetWidth > 0) {
+                        btn.click();
+                        return { success: true, msg: `Clicked fallback review button: ${btn.className}` };
+                    }
+                }
+            }
+
+            return {
+                success: false,
+                error: 'Review button not found',
+                debugInfo: JSON.stringify(btnInfo.slice(0, 10)) // Log first 10 buttons for context
+            };
+        });
+
+        if (reviewClickResult.success) {
+            log.push(reviewClickResult.msg);
+            debugLog('QUIZ-SUBMIT', `✓ ${reviewClickResult.msg}`);
+            await quizPage.waitForTimeout(3000);
         } else {
-            log.push('No Review button found, may already be on review page');
-            debugLog('QUIZ-SUBMIT', 'No Review button found');
+            // If main page fail, try the recursive search (user said no iframe, but fallback is safe)
+            debugLog('QUIZ-SUBMIT', `Main page check failed: ${reviewClickResult.error}`);
+            debugLog('QUIZ-SUBMIT', `Buttons found on page: ${reviewClickResult.debugInfo}`);
+
+            log.push('Main page search failed, trying deep frame search...');
+            const reviewSelector = '.lrn_btn.test-review-screen, button[data-action="review"], button:has-text("Review")';
+            const reviewResult = await findInFrames(quizPage, reviewSelector);
+
+            if (reviewResult) {
+                log.push(`Found Review button in frame: ${reviewResult.frame.url()}`);
+                await reviewResult.element.click();
+                await quizPage.waitForTimeout(3000);
+                log.push('✓ Clicked Review (in frame)');
+            } else {
+                log.push('FATAL: Review button NOT found anywhere.');
+                debugLog('QUIZ-SUBMIT', 'FATAL: Review button NOT found anywhere.');
+            }
         }
-        
+
         // Step 2: Click Finish/Submit button
         debugLog('QUIZ-SUBMIT', 'Looking for Finish/Submit button...');
-        await quizPage.waitForTimeout(1000);
-        
-        // Look for Finish or Submit button
-        const finishBtn = await quizPage.$('button[data-action="finish"], button:has-text("Finish"), button:has-text("Submit"), .test-submit, [class*="finish"], [class*="submit"]');
-        
-        if (finishBtn) {
-            log.push('Found Finish/Submit button, clicking...');
+        await quizPage.waitForTimeout(2000);
+
+        const finishSelector = 'button[data-action="finish"], button:has-text("Finish"), button:has-text("Submit"), .test-submit, [class*="finish"], [class*="submit"], .lrn_btn_finish';
+        const finishResult = await findInFrames(quizPage, finishSelector);
+
+        if (finishResult) {
+            log.push(`Found Finish/Submit button in frame: ${finishResult.frame.url()}`);
             debugLog('QUIZ-SUBMIT', 'Clicking Finish/Submit button...');
-            await finishBtn.click();
+            await finishResult.element.click();
             await quizPage.waitForTimeout(2000);
             log.push('✓ Clicked Finish/Submit');
         } else {
             log.push('No Finish/Submit button found');
             debugLog('QUIZ-SUBMIT', 'No Finish/Submit button found');
         }
-        
+
         // Step 3: Handle confirmation dialog (Yes/OK/Confirm)
         debugLog('QUIZ-SUBMIT', 'Looking for confirmation dialog...');
         await quizPage.waitForTimeout(1000);
-        
+
         // Look for confirmation buttons in dialogs/modals
         const confirmSelectors = [
             'button:has-text("Yes")',
@@ -3034,7 +3123,7 @@ app.post('/api/quiz/submit', requireBrowserFeatures, async (req, res) => {
             '.lrn button:has-text("Yes")',
             '.confirmation button:has-text("Yes")'
         ];
-        
+
         for (const selector of confirmSelectors) {
             try {
                 const confirmBtn = await quizPage.$(selector);
@@ -3053,26 +3142,21 @@ app.post('/api/quiz/submit', requireBrowserFeatures, async (req, res) => {
                 // Continue trying other selectors
             }
         }
-        
+
         // Take final screenshot
         await quizPage.waitForTimeout(2000);
         let finalScreenshot = null;
-        try {
-            finalScreenshot = await takeQuizScreenshot(quizPage);
-        } catch (e) {
-            // May fail if page navigated away
-        }
-        
+
         debugLog('QUIZ-SUBMIT', '✓ Quiz submission complete');
         log.push('Quiz submission process complete');
-        
+
         res.json({
             success: true,
             message: 'Quiz submitted!',
             log: log,
             screenshot: finalScreenshot ? finalScreenshot.toString('base64') : null
         });
-        
+
     } catch (error) {
         debugLog('QUIZ-SUBMIT', `✗ Error: ${error.message}`);
         res.status(500).json({ success: false, error: error.message });
@@ -3082,7 +3166,7 @@ app.post('/api/quiz/submit', requireBrowserFeatures, async (req, res) => {
 // Close quiz session
 app.post('/api/quiz/close', requireBrowserFeatures, async (req, res) => {
     debugLog('QUIZ-CLOSE', 'Closing quiz session...');
-    
+
     if (quizPage) {
         try {
             await quizPage.close();
@@ -3091,23 +3175,379 @@ app.post('/api/quiz/close', requireBrowserFeatures, async (req, res) => {
         }
         quizPage = null;
     }
-    
+
     res.json({ success: true, message: 'Quiz session closed' });
 });
 
-// Ask AI to solve the current question using Gemini
-app.post('/api/quiz/ask-ai', requireBrowserFeatures, express.json(), async (req, res) => {
-    debugLog('ASK-AI', '=== Asking AI to solve question ===');
-    
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'your_gemini_api_key_here') {
-        debugLog('ASK-AI', '✗ No Gemini API key configured');
+// Get current quiz content (for refreshing display after interactions)
+app.get('/api/quiz/content', requireBrowserFeatures, async (req, res) => {
+    debugLog('QUIZ-CONTENT', 'Fetching current quiz content...');
+
+    if (!quizPage) {
         return res.json({
             success: false,
-            error: 'Gemini API key not configured. Add GEMINI_API_KEY to your .env file.'
+            error: 'No active quiz page'
         });
     }
-    
+
+    try {
+        const content = await extractQuizContent(quizPage);
+        const navState = await checkNavButtons(quizPage);
+
+        debugLog('QUIZ-CONTENT', `✓ Content extracted (${content.html.length} chars)`);
+
+        res.json({
+            success: true,
+            content: content,
+            canGoBack: navState.canGoBack,
+            canGoNext: navState.canGoNext
+        });
+    } catch (error) {
+        debugLog('QUIZ-CONTENT', `✗ Error: ${error.message}`);
+        res.json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Perform a click on the actual quiz page (using index-based targeting)
+app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), async (req, res) => {
+    try {
+        const { type, index } = req.body;
+        const result = await quizPage.evaluate((args) => {
+            const { type, index } = args;
+
+            // Robust visibility check matching extractQuizContent
+            const isVisible = (el) => {
+                if (!el) return false;
+                const style = window.getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+                return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+            };
+
+            // Find container logic matching extractQuizContent
+            let container = null;
+            const activeSelectors = [
+                '.question-view.active',
+                '.slide.active',
+                '.question-container.current',
+                '.question-body:not([style*="display: none"])'
+            ];
+
+            for (const s of activeSelectors) {
+                const el = document.querySelector(s);
+                if (el && isVisible(el)) {
+                    container = el;
+                    break;
+                }
+            }
+
+            // Fallback strategy if no active container found
+            if (!container) {
+                const genericSelectors = ['.question-view', '.question-body', '.slides-container .slide', '.assessment-content > div'];
+                for (const s of genericSelectors) {
+                    const elements = document.querySelectorAll(s);
+                    for (const el of elements) {
+                        if (isVisible(el)) {
+                            container = el;
+                            break;
+                        }
+                    }
+                    if (container) break;
+                }
+            }
+
+            // Final fallback
+            if (!container) container = document.body;
+
+            let elements;
+            if (type === 'radio') {
+                elements = Array.from(container.querySelectorAll('input[type="radio"]'));
+            } else if (type === 'checkbox') {
+                elements = Array.from(container.querySelectorAll('input[type="checkbox"]'));
+            } else {
+                return { success: false, error: 'Unknown type' };
+            }
+
+            // Filter by visibility to match extraction
+            const visibleElements = elements.filter(isVisible);
+
+            if (index >= 0 && index < visibleElements.length) {
+                const el = visibleElements[index];
+                el.click();
+                return { success: true };
+            }
+            return { success: false, error: `Element not found at index ${index} (found ${visibleElements.length} visible)` };
+        }, { type, index });
+
+        if (result.success) {
+            res.json({ success: true });
+        } else {
+            res.json(result);
+        }
+    } catch (error) {
+        debugLog('SYNC-CLICK', `Error: ${error.message}`);
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// Sync text input (using index-based targeting)
+app.post('/api/quiz/type-text', requireBrowserFeatures, express.json(), async (req, res) => {
+    const { type, index, text } = req.body;
+    debugLog('SYNC-TYPE', `Typing "${text}" into ${type} at index ${index}`);
+
+    if (!quizPage) {
+        return res.json({ success: false, error: 'No active quiz page' });
+    }
+
+    try {
+        // We use Puppeteer to find the element handle so we can use page.type for realistic typing
+        // But first we need to find it using evaluate logic to match the container
+        const boundingBox = await quizPage.evaluate((args) => {
+            const { index } = args;
+
+            // Robust visibility check
+            const isVisible = (el) => {
+                if (!el) return false;
+                const style = window.getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+                return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+            };
+
+            // Find active container (standardized)
+            let container = null;
+            const activeSelectors = ['.question-view.active', '.slide.active', '.question-container.current', '.question-body:not([style*="display: none"])'];
+            for (const s of activeSelectors) {
+                const el = document.querySelector(s);
+                if (el && isVisible(el)) {
+                    container = el;
+                    break;
+                }
+            }
+            if (!container) container = document.body;
+
+            // inputs only (text/textarea)
+            const inputs = Array.from(container.querySelectorAll('input[type="text"], textarea'));
+            const visibleInputs = inputs.filter(isVisible);
+
+            if (index >= 0 && index < visibleInputs.length) {
+                const el = visibleInputs[index];
+                // Mark it so we can find it with Puppeteer handle
+                el.setAttribute('data-puppeteer-typing-target', 'true');
+                return true;
+            }
+            return false;
+        }, { index });
+
+        if (boundingBox) {
+            const inputHandle = await quizPage.$('[data-puppeteer-typing-target]');
+            if (inputHandle) {
+                // Clear existing text? Not easily done with just type. 
+                // Triple click to select all then backspace is a common strategy
+                await inputHandle.click({ clickCount: 3 });
+                await inputHandle.press('Backspace');
+                await inputHandle.type(text, { delay: 50 }); // Type with slight delay
+
+                // Clean up attribute
+                await quizPage.evaluate(() => {
+                    document.querySelectorAll('[data-puppeteer-typing-target]').forEach(e => e.removeAttribute('data-puppeteer-typing-target'));
+                });
+
+                res.json({ success: true });
+            } else {
+                res.json({ success: false, error: 'Input handle not found' });
+            }
+        } else {
+            res.json({ success: false, error: 'Input not found by index' });
+        }
+    } catch (error) {
+        debugLog('SYNC-TYPE', `Error: ${error.message}`);
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// Sync select option (using index-based targeting)
+app.post('/api/quiz/select-option', requireBrowserFeatures, express.json(), async (req, res) => {
+    const { index, value } = req.body;
+    debugLog('SYNC-SELECT', `Selecting "${value}" in dropdown index ${index}`);
+
+    if (!quizPage) {
+        return res.json({ success: false, error: 'No active quiz page' });
+    }
+
+    try {
+        const result = await quizPage.evaluate((args) => {
+            const { index, value } = args;
+
+            // Robust visibility check
+            const isVisible = (el) => {
+                if (!el) return false;
+                const style = window.getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+                return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+            };
+
+            // Find active container (standardized)
+            let container = null;
+            const activeSelectors = ['.question-view.active', '.slide.active', '.question-container.current', '.question-body:not([style*="display: none"])'];
+            for (const s of activeSelectors) {
+                const el = document.querySelector(s);
+                if (el && isVisible(el)) {
+                    container = el;
+                    break;
+                }
+            }
+            if (!container) container = document.body;
+
+            const selects = Array.from(container.querySelectorAll('select'));
+            const visibleSelects = selects.filter(isVisible);
+
+            if (index >= 0 && index < visibleSelects.length) {
+                const el = visibleSelects[index];
+                el.value = value;
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+                return { success: true };
+            }
+            return { success: false, error: 'Select not found at index' };
+        }, { index, value });
+
+        res.json(result);
+    } catch (error) {
+        debugLog('SYNC-SELECT', `Error: ${error.message}`);
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// Perform drag-drop on the actual quiz
+app.post('/api/quiz/drag-drop', requireBrowserFeatures, express.json(), async (req, res) => {
+    const { dragText, dropIndex } = req.body;
+    debugLog('SYNC-DRAG', `Dragging "${dragText}" to drop zone ${dropIndex}`);
+
+    if (!quizPage) {
+        return res.json({ success: false, error: 'No active quiz page' });
+    }
+
+    try {
+        // Find the drag button and drop zone
+        const elements = await quizPage.evaluate((args) => {
+            const { text, idx } = args;
+            const isVisible = (el) => {
+                const rect = el.getBoundingClientRect();
+                const style = window.getComputedStyle(el);
+                return rect.width > 0 && rect.height > 0 &&
+                    style.display !== 'none' && style.visibility !== 'hidden';
+            };
+
+            // Find active container
+            let container = document.body;
+            const activeSelectors = ['.question-view.active', '.slide.active', '.question-container.current'];
+            for (const s of activeSelectors) {
+                const el = document.querySelector(s);
+                if (el && isVisible(el)) {
+                    container = el;
+                    break;
+                }
+            }
+
+            // Find visible drag buttons
+            const drags = Array.from(container.querySelectorAll('.lrn_btn_drag')).filter(isVisible);
+            const drops = Array.from(container.querySelectorAll('.lrn_dropzone')).filter(isVisible);
+
+            // Find the matching drag by text
+            const textNorm = text.trim().toLowerCase().replace(/[^\w\s]/g, '');
+            let dragIdx = -1;
+            for (let i = 0; i < drags.length; i++) {
+                const btnText = drags[i].textContent.trim().toLowerCase().replace(/[^\w\s]/g, '');
+                if (btnText === textNorm || btnText.includes(textNorm) || textNorm.includes(btnText)) {
+                    dragIdx = i;
+                    break;
+                }
+            }
+
+            // Mark elements for Puppeteer
+            if (dragIdx >= 0) drags[dragIdx].setAttribute('data-drag-target', 'true');
+            if (idx < drops.length) drops[idx].setAttribute('data-drop-target', 'true');
+
+            return {
+                dragFound: dragIdx >= 0,
+                dropFound: idx < drops.length,
+                dragText: dragIdx >= 0 ? drags[dragIdx].textContent.trim() : null
+            };
+        }, { text: dragText, idx: dropIndex });
+
+        if (!elements.dragFound) {
+            debugLog('SYNC-DRAG', `✗ Drag item "${dragText}" not found`);
+            return res.json({ success: false, error: 'Drag item not found' });
+        }
+        if (!elements.dropFound) {
+            debugLog('SYNC-DRAG', `✗ Drop zone ${dropIndex} not found`);
+            return res.json({ success: false, error: 'Drop zone not found' });
+        }
+
+        // Get the marked elements
+        const dragBtn = await quizPage.$('[data-drag-target]');
+        const dropZone = await quizPage.$('[data-drop-target]');
+
+        if (!dragBtn || !dropZone) {
+            debugLog('SYNC-DRAG', '✗ Could not find marked elements');
+            return res.json({ success: false, error: 'Could not find elements' });
+        }
+
+        // Get positions and perform drag
+        await dragBtn.scrollIntoViewIfNeeded();
+        await quizPage.waitForTimeout(100);
+        const dragBox = await dragBtn.boundingBox();
+
+        await dropZone.scrollIntoViewIfNeeded();
+        await quizPage.waitForTimeout(100);
+        const dropBox = await dropZone.boundingBox();
+
+        if (dragBox && dropBox) {
+            const startX = dragBox.x + dragBox.width / 2;
+            const startY = dragBox.y + dragBox.height / 2;
+            const endX = dropBox.x + dropBox.width / 2;
+            const endY = dropBox.y + dropBox.height / 2;
+
+            // Perform drag
+            await quizPage.mouse.move(startX, startY);
+            await quizPage.waitForTimeout(100);
+            await quizPage.mouse.down();
+            await quizPage.waitForTimeout(150);
+            await quizPage.mouse.move(endX, endY, { steps: 20 });
+            await quizPage.waitForTimeout(150);
+            await quizPage.mouse.up();
+            await quizPage.waitForTimeout(300);
+
+            debugLog('SYNC-DRAG', `✓ Dragged "${elements.dragText}" to zone ${dropIndex}`);
+        }
+
+        // Clean up markers
+        await quizPage.evaluate(() => {
+            document.querySelectorAll('[data-drag-target]').forEach(el => el.removeAttribute('data-drag-target'));
+            document.querySelectorAll('[data-drop-target]').forEach(el => el.removeAttribute('data-drop-target'));
+        });
+
+        res.json({ success: true, message: `Dragged "${elements.dragText}" to zone ${dropIndex}` });
+    } catch (error) {
+        debugLog('SYNC-DRAG', `✗ Error: ${error.message}`);
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// Ask AI to solve the current question using Cerebras
+app.post('/api/quiz/ask-ai', requireBrowserFeatures, express.json(), async (req, res) => {
+    debugLog('ASK-AI', '=== Asking AI to solve question ===');
+
+    const apiKey = process.env.CEREBRAS_API_KEY;
+    if (!apiKey || apiKey === 'your_cerebras_api_key_here') {
+        debugLog('ASK-AI', '✗ No Cerebras API key configured');
+        return res.json({
+            success: false,
+            error: 'Cerebras API key not configured. Add CEREBRAS_API_KEY to your .env file.'
+        });
+    }
+
     if (!quizPage) {
         debugLog('ASK-AI', '✗ No active quiz page');
         return res.json({
@@ -3115,49 +3555,49 @@ app.post('/api/quiz/ask-ai', requireBrowserFeatures, express.json(), async (req,
             error: 'No active quiz. Please load a quiz first.'
         });
     }
-    
+
     try {
         // Get additional context from request
-        const { context, contextImages, contextScope } = req.body || {};
-        debugLog('ASK-AI', `User context: ${context ? context.substring(0, 100) + '...' : 'none'}, Images: ${contextImages?.length || 0}, Scope: ${contextScope || 'question'}`);
-        
-        // Take a fresh screenshot
-        debugLog('ASK-AI', 'Taking screenshot for AI...');
-        const screenshot = await takeQuizScreenshot(quizPage);
-        const screenshotBase64 = screenshot.toString('base64');
-        debugLog('ASK-AI', `✓ Screenshot taken, size: ${screenshotBase64.length} chars`);
-        
-        // Call Gemini API with the image
-        debugLog('ASK-AI', 'Calling Gemini 2.0 Flash API...');
-        
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-        
-        // Build the prompt with optional context
-        let promptText = `You are solving a question shown in the attached image.
+        const { quizContext, questionContext, contextImages } = req.body || {};
+        debugLog('ASK-AI', `Quiz context: ${quizContext ? quizContext.substring(0, 100) + '...' : 'none'}`);
+        debugLog('ASK-AI', `Question context: ${questionContext ? questionContext.substring(0, 100) + '...' : 'none'}`);
+        debugLog('ASK-AI', `Context images: ${contextImages ? contextImages.length : 0} image(s) provided`);
 
+        // Extract text content from the quiz page
+        debugLog('ASK-AI', 'Extracting text content for AI...');
+        const content = await extractQuizContent(quizPage);
+
+        if (!content || !content.text) {
+            debugLog('ASK-AI', '✗ Failed to extract content');
+            return res.json({
+                success: false,
+                error: 'Failed to extract question content from the page.'
+            });
+        }
+
+        debugLog('ASK-AI', `✓ Content extracted, length: ${content.text.length} chars`);
+        debugLog('ASK-AI', `✓ Question images in content: ${content.images ? content.images.length : 0}`);
+
+        // Call Cerebras API
+        debugLog('ASK-AI', 'Calling Cerebras API (qwen-3-32b)...');
+
+        const cerebrasUrl = 'https://api.cerebras.ai/v1/chat/completions';
+
+        // Build the prompt
+        let systemPrompt = `You are an expert tutor helping a student solve a quiz question.
 Rules:
-- Carefully read the entire question and all answer choices (if any).
+- Carefully read the entire question and all answer choices.
 - Think step by step and explain your reasoning clearly.
 - You MUST select your final answer strictly from the given choices. Do not invent new answers.
 - If the question is open-ended with no choices, give the exact final answer.
 - If it's multiple-choice with single answer → choose one.
 - If it explicitly says "select all that apply" or has checkboxes → select all correct ones.
-- If there are multiple answers list them, numbered in the order they appear in the question
+- If there are multiple answers list them, numbered in the order they appear in the question.
 
-`;
-        
-        // Add user context if provided
-        if (context && context.trim()) {
-            promptText += `ADDITIONAL CONTEXT FROM USER:
-${context.trim()}
-
-`;
-        }
-        
-        promptText += `Format your response EXACTLY like this and nothing else after the reasoning:
+Format your response EXACTLY like this and nothing else after the reasoning:
 
 ===RESULT===
-[Put the final answer(s) here, exactly as they appear in the image]
+[Put the final answer(s) here, exactly as they appear in the question text]
 
 Examples of correct RESULT formatting:
 ===RESULT===
@@ -3184,93 +3624,70 @@ C
 42
 
 Do not add explanations after ===RESULT===. Do not say "So the answer is" or "Therefore". The section after ===RESULT=== must contain ONLY the answer(s) in the exact format shown above.`;
-        
-        // Build parts array with quiz screenshot and optional context images
-        const parts = [
-            { text: promptText },
-            {
-                inline_data: {
-                    mime_type: "image/png",
-                    data: screenshotBase64
-                }
-            }
-        ];
-        
-        // Add context images if provided
-        if (contextImages && contextImages.length > 0) {
-            const supportedMimeTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
-            for (const img of contextImages) {
-                if (img && img.base64) {
-                    // Normalize and validate MIME type
-                    let mimeType = img.mimeType || 'image/jpeg';
-                    if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
-                    
-                    // Skip unsupported formats
-                    if (!supportedMimeTypes.includes(mimeType)) {
-                        debugLog('ASK-AI', `Skipping unsupported image format: ${mimeType}`);
-                        continue;
-                    }
-                    
-                    parts.push({
-                        inline_data: {
-                            mime_type: mimeType,
-                            data: img.base64
-                        }
-                    });
-                }
-            }
-            debugLog('ASK-AI', `Added ${contextImages.filter(i => i && i.base64).length} context images`);
+
+        // Build user prompt with question number if available
+        let questionLabel = content.questionNumber ? `Question ${content.questionNumber}` : 'Question';
+        let userPrompt = `Here is ${questionLabel}:\n\n${content.text}\n\n`;
+
+        // Combine quiz and question context into a single additional context section
+        const combinedContext = [quizContext, questionContext].filter(c => c && c.trim()).join('\n\n');
+        if (combinedContext) {
+            userPrompt += `ADDITIONAL CONTEXT:\n${combinedContext}\n\n`;
         }
-        
+
         const requestBody = {
-            contents: [{
-                parts: parts
-            }],
-            generationConfig: {
-                temperature: 0.4,
-                topK: 32,
-                topP: 1,
-                maxOutputTokens: 2048
-            }
+            model: "qwen-3-32b",
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt }
+            ],
+            temperature: 0.2,
+            max_completion_tokens: 8192,
+            top_p: 1
         };
-        
-        const response = await fetch(geminiUrl, {
+
+        // Log the prompts for debugging
+        debugLog('ASK-AI', `--- SYSTEM PROMPT ---\n${systemPrompt}`);
+        debugLog('ASK-AI', `--- USER PROMPT ---\n${userPrompt}`);
+
+        const response = await fetch(cerebrasUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify(requestBody)
         });
-        
+
         const responseData = await response.json();
-        
+
         if (!response.ok) {
             debugLog('ASK-AI', `✗ API Error: ${JSON.stringify(responseData)}`);
             return res.json({
                 success: false,
-                error: responseData.error?.message || 'Gemini API error'
+                error: responseData.error?.message || 'Cerebras API error'
             });
         }
-        
+
         // Extract the text response
-        const aiResponse = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
-        
+        const aiResponse = responseData.choices?.[0]?.message?.content;
+
         if (!aiResponse) {
             debugLog('ASK-AI', '✗ No response from AI');
             return res.json({
                 success: false,
-                error: 'No response from AI. The image may not contain a recognizable question.'
+                error: 'No response from AI.'
             });
         }
-        
+
         debugLog('ASK-AI', `✓ Got AI response (${aiResponse.length} chars)`);
-        
+
         // Parse the result section
         let parsedAnswers = [];
         if (aiResponse.includes('===RESULT===')) {
             const resultSection = aiResponse.split('===RESULT===')[1].trim();
             const lines = resultSection.split('\n').filter(line => line.trim());
-            
+
             if (lines.length === 1 && !lines[0].match(/^\d+\./)) {
                 // Single answer
                 parsedAnswers = [lines[0].trim()];
@@ -3282,15 +3699,15 @@ Do not add explanations after ===RESULT===. Do not say "So the answer is" or "Th
                 });
             }
         }
-        
+
         debugLog('ASK-AI', `Parsed ${parsedAnswers.length} answers: ${JSON.stringify(parsedAnswers)}`);
-        
+
         res.json({
             success: true,
             response: aiResponse,
             parsedAnswers: parsedAnswers
         });
-        
+
     } catch (error) {
         debugLog('ASK-AI', `✗ ERROR: ${error.message}`);
         res.status(500).json({
@@ -3303,76 +3720,100 @@ Do not add explanations after ===RESULT===. Do not say "So the answer is" or "Th
 // Enter the AI answers into the Schoology quiz page
 app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), async (req, res) => {
     debugLog('ENTER-ANSWERS', '=== Entering answers on quiz page ===');
-    
+
     const { answers } = req.body;
-    
+
     if (!answers || !Array.isArray(answers) || answers.length === 0) {
         return res.json({
             success: false,
             error: 'No answers provided'
         });
     }
-    
+
     if (!quizPage) {
         return res.json({
             success: false,
             error: 'No active quiz page'
         });
     }
-    
+
     try {
         debugLog('ENTER-ANSWERS', `Attempting to enter ${answers.length} answer(s): ${JSON.stringify(answers)}`);
-        
+
         const log = [];
         let answered = false;
-        
-        // Find the current visible question - we need to find elements that are VISIBLE on screen
-        // The quiz shows one question at a time, so we look for visible elements only
+
         const visibleElements = await quizPage.evaluate(() => {
-            // Helper to check if element is visible
+            // Standardized robust visibility check
             const isVisible = (el) => {
-                const rect = el.getBoundingClientRect();
+                if (!el) return false;
                 const style = window.getComputedStyle(el);
-                return rect.width > 0 && 
-                       rect.height > 0 && 
-                       style.display !== 'none' && 
-                       style.visibility !== 'hidden' &&
-                       style.opacity !== '0' &&
-                       rect.top < window.innerHeight &&
-                       rect.bottom > 0;
+                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+                return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
             };
-            
+
+            // Find the active container
+            let container = null;
+            const activeSelectors = [
+                '.question-view.active',
+                '.slide.active',
+                '.question-container.current',
+                '.question-body:not([style*="display: none"])'
+            ];
+            for (const s of activeSelectors) {
+                const el = document.querySelector(s);
+                if (el && isVisible(el)) {
+                    container = el;
+                    break;
+                }
+            }
+            if (!container) container = document.body;
+
             // Get only VISIBLE drag buttons and drop zones
-            const allDrags = document.querySelectorAll('.lrn_btn_drag');
-            const allDrops = document.querySelectorAll('.lrn_dropzone');
-            
+            const allDrags = container.querySelectorAll('.lrn_btn_drag');
+            const allDrops = container.querySelectorAll('.lrn_dropzone');
+
             const visibleDrags = Array.from(allDrags).filter(isVisible);
             const visibleDrops = Array.from(allDrops).filter(isVisible);
-            
+
             // Mark visible elements for Playwright to find
             visibleDrags.forEach((el, i) => el.setAttribute('data-visible-drag', i.toString()));
             visibleDrops.forEach((el, i) => el.setAttribute('data-visible-drop', i.toString()));
-            
+
+            // Identify empty drop zones to avoid overwriting (simple heuristic: no text or check for specific classes)
+            const emptyIndices = [];
+            visibleDrops.forEach((el, i) => {
+                // Check if it has a drag item inside or significant text
+                const hasItem = el.querySelector('.lrn_btn_drag') !== null;
+                const hasText = el.textContent.trim().length > 0;
+
+                // If it doesn't have a drag item and text is empty (or very short, allowing for nbsp), consider it empty
+                if (!hasItem && (!hasText || el.textContent.trim() === '')) {
+                    emptyIndices.push(i);
+                }
+            });
+
             return {
                 totalDrags: allDrags.length,
                 visibleDrags: visibleDrags.length,
                 visibleDragTexts: visibleDrags.map(el => el.textContent.trim()),
                 totalDrops: allDrops.length,
                 visibleDrops: visibleDrops.length,
-                
-                // Also check for other input types
-                radios: document.querySelectorAll('input[type="radio"]').length,
-                checkboxes: document.querySelectorAll('input[type="checkbox"]').length,
-                textInputs: document.querySelectorAll('input[type="text"], textarea').length,
-                selects: document.querySelectorAll('select').length,
+                emptyDropIndices: emptyIndices, // Return indices of empty zones
+
+                // Also check for other input types - using precise visibility check
+                radios: Array.from(container.querySelectorAll('input[type="radio"]')).filter(isVisible).length,
+                checkboxes: Array.from(container.querySelectorAll('input[type="checkbox"]')).filter(isVisible).length,
+                textInputs: Array.from(container.querySelectorAll('input[type="text"], textarea')).filter(isVisible).length,
+                selects: Array.from(container.querySelectorAll('select')).filter(isVisible).length,
             };
         });
-        
+
         debugLog('ENTER-ANSWERS', `VISIBLE ELEMENTS: ${JSON.stringify(visibleElements, null, 2)}`);
         log.push(`Total drags: ${visibleElements.totalDrags}, Visible: ${visibleElements.visibleDrags}`);
         log.push(`Total drops: ${visibleElements.totalDrops}, Visible: ${visibleElements.visibleDrops}`);
-        log.push(`Visible drag texts: ${visibleElements.visibleDragTexts.join(', ')}`);
-        
+        log.push(`Empty drop zones indices: ${visibleElements.emptyDropIndices.join(', ')}`);
+
         // Use visible elements for pageDebug compatibility
         const pageDebug = {
             lrnDragBtns: visibleElements.visibleDrags,
@@ -3383,22 +3824,22 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
             textInputs: visibleElements.textInputs,
             selects: visibleElements.selects,
         };
-        
+
         // CASE: Learnosity drag and drop (visible elements only)
         if (visibleElements.visibleDrags > 0 && visibleElements.visibleDrops > 0) {
             log.push(`Found visible drag/drop: ${visibleElements.visibleDrags} drags, ${visibleElements.visibleDrops} drops`);
             debugLog('ENTER-ANSWERS', `Attempting drag/drop with VISIBLE elements only...`);
-            
+
             // Track which answers have been used
             const usedAnswers = new Set();
             const usedDragIndices = new Set();
-            
+
             // Get ONLY visible drag buttons (marked with data-visible-drag)
             const dragButtons = await quizPage.$$('[data-visible-drag]');
             const dropZones = await quizPage.$$('[data-visible-drop]');
-            
+
             debugLog('ENTER-ANSWERS', `Found ${dragButtons.length} visible drags, ${dropZones.length} visible drops`);
-            
+
             // Build list of drag buttons with their text
             const dragButtonsInfo = [];
             for (let i = 0; i < dragButtons.length; i++) {
@@ -3411,71 +3852,88 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
                     textNorm: text.trim().toLowerCase().replace(/[^\w\s]/g, '')
                 });
             }
-            
+
             debugLog('ENTER-ANSWERS', `Visible drag options: ${dragButtonsInfo.map(d => d.text).join(', ')}`);
             log.push(`Visible drags: ${dragButtonsInfo.map(d => d.text).join(', ')}`);
-            
-            // For each AI answer, find a matching drag and an available drop zone
-            let dropIdx = 0;
-            for (const answer of answers) {
-                if (dropIdx >= dropZones.length) {
-                    log.push(`No more drop zones available`);
-                    break;
-                }
-                
+
+            // Use logic to fill ONLY empty drop zones if possible
+            // If we have identification of empty zones, prefer them.
+            // But fallback to filling sequentially if we run out.
+            let targetIndices = visibleElements.emptyDropIndices;
+
+            // If no empty indices found (maybe heuristic failed?), or user wants overwrite, we might need fallback.
+            // But user specifically asked to "fill empty drop zones".
+            if (targetIndices.length === 0 && visibleElements.visibleDrops > 0 && answers.length > 0) {
+                log.push('Note: No empty drop zones detected. Checking all zones.');
+                // Fallback: Use all zones if we think none are empty but we have answers?
+                // Or maybe the user *has* filled everything and wants to overwrite?
+                // The prompt implies "when some are filled", implying we should respect them.
+                // So if targetIndices is empty, maybe we stop?
+                // Let's trust the detection. If 0 empty, we do nothing for drag-drop.
+            }
+
+            // For each AI answer, find a matching drag and enter into the next EMPTY drop zone
+            let answerIdx = 0;
+            for (let i = 0; i < targetIndices.length; i++) {
+                if (answerIdx >= answers.length) break; // No more answers to input
+
+                const dropIdx = targetIndices[i]; // The actual index of the drop zone to use
+                const answer = answers[answerIdx];
+                answerIdx++;
+
                 const ansNorm = answer.trim().toLowerCase().replace(/[^\w\s]/g, '');
                 debugLog('ENTER-ANSWERS', `\n--- Looking for drag matching AI answer: "${answer}" ---`);
-                
+
                 // Find a drag that matches this AI answer
                 let matchedDrag = null;
                 for (const dragInfo of dragButtonsInfo) {
                     if (usedDragIndices.has(dragInfo.index)) continue; // Skip used drags
-                    
-                    const isMatch = dragInfo.textNorm === ansNorm || 
-                                    dragInfo.textNorm.includes(ansNorm) || 
-                                    ansNorm.includes(dragInfo.textNorm);
-                    
+
+                    const isMatch = dragInfo.textNorm === ansNorm ||
+                        dragInfo.textNorm.includes(ansNorm) ||
+                        ansNorm.includes(dragInfo.textNorm);
+
                     if (isMatch) {
                         matchedDrag = dragInfo;
                         debugLog('ENTER-ANSWERS', `✓ Found matching drag: "${dragInfo.text}"`);
                         break;
                     }
                 }
-                
+
                 if (!matchedDrag) {
                     log.push(`AI answer "${answer}" - no matching drag found, SKIPPING`);
                     debugLog('ENTER-ANSWERS', `No drag matches "${answer}", skipping this answer`);
                     continue;
                 }
-                
+
                 // Mark as used
                 usedDragIndices.add(matchedDrag.index);
-                
+
                 try {
-                    // Get the current drop zone
+                    // Get the current drop zone using the EMPTY index
                     const dropZone = dropZones[dropIdx];
-                    
+
                     // Scroll and get fresh positions
                     await matchedDrag.element.scrollIntoViewIfNeeded();
                     await quizPage.waitForTimeout(150);
                     const dragBox = await matchedDrag.element.boundingBox();
-                    
+
                     await dropZone.scrollIntoViewIfNeeded();
                     await quizPage.waitForTimeout(150);
                     const dropBox = await dropZone.boundingBox();
-                    
-                    debugLog('ENTER-ANSWERS', `Drag box: ${JSON.stringify(dragBox)}`);
-                    debugLog('ENTER-ANSWERS', `Drop box: ${JSON.stringify(dropBox)}`);
-                    
+
+                    // debugLog('ENTER-ANSWERS', `Drag box: ${JSON.stringify(dragBox)}`);
+                    // debugLog('ENTER-ANSWERS', `Drop box: ${JSON.stringify(dropBox)}`);
+
                     if (dragBox && dropBox) {
                         const startX = dragBox.x + dragBox.width / 2;
                         const startY = dragBox.y + dragBox.height / 2;
                         const endX = dropBox.x + dropBox.width / 2;
                         const endY = dropBox.y + dropBox.height / 2;
-                        
-                        log.push(`Dragging "${matchedDrag.text}" to drop zone ${dropIdx + 1}`);
+
+                        log.push(`Dragging "${matchedDrag.text}" to drop zone ${dropIdx + 1} (Empty Slot)`);
                         debugLog('ENTER-ANSWERS', `Drag: (${startX.toFixed(0)}, ${startY.toFixed(0)}) -> (${endX.toFixed(0)}, ${endY.toFixed(0)})`);
-                        
+
                         // Perform the drag
                         await quizPage.mouse.move(startX, startY);
                         await quizPage.waitForTimeout(100);
@@ -3485,11 +3943,10 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
                         await quizPage.waitForTimeout(150);
                         await quizPage.mouse.up();
                         await quizPage.waitForTimeout(400);
-                        
+
                         log.push(`✓ Dragged "${matchedDrag.text}" to zone ${dropIdx + 1}`);
                         answered = true;
-                        dropIdx++; // Move to next drop zone
-                        
+
                     } else {
                         log.push(`⚠ Could not get bounding box`);
                     }
@@ -3498,34 +3955,59 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
                     debugLog('ENTER-ANSWERS', `Error: ${err.message}`);
                 }
             }
-            
+
             log.push(`Completed: ${usedDragIndices.size} AI answers placed into ${dropIdx} zones`);
-            
+
             // Clean up the marker attributes
             await quizPage.evaluate(() => {
                 document.querySelectorAll('[data-visible-drag]').forEach(el => el.removeAttribute('data-visible-drag'));
                 document.querySelectorAll('[data-visible-drop]').forEach(el => el.removeAttribute('data-visible-drop'));
             });
         }
-        
+
         // CASE: Standard radio buttons (single choice) - only if drag/drop didn't work
         if (pageDebug.radios > 0 && answers.length === 1 && !answered) {
             const answer = answers[0];
             log.push(`Trying radio buttons for answer: "${answer}"`);
-            
+
             const clicked = await quizPage.evaluate((ans) => {
-                const radios = document.querySelectorAll('input[type="radio"]');
+                // Robust visibility check
+                const isVisible = (el) => {
+                    if (!el) return false;
+                    const style = window.getComputedStyle(el);
+                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+                    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+                };
+
+                // Find active container
+                let container = null;
+                const activeSelectors = [
+                    '.question-view.active',
+                    '.slide.active',
+                    '.question-container.current',
+                    '.question-body:not([style*="display: none"])'
+                ];
+                for (const s of activeSelectors) {
+                    const el = document.querySelector(s);
+                    if (el && isVisible(el)) {
+                        container = el;
+                        break;
+                    }
+                }
+                if (!container) container = document.body;
+
+                const radios = container.querySelectorAll('input[type="radio"]');
                 const ansNorm = ans.trim().toLowerCase().replace(/[^\w\s]/g, '');
-                
+
                 for (const radio of radios) {
                     const label = radio.closest('label') || document.querySelector(`label[for="${radio.id}"]`);
                     const parent = radio.closest('.choice, .answer-choice, .option, li, div');
                     const text = (label?.textContent || parent?.textContent || '').trim();
                     const textNorm = text.toLowerCase().replace(/[^\w\s]/g, '');
-                    
+
                     const letterMatch = /^[a-d]$/i.test(ans) && text.toLowerCase().startsWith(ans.toLowerCase());
                     const contentMatch = textNorm.includes(ansNorm) || ansNorm.includes(textNorm);
-                    
+
                     if (letterMatch || contentMatch) {
                         radio.click();
                         return text.substring(0, 50);
@@ -3533,31 +4015,56 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
                 }
                 return null;
             }, answer);
-            
+
             if (clicked) {
                 log.push(`✓ Clicked radio: "${clicked}..."`);
                 answered = true;
             }
         }
-        
+
         // CASE: Checkboxes (multiple choice)
         if (pageDebug.checkboxes > 0 && !answered) {
             log.push(`Trying checkboxes for ${answers.length} answer(s)`);
-            
+
             for (const answer of answers) {
                 const clicked = await quizPage.evaluate((ans) => {
-                    const checkboxes = document.querySelectorAll('input[type="checkbox"]:not([id*="nav"])');
+                    // Robust visibility check
+                    const isVisible = (el) => {
+                        if (!el) return false;
+                        const style = window.getComputedStyle(el);
+                        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+                        return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+                    };
+
+                    // Find active container
+                    let container = null;
+                    const activeSelectors = [
+                        '.question-view.active',
+                        '.slide.active',
+                        '.question-container.current',
+                        '.question-body:not([style*="display: none"])'
+                    ];
+                    for (const s of activeSelectors) {
+                        const el = document.querySelector(s);
+                        if (el && isVisible(el)) {
+                            container = el;
+                            break;
+                        }
+                    }
+                    if (!container) container = document.body;
+
+                    const checkboxes = container.querySelectorAll('input[type="checkbox"]:not([id*="nav"])');
                     const ansNorm = ans.trim().toLowerCase().replace(/[^\w\s]/g, '');
-                    
+
                     for (const cb of checkboxes) {
                         const label = cb.closest('label') || document.querySelector(`label[for="${cb.id}"]`);
                         const parent = cb.closest('.choice, .answer-choice, .option, li, div');
                         const text = (label?.textContent || parent?.textContent || '').trim();
                         const textNorm = text.toLowerCase().replace(/[^\w\s]/g, '');
-                        
+
                         const letterMatch = /^[a-d]$/i.test(ans) && text.toLowerCase().startsWith(ans.toLowerCase());
                         const contentMatch = textNorm.includes(ansNorm) || ansNorm.includes(textNorm);
-                        
+
                         if ((letterMatch || contentMatch) && !cb.checked) {
                             cb.click();
                             return text.substring(0, 50);
@@ -3565,59 +4072,138 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
                     }
                     return null;
                 }, answer);
-                
+
                 if (clicked) {
                     log.push(`✓ Checked: "${clicked}..."`);
                     answered = true;
                 }
             }
         }
-        
+
         // CASE: Text inputs (fill in the blank)
         if (pageDebug.textInputs > 0 && !answered) {
             log.push(`Trying text inputs (${pageDebug.textInputs} fields)`);
-            
-            const filled = await quizPage.evaluate((answersArr) => {
-                const inputs = Array.from(document.querySelectorAll('input[type="text"]:not([readonly]), textarea'))
+
+            // We need to type into inputs using Puppeteer for reliability
+            // First, find the elements we need to type into
+            const inputsToFill = await quizPage.evaluate((answersArr) => {
+                // Robust visibility check
+                const isVisible = (el) => {
+                    if (!el) return false;
+                    const style = window.getComputedStyle(el);
+                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+                    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+                };
+
+                // Find active container
+                let container = null;
+                const activeSelectors = [
+                    '.question-view.active',
+                    '.slide.active',
+                    '.question-container.current',
+                    '.question-body:not([style*="display: none"])'
+                ];
+                for (const s of activeSelectors) {
+                    const el = document.querySelector(s);
+                    if (el && isVisible(el)) {
+                        container = el;
+                        break;
+                    }
+                }
+                if (!container) container = document.body;
+
+                const inputs = Array.from(container.querySelectorAll('input[type="text"]:not([readonly]), textarea'))
                     .filter(input => {
                         const style = window.getComputedStyle(input);
                         return style.display !== 'none' && style.visibility !== 'hidden' && !input.disabled;
                     });
-                
-                const results = [];
+
+                // Mark the inputs we want to fill
+                const indices = [];
                 for (let i = 0; i < Math.min(inputs.length, answersArr.length); i++) {
                     const input = inputs[i];
-                    input.focus();
-                    input.value = answersArr[i];
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                    input.dispatchEvent(new Event('change', { bubbles: true }));
-                    results.push(answersArr[i]);
+                    input.setAttribute('data-ai-fill-target', i.toString());
+                    indices.push(i);
                 }
-                return results;
+                return indices;
             }, answers);
-            
-            if (filled.length > 0) {
-                filled.forEach((ans, i) => log.push(`✓ Filled text input ${i + 1}: "${ans}"`));
+
+            if (inputsToFill.length > 0) {
+                for (let i = 0; i < inputsToFill.length; i++) {
+                    const idx = inputsToFill[i];
+                    const answer = answers[idx];
+
+                    try {
+                        const inputHandle = await quizPage.$(`[data-ai-fill-target="${idx}"]`);
+                        if (inputHandle) {
+                            // Clear and type
+                            await inputHandle.click({ clickCount: 3 });
+                            await inputHandle.press('Backspace');
+                            await inputHandle.type(answer, { delay: 30 });
+
+                            // Trigger extra events just in case
+                            await quizPage.evaluate((el) => {
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                el.blur();
+                            }, inputHandle);
+
+                            log.push(`✓ Typed into field ${idx + 1}: "${answer}"`);
+                        }
+                    } catch (e) {
+                        log.push(`⚠ Error typing answer ${idx + 1}: ${e.message}`);
+                    }
+                }
+
+                // Cleanup
+                await quizPage.evaluate(() => {
+                    document.querySelectorAll('[data-ai-fill-target]').forEach(el => el.removeAttribute('data-ai-fill-target'));
+                });
                 answered = true;
             }
         }
-        
+
         // CASE: Dropdown selects
         if (pageDebug.selects > 0 && !answered) {
             log.push(`Trying dropdown selects`);
-            
+
             const selected = await quizPage.evaluate((answersArr) => {
-                const selects = Array.from(document.querySelectorAll('select'))
+                // Robust visibility check
+                const isVisible = (el) => {
+                    if (!el) return false;
+                    const style = window.getComputedStyle(el);
+                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+                    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+                };
+
+                // Find active container
+                let container = null;
+                const activeSelectors = [
+                    '.question-view.active',
+                    '.slide.active',
+                    '.question-container.current',
+                    '.question-body:not([style*="display: none"])'
+                ];
+                for (const s of activeSelectors) {
+                    const el = document.querySelector(s);
+                    if (el && isVisible(el)) {
+                        container = el;
+                        break;
+                    }
+                }
+                if (!container) container = document.body;
+
+                const selects = Array.from(container.querySelectorAll('select'))
                     .filter(sel => {
                         const style = window.getComputedStyle(sel);
                         return style.display !== 'none' && style.visibility !== 'hidden';
                     });
-                
+
                 const results = [];
                 for (let i = 0; i < Math.min(selects.length, answersArr.length); i++) {
                     const select = selects[i];
                     const ansNorm = answersArr[i].trim().toLowerCase().replace(/[^\w\s]/g, '');
-                    
+
                     for (const option of select.options) {
                         const optNorm = option.text.toLowerCase().replace(/[^\w\s]/g, '');
                         if (optNorm.includes(ansNorm) || ansNorm.includes(optNorm)) {
@@ -3630,31 +4216,31 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
                 }
                 return results;
             }, answers);
-            
+
             if (selected.length > 0) {
                 selected.forEach(opt => log.push(`✓ Selected: "${opt}"`));
                 answered = true;
             }
         }
-        
+
         if (!answered) {
             log.push('⚠ Could not find matching input elements for the answer');
         }
-        
+
         debugLog('ENTER-ANSWERS', `Final log: ${JSON.stringify(log)}`);
-        
+
         // Take a new screenshot to show the result
-        await quizPage.waitForTimeout(500);
+        await quizPage.waitForTimeout(2000);
         const screenshot = await takeQuizScreenshot(quizPage);
         const screenshotBase64 = screenshot.toString('base64');
-        
+
         res.json({
             success: answered,
             log: log,
             screenshot: screenshotBase64,
             message: answered ? 'Answers entered successfully' : 'Could not enter answers automatically'
         });
-        
+
     } catch (error) {
         debugLog('ENTER-ANSWERS', `✗ ERROR: ${error.message}`);
         debugLog('ENTER-ANSWERS', `Stack: ${error.stack}`);
@@ -3669,12 +4255,12 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
 async function takeQuizScreenshot(page) {
     // Try to find the slides-container element
     const slidesContainer = await page.$('.slides-container');
-    
+
     if (slidesContainer) {
         debugLog('SCREENSHOT', '✓ Found .slides-container, taking element screenshot');
         return await slidesContainer.screenshot({ type: 'png' });
     }
-    
+
     // Fallback: try other common quiz content containers
     const fallbackSelectors = ['.assessment-content', '.quiz-content', '.question-container', 'main'];
     for (const selector of fallbackSelectors) {
@@ -3684,7 +4270,7 @@ async function takeQuizScreenshot(page) {
             return await el.screenshot({ type: 'png' });
         }
     }
-    
+
     // Last resort: full page screenshot
     debugLog('SCREENSHOT', '✗ No container found, taking full viewport screenshot');
     return await page.screenshot({ type: 'png', fullPage: false });
@@ -3693,27 +4279,177 @@ async function takeQuizScreenshot(page) {
 // Helper function to extract quiz content (HTML + images)
 async function extractQuizContent(page) {
     debugLog('EXTRACT', 'Extracting quiz content...');
-    
-    // Define selectors to try
-    const selectors = ['.slides-container', '.assessment-content', '.quiz-content', '.question-container', 'main'];
-    
+
     try {
-        const content = await page.evaluate(async (selectors) => {
+        // Wait for loading to finish
+        debugLog('EXTRACT', 'Waiting for loading indicators to disappear...');
+        try {
+            await page.waitForFunction(() => {
+                const text = document.body.innerText;
+                return !text.includes('Loading question') && !text.includes('Just a moment please');
+            }, { timeout: 5000 });
+        } catch (e) {
+            debugLog('EXTRACT', 'Timeout waiting for loading text to disappear, proceeding anyway...');
+        }
+
+        // Wait for question content
+        debugLog('EXTRACT', 'Waiting for question content...');
+        try {
+            await page.waitForSelector('.question-body, .question-text, .multiple-choice-question, .ordering-question, .matching-question', { timeout: 5000 });
+        } catch (e) {
+            debugLog('EXTRACT', 'Timeout waiting for specific question selector, trying generic containers...');
+        }
+
+        const content = await page.evaluate(async () => {
+            // Helper to check visibility
+            const isVisible = (el) => {
+                if (!el) return false;
+                const style = window.getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+                return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+            };
+
             // Find the container
             let container = null;
-            for (const s of selectors) {
+
+            // 1. Try specific ACTIVE question selectors
+            const activeSelectors = [
+                '.question-view.active',
+                '.slide.active',
+                '.question-container.current',
+                '.question-body:not([style*="display: none"])'
+            ];
+
+            for (const s of activeSelectors) {
                 const el = document.querySelector(s);
-                if (el) {
+                if (el && isVisible(el)) {
                     container = el;
                     break;
                 }
             }
-            
+
+            // 2. If no specific active class, look for generic question containers and pick the visible one
+            if (!container) {
+                const genericSelectors = ['.question-view', '.question-body', '.slides-container .slide', '.assessment-content > div'];
+                for (const s of genericSelectors) {
+                    const elements = document.querySelectorAll(s);
+                    for (const el of elements) {
+                        if (isVisible(el)) {
+                            container = el;
+                            break;
+                        }
+                    }
+                    if (container) break;
+                }
+            }
+
+            // 3. Fallback to main containers if they are visible
+            if (!container) {
+                const fallbackSelectors = ['.slides-container', '.assessment-content', '.quiz-content', 'main'];
+                for (const s of fallbackSelectors) {
+                    const el = document.querySelector(s);
+                    if (el && isVisible(el)) {
+                        // If we found a broad container like .slides-container, try to find the visible child inside it
+                        if (s === '.slides-container' || s === '.assessment-content') {
+                            const children = Array.from(el.children);
+                            const visibleChild = children.find(child => isVisible(child));
+                            if (visibleChild) {
+                                container = visibleChild;
+                                break;
+                            }
+                        }
+                        container = el;
+                        break;
+                    }
+                }
+            }
+
             if (!container) return { html: '<div class="error-content">Could not find quiz content container.</div>', text: '' };
-            
-            // Clone the container so we don't modify the actual page
-            const clone = container.cloneNode(true);
-            
+
+            // Function to clone only visible elements
+            function cloneVisible(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return node.cloneNode(true);
+                }
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const style = window.getComputedStyle(node);
+                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                        return null;
+                    }
+
+                    // Skip script/style tags
+                    if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'IFRAME'].includes(node.tagName)) {
+                        return null;
+                    }
+
+                    // Skip junk selectors
+                    if (node.matches && (
+                        node.matches('.skip-link') ||
+                        node.matches('.visually-hidden') ||
+                        node.matches('.sr-only') ||
+                        node.matches('.loading-overlay') ||
+                        node.matches('.loader') ||
+                        node.matches('.lrn_accessibility_label') ||
+                        node.matches('a[href^="#"]')
+                    )) {
+                        return null;
+                    }
+
+                    const clonedNode = node.cloneNode(false); // Shallow clone
+
+                    // sync value/checked properties to attributes for inputs
+                    if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA' || node.tagName === 'SELECT') {
+                        if (node.type === 'checkbox' || node.type === 'radio') {
+                            if (node.checked) {
+                                clonedNode.setAttribute('checked', 'checked');
+                            } else {
+                                clonedNode.removeAttribute('checked');
+                            }
+                        } else if (node.tagName === 'TEXTAREA') {
+                            clonedNode.textContent = node.value;
+                        } else if (node.tagName === 'SELECT') {
+                            // For select, we need to mark the selected option
+                            // We'll handle children later, but we can't easily sync select value without children
+                            // So we defer this to the child loop or just handle it here if we were cloning deep
+                        } else {
+                            // Text input, etc.
+                            clonedNode.setAttribute('value', node.value);
+                        }
+                    }
+
+                    for (const child of node.childNodes) {
+                        const clonedChild = cloneVisible(child);
+                        if (clonedChild) {
+                            // If parent is select and child is option, check if selected
+                            if (node.tagName === 'SELECT' && child.tagName === 'OPTION') {
+                                if (child.selected) {
+                                    clonedChild.setAttribute('selected', 'selected');
+                                }
+                            }
+                            clonedNode.appendChild(clonedChild);
+                        }
+                    }
+                    return clonedNode;
+                }
+                return node.cloneNode(true);
+            }
+
+            // Create a clean clone with only visible elements
+            const clone = cloneVisible(container);
+
+            if (!clone) return { html: '<div class="error-content">Content is hidden.</div>', text: '' };
+
+            // Remove elements containing "Loading question" text
+            const allElements = clone.querySelectorAll('*');
+            allElements.forEach(el => {
+                if (el.innerText && (el.innerText.includes('Loading question') || el.innerText.includes('Skip to navigation'))) {
+                    // Only remove if it's a leaf node or small container, not the whole thing
+                    if (el.children.length === 0 || el.tagName === 'SPAN' || el.tagName === 'DIV') {
+                        el.remove();
+                    }
+                }
+            });
+
             // Process images to base64
             const images = clone.querySelectorAll('img');
             for (const img of images) {
@@ -3723,7 +4459,7 @@ async function extractQuizContent(page) {
                         // Fetch the image data
                         const response = await fetch(src);
                         const blob = await response.blob();
-                        
+
                         // Convert to base64
                         await new Promise((resolve) => {
                             const reader = new FileReader();
@@ -3735,21 +4471,108 @@ async function extractQuizContent(page) {
                         });
                     }
                 } catch (e) {
-                    console.error('Failed to convert image:', e);
-                    // Keep original src if failed
+                    console.error('Failed to process image:', e);
                 }
             }
-            
-            // Remove scripts, iframes, styles, and navigation buttons
-            const unwanted = clone.querySelectorAll('script, iframe, style, .submit-button, .next-button, .prev-button, button');
-            unwanted.forEach(el => el.remove());
-            
+
+            // Get text content ONLY from visible nodes in the original container
+            // We can't trust clone.innerText because the clone is detached and has no layout info.
+            // So we traverse the ORIGINAL container to get text.
+
+            function getVisibleText(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return node.textContent;
+                }
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const style = window.getComputedStyle(node);
+                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                        return '';
+                    }
+                    // Skip script/style tags
+                    if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'IFRAME'].includes(node.tagName)) {
+                        return '';
+                    }
+
+                    // Skip "Skip to navigation" links
+                    if (node.classList.contains('skip-link') ||
+                        node.textContent.includes('Skip to navigation') ||
+                        node.getAttribute('aria-label') === 'Skip to navigation') {
+                        // Double check if it's the specific link, not a container
+                        if (node.tagName === 'A' || node.tagName === 'SPAN' || node.children.length === 0) {
+                            return '';
+                        }
+                    }
+
+                    // Special handling for Drag Buttons
+                    if (node.classList.contains('lrn_btn_drag')) {
+                        let btnText = '';
+                        for (const child of node.childNodes) {
+                            btnText += getVisibleText(child);
+                        }
+                        return ' [Answer Choice: ' + btnText.trim() + '] ';
+                    }
+
+                    let text = '';
+                    for (const child of node.childNodes) {
+                        text += getVisibleText(child);
+                    }
+
+                    // Add block spacing
+                    if (style.display === 'block' || style.display === 'flex' || style.display === 'grid') {
+                        text = '\n' + text + '\n';
+                    }
+                    return text;
+                }
+                return '';
+            }
+
+            let visibleText = getVisibleText(container).replace(/\n\s*\n/g, '\n').trim();
+
+            // Refined cleaning
+            visibleText = visibleText.replace(/Skip to navigation/gi, ''); // Fallback cleanup
+            visibleText = visibleText.replace(/(?:Possible[\s\n]*Points|Points[\s\n]*Possible)[\s\n]*:?[\s\n]*[\d.,]+/gi, '');
+            // Also catch standalone "Possible Points" text without numbers (header labels)
+            visibleText = visibleText.replace(/(?:Possible[\s\n]*Points|Points[\s\n]*Possible)[\s\n]*:?\s*$/gim, '');
+
+            // Extract question number from pagination (this is on the full page, not in the question container)
+            let questionNumber = null;
+            const pageActive = document.querySelector('.lrn-assess-li.pagination-active');
+            if (pageActive) {
+                // Try to find the number in text nodes
+                const walker = document.createTreeWalker(pageActive, NodeFilter.SHOW_TEXT, null);
+                let node;
+                while ((node = walker.nextNode())) {
+                    const txt = node.textContent.trim();
+                    if (txt && /^\d+$/.test(txt)) {
+                        questionNumber = parseInt(txt, 10);
+                        break;
+                    }
+                }
+                // Fallback: try textContent
+                if (!questionNumber) {
+                    const txt = pageActive.textContent.trim();
+                    const match = txt.match(/(\d+)/);
+                    if (match) questionNumber = parseInt(match[1], 10);
+                }
+            }
+
+            // Collect base64 images for AI
+            const imageDataList = [];
+            const imagesForAI = clone.querySelectorAll('img');
+            for (const img of imagesForAI) {
+                if (img.src && img.src.startsWith('data:')) {
+                    imageDataList.push(img.src);
+                }
+            }
+
             return {
                 html: clone.innerHTML,
-                text: clone.innerText
+                text: visibleText,
+                questionNumber: questionNumber,
+                images: imageDataList
             };
-        }, selectors);
-        
+        });
+
         debugLog('EXTRACT', `✓ Extracted content (${content.html.length} chars)`);
         return content;
     } catch (e) {
@@ -3766,27 +4589,27 @@ async function checkNavButtons(page) {
             canGoNext: false,
             isReview: false
         };
-        
+
         // Look for the navigation buttons - Schoology uses input[type="button"] typically
         const allInputs = document.querySelectorAll('input[type="button"], input[type="submit"], button');
-        
+
         allInputs.forEach(el => {
             const value = (el.value || el.textContent || '').trim().toLowerCase();
-            
+
             // Check for Previous/Back
             if (value === 'previous' || value === 'back' || value.includes('previous') || value.includes('back')) {
                 if (!el.disabled) {
                     result.canGoBack = true;
                 }
             }
-            
+
             // Check for Next vs Review
             if (value === 'next' || value.includes('next')) {
                 if (!el.disabled) {
                     result.canGoNext = true;
                 }
             }
-            
+
             // If the button says "Review", we're on the last question
             if (value === 'review' || value.includes('review')) {
                 result.isReview = true;
@@ -3794,7 +4617,7 @@ async function checkNavButtons(page) {
                 result.canGoNext = false;
             }
         });
-        
+
         return result;
     });
 }
@@ -3802,7 +4625,7 @@ async function checkNavButtons(page) {
 // Quiz page - renders the course/assignment selection UI
 app.get('/quiz', async (req, res) => {
     debugLog('QUIZ', 'Quiz page requested');
-    
+
     if (!req.session.accessToken) {
         debugLog('QUIZ', 'No access token, redirecting to home');
         return res.redirect('/');
@@ -3812,7 +4635,7 @@ app.get('/quiz', async (req, res) => {
     const sectionId = req.query.section;
     const assignmentId = req.query.id;
     const courseId = req.query.course;
-    
+
     if (!sectionId || !assignmentId || !courseId) {
         debugLog('QUIZ', 'Missing required params, redirecting to courses');
         return res.redirect('/courses');
@@ -3824,14 +4647,14 @@ app.get('/quiz', async (req, res) => {
         debugLog('QUIZ', `Fetching assignment from: ${assignmentUrl}`);
         const assignment = await makeOAuthRequest('GET', assignmentUrl, req.session.accessToken);
         debugLog('QUIZ', `✓ Got assignment: ${assignment.title}`);
-        
+
         // Fetch section info for course name
         const sectionUrl = `${config.apiBase}/sections/${sectionId}`;
         debugLog('QUIZ', `Fetching section from: ${sectionUrl}`);
         const section = await makeOAuthRequest('GET', sectionUrl, req.session.accessToken);
         debugLog('QUIZ', `✓ Section: ${section.course_title || section.section_title}`);
 
-        res.render('quiz', { 
+        res.render('quiz', {
             assignment,
             section,
             courseId,
@@ -3849,7 +4672,7 @@ app.get('/quiz', async (req, res) => {
 // API to get assignments for a specific section (for quiz page)
 app.get('/api/quiz/assignments/:sectionId', async (req, res) => {
     debugLog('QUIZ-API', `Fetching assignments for section: ${req.params.sectionId}`);
-    
+
     if (!req.session.accessToken) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -3867,7 +4690,7 @@ app.get('/api/quiz/assignments/:sectionId', async (req, res) => {
 // Inbox page
 app.get('/inbox', async (req, res) => {
     debugLog('INBOX', 'Inbox page requested');
-    
+
     if (!req.session.accessToken) {
         debugLog('INBOX', 'No access token, redirecting to home');
         return res.redirect('/');
@@ -3882,7 +4705,7 @@ app.get('/inbox', async (req, res) => {
 // Focus page - distraction-free assignment view
 app.get('/focus', async (req, res) => {
     debugLog('FOCUS', 'Focus page requested');
-    
+
     if (!req.session.accessToken) {
         debugLog('FOCUS', 'No access token, redirecting to home');
         return res.redirect('/');
@@ -3890,39 +4713,39 @@ app.get('/focus', async (req, res) => {
 
     try {
         const startTime = Date.now();
-        
+
         // ⚡ Use cached sections
         debugLog('FOCUS', '⚡ Fetching sections with caching...');
         const sections = await fetchAllSectionsOptimized(req.session.userId, req.session.accessToken);
-        
+
         // ⚡ PARALLEL FETCH: Get assignments for all sections
         debugLog('FOCUS', '⚡ Fetching assignments for all sections in parallel...');
         const sectionsToFetch = sections.slice(0, 10); // Limit to first 10
-        
+
         const assignmentsResults = await fetchAssignmentsForSectionsParallel(
             sectionsToFetch.map(s => s.id),
             req.session.accessToken,
             5
         );
-        
+
         debugLog('FOCUS', `⚡ All assignments fetched in ${Date.now() - startTime}ms`);
-        
+
         // Combine all assignments
         let allAssignments = [];
         const now = new Date();
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const threeDaysAgo = new Date(todayStart);
         threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-        
+
         for (const section of sectionsToFetch) {
             const result = assignmentsResults[section.id];
             if (result && result.assignments) {
                 for (const assignment of result.assignments) {
                     const hasDue = assignment.due && assignment.due.trim() !== '';
                     if (!hasDue) continue;
-                    
+
                     const dueDate = new Date(assignment.due);
-                    
+
                     if (dueDate >= threeDaysAgo) {
                         assignment.course_name = section.course_title || section.section_title;
                         allAssignments.push(assignment);
@@ -3930,12 +4753,12 @@ app.get('/focus', async (req, res) => {
                 }
             }
         }
-        
+
         // Apply adjusted due times from schedule
         loadSchedule(req.session.userId);
         const userSchedule = scheduleCache[req.session.userId] || {};
         const adjustedDueTimes = userSchedule.adjustedDueTimes || {};
-        
+
         allAssignments.forEach(assignment => {
             const adjusted = adjustedDueTimes[assignment.id];
             if (adjusted) {
@@ -3944,13 +4767,13 @@ app.get('/focus', async (req, res) => {
                 assignment.dueAdjusted = true;
             }
         });
-        
+
         // Sort by due date (soonest first)
         allAssignments.sort((a, b) => new Date(a.due) - new Date(b.due));
-        
+
         // Add time estimates
         const assignmentsWithTime = addTimeEstimates(allAssignments);
-        
+
         debugLog('FOCUS', `⚡ Total processing time: ${Date.now() - startTime}ms`);
         debugLog('FOCUS', `Found ${allAssignments.length} assignments for focus mode`);
 
@@ -3969,7 +4792,7 @@ app.get('/focus', async (req, res) => {
 // Schedule page
 app.get('/schedule', async (req, res) => {
     debugLog('SCHEDULE', 'Schedule page requested');
-    
+
     if (!req.session.accessToken) {
         debugLog('SCHEDULE', 'No access token, redirecting to home');
         return res.redirect('/');
@@ -3978,7 +4801,7 @@ app.get('/schedule', async (req, res) => {
     try {
         // ⚡ Use cached sections
         const courses = await fetchAllSectionsOptimized(req.session.userId, req.session.accessToken);
-        
+
         debugLog('SCHEDULE', `Found ${courses.length} courses`);
 
         res.render('schedule', {
@@ -3997,7 +4820,7 @@ app.get('/api/schedule', (req, res) => {
     if (!req.session.userId) {
         return res.json({ schedule: {} });
     }
-    
+
     const schedule = loadSchedule(req.session.userId);
     res.json({ schedule });
 });
@@ -4005,7 +4828,7 @@ app.get('/api/schedule', (req, res) => {
 // Save schedule and update assignment due times
 app.post('/api/schedule/save', express.json(), async (req, res) => {
     debugLog('SCHEDULE', 'Saving schedule');
-    
+
     if (!req.session.accessToken || !req.session.userId) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -4013,13 +4836,13 @@ app.post('/api/schedule/save', express.json(), async (req, res) => {
     try {
         const { schedule } = req.body;
         const userId = req.session.userId;
-        
+
         // Save the schedule
         saveSchedule(userId, schedule);
-        
+
         // Now update assignment due times based on schedule
         let assignmentsUpdated = 0;
-        
+
         // Build a map of sectionId -> day -> start time
         const scheduleMap = {};
         Object.keys(schedule).forEach(day => {
@@ -4033,29 +4856,29 @@ app.post('/api/schedule/save', express.json(), async (req, res) => {
                 };
             });
         });
-        
+
         debugLog('SCHEDULE', `Schedule map: ${JSON.stringify(scheduleMap)}`);
-        
+
         // For each section in the schedule, fetch assignments and check due dates
         for (const sectionId of Object.keys(scheduleMap)) {
             try {
                 // Fetch assignments for this section
                 const assignments = await fetchAllAssignments(sectionId, req.session.accessToken);
-                
+
                 for (const assignment of assignments) {
                     // Skip if no due date
                     if (!assignment.due || assignment.due.trim() === '') continue;
-                    
+
                     // Skip if assignment allows dropbox (online submission)
                     if (assignment.allow_dropbox === 1 || assignment.allow_dropbox === '1') {
                         debugLog('SCHEDULE', `  Skipping "${assignment.title}" - online submission allowed`);
                         continue;
                     }
-                    
+
                     // Parse the due date
                     let dueDate = new Date(assignment.due);
                     if (isNaN(dueDate.getTime())) continue;
-                    
+
                     // Check if due date has no time component (date only, e.g., "2025-12-05")
                     // Schoology format: "YYYY-MM-DD" for date only, "YYYY-MM-DD HH:MM:SS" for datetime
                     const hasTimeComponent = assignment.due.includes(':');
@@ -4064,32 +4887,32 @@ app.post('/api/schedule/save', express.json(), async (req, res) => {
                         dueDate.setHours(6, 0, 0, 0);
                         debugLog('SCHEDULE', `  "${assignment.title}" has no time, assuming 6 AM`);
                     }
-                    
+
                     // Get day of week (0=Sunday, 1=Monday, ..., 5=Friday, 6=Saturday)
                     const jsDay = dueDate.getDay();
                     // Convert to our format (1=Monday, 5=Friday)
                     // Sunday=0 -> skip, Monday=1 -> 1, Tuesday=2 -> 2, etc.
                     if (jsDay === 0 || jsDay === 6) continue; // Skip weekends
                     const scheduleDay = jsDay; // 1-5 for Mon-Fri
-                    
+
                     // Check if this section has a class on this day
                     const classTime = scheduleMap[sectionId][scheduleDay];
                     if (!classTime) continue;
-                    
+
                     // Update the due time to class start time
                     const newDueDate = new Date(dueDate);
                     newDueDate.setHours(classTime.hour, classTime.minute, 0, 0);
-                    
+
                     // Store the adjusted time in our local cache
                     // Note: We don't actually update Schoology's due date (API doesn't allow it for most users)
                     // Instead, we'll store adjusted times locally and use them when displaying
                     if (!scheduleCache[userId].adjustedDueTimes) {
                         scheduleCache[userId].adjustedDueTimes = {};
                     }
-                    
+
                     const originalTime = dueDate.toISOString();
                     const newTime = newDueDate.toISOString();
-                    
+
                     if (originalTime !== newTime) {
                         scheduleCache[userId].adjustedDueTimes[assignment.id] = {
                             originalDue: originalTime,
@@ -4106,10 +4929,10 @@ app.post('/api/schedule/save', express.json(), async (req, res) => {
                 debugLog('SCHEDULE', `  Error processing section ${sectionId}: ${e.message}`);
             }
         }
-        
+
         // Save the updated cache with adjusted times
         fs.writeFileSync(SCHEDULE_PATH, JSON.stringify(scheduleCache, null, 2));
-        
+
         debugLog('SCHEDULE', `Schedule saved. ${assignmentsUpdated} assignments adjusted.`);
         res.json({ success: true, assignmentsUpdated });
     } catch (error) {
@@ -4123,11 +4946,11 @@ app.get('/api/schedule/adjusted-due/:assignmentId', (req, res) => {
     if (!req.session.userId) {
         return res.json({ adjusted: false });
     }
-    
+
     const schedule = scheduleCache[req.session.userId] || {};
     const adjustedTimes = schedule.adjustedDueTimes || {};
     const adjusted = adjustedTimes[req.params.assignmentId];
-    
+
     if (adjusted) {
         res.json({ adjusted: true, ...adjusted });
     } else {
@@ -4140,7 +4963,7 @@ app.get('/api/notifications', (req, res) => {
     if (!req.session.userId) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
-    
+
     const userData = loadNotifications(req.session.userId);
     res.json({ notifications: userData.notifications });
 });
@@ -4150,7 +4973,7 @@ app.get('/api/notifications/count', (req, res) => {
     if (!req.session.userId) {
         return res.json({ count: 0 });
     }
-    
+
     const userData = loadNotifications(req.session.userId);
     const unreadCount = userData.notifications.filter(n => !n.read).length;
     res.json({ count: unreadCount });
@@ -4161,16 +4984,16 @@ app.post('/api/notifications/read', express.json(), (req, res) => {
     if (!req.session.userId) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
-    
+
     const { notificationId } = req.body;
     const userData = loadNotifications(req.session.userId);
-    
+
     const notification = userData.notifications.find(n => n.id === notificationId);
     if (notification) {
         notification.read = true;
         saveNotifications();
     }
-    
+
     res.json({ success: true });
 });
 
@@ -4179,18 +5002,18 @@ app.post('/api/notifications/read-all', (req, res) => {
     if (!req.session.userId) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
-    
+
     const userData = loadNotifications(req.session.userId);
     userData.notifications.forEach(n => n.read = true);
     saveNotifications();
-    
+
     res.json({ success: true });
 });
 
 // Refresh notifications (check for new assignments and grades)
 app.post('/api/notifications/refresh', async (req, res) => {
     debugLog('NOTIFICATIONS', 'Refreshing notifications');
-    
+
     if (!req.session.accessToken || !req.session.userId) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -4204,7 +5027,7 @@ app.post('/api/notifications/refresh', async (req, res) => {
         const sectionsUrl = `${config.apiBase}/users/${userId}/sections?limit=50`;
         const sectionsData = await makeOAuthRequest('GET', sectionsUrl, req.session.accessToken);
         const sections = sectionsData.section || [];
-        
+
         debugLog('NOTIFICATIONS', `Checking ${sections.length} sections for new content`);
 
         // Create section lookup
@@ -4224,20 +5047,20 @@ app.post('/api/notifications/refresh', async (req, res) => {
                 for (const assignment of assignments) {
                     const assignmentKey = `${section.id}_${assignment.id}`;
                     const lastUpdated = assignment.last_updated ? assignment.last_updated : 0;
-                    
+
                     // Check if this is a new assignment we haven't seen before
                     if (!userData.knownAssignments[assignmentKey]) {
-                        userData.knownAssignments[assignmentKey] = { 
+                        userData.knownAssignments[assignmentKey] = {
                             firstSeen: new Date().toISOString(),
                             hasGrade: false,
                             lastUpdated: lastUpdated
                         };
-                        
+
                         // Only notify if assignment was created in last 7 days
                         const createdDate = assignment.created ? new Date(assignment.created * 1000) : new Date();
                         const weekAgo = new Date();
                         weekAgo.setDate(weekAgo.getDate() - 7);
-                        
+
                         if (createdDate > weekAgo) {
                             const added = addNotification(userId, {
                                 type: 'new_assignment',
@@ -4255,12 +5078,12 @@ app.post('/api/notifications/refresh', async (req, res) => {
                         const storedLastUpdated = userData.knownAssignments[assignmentKey].lastUpdated || 0;
                         if (lastUpdated > storedLastUpdated) {
                             userData.knownAssignments[assignmentKey].lastUpdated = lastUpdated;
-                            
+
                             // Only notify if update was recent (within last 3 days)
                             const updateDate = new Date(lastUpdated * 1000);
                             const threeDaysAgo = new Date();
                             threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-                            
+
                             if (updateDate > threeDaysAgo) {
                                 const added = addNotification(userId, {
                                     type: 'updated',
@@ -4280,10 +5103,10 @@ app.post('/api/notifications/refresh', async (req, res) => {
                     if (assignment.grade !== undefined && assignment.grade !== null && assignment.grade !== '') {
                         const gradeKey = `grade_${assignmentKey}`;
                         const hasExistingGrade = userData.knownAssignments[assignmentKey]?.hasGrade;
-                        
+
                         if (!hasExistingGrade) {
                             userData.knownAssignments[assignmentKey].hasGrade = true;
-                            
+
                             const added = addNotification(userId, {
                                 type: 'graded',
                                 title: assignment.title,
@@ -4307,7 +5130,7 @@ app.post('/api/notifications/refresh', async (req, res) => {
         try {
             const gradesUrl = `${config.apiBase}/users/${userId}/grades`;
             const gradesData = await makeOAuthRequest('GET', gradesUrl, req.session.accessToken);
-            
+
             if (gradesData.section) {
                 for (const sec of gradesData.section) {
                     if (sec.period && Array.isArray(sec.period)) {
@@ -4316,18 +5139,18 @@ app.post('/api/notifications/refresh', async (req, res) => {
                                 for (const assignment of period.assignment) {
                                     if (assignment.grade !== undefined && assignment.grade !== null && assignment.grade !== '') {
                                         const assignmentKey = `${sec.section_id}_${assignment.assignment_id}`;
-                                        
+
                                         if (!userData.knownAssignments[assignmentKey]) {
-                                            userData.knownAssignments[assignmentKey] = { 
+                                            userData.knownAssignments[assignmentKey] = {
                                                 firstSeen: new Date().toISOString(),
                                                 hasGrade: true
                                             };
                                         }
-                                        
+
                                         const hasExistingGrade = userData.knownAssignments[assignmentKey]?.hasGrade;
                                         if (!hasExistingGrade) {
                                             userData.knownAssignments[assignmentKey].hasGrade = true;
-                                            
+
                                             const sectionInfo = sectionLookup[sec.section_id] || {};
                                             const added = addNotification(userId, {
                                                 type: 'graded',
@@ -4353,13 +5176,13 @@ app.post('/api/notifications/refresh', async (req, res) => {
         }
 
         saveNotifications();
-        
+
         const unreadCount = userData.notifications.filter(n => !n.read).length;
         debugLog('NOTIFICATIONS', `Refresh complete: ${newCount} new notifications, ${unreadCount} unread total`);
-        
-        res.json({ 
-            success: true, 
-            newCount, 
+
+        res.json({
+            success: true,
+            newCount,
             unreadCount,
             notifications: userData.notifications
         });
@@ -4386,7 +5209,7 @@ app.post('/api/notifications/clear', (req, res) => {
 // Settings page
 app.get('/settings', async (req, res) => {
     debugLog('SETTINGS', 'Settings page requested');
-    
+
     if (!req.session.accessToken) {
         debugLog('SETTINGS', 'No access token, redirecting to home');
         return res.redirect('/');
@@ -4399,7 +5222,7 @@ app.get('/settings', async (req, res) => {
             id: s.id,
             name: s.course_title || s.section_title || 'Unknown Course'
         }));
-        
+
         debugLog('SETTINGS', `Found ${courses.length} enrolled courses`);
 
         res.render('settings', {
@@ -4440,7 +5263,7 @@ app.listen(PORT, () => {
     console.log('='.repeat(60));
     console.log(`🎓 Schoology Pro Max is running!`);
     console.log('='.repeat(60));
-    
+
     if (IS_VERCEL) {
         console.log('🌐 Running on Vercel (Serverless Mode)');
         if (BROWSER_FEATURES_ENABLED) {
