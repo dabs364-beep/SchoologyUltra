@@ -2620,6 +2620,21 @@ app.post('/api/browser/close', requireBrowserFeatures, async (req, res) => {
 // Store the current quiz page reference
 let quizPage = null;
 
+app.post('/api/quiz/ask-ai', requireBrowserFeatures, express.json(), async (req, res) => {
+    try {
+        if (!quizPage) {
+            return res.status(400).json({ success: false, error: 'No active quiz page. Please load a quiz first.' });
+        }
+        const { model = 'llama3.1-8b', customPrompt } = req.body;
+        // Placeholder for AI logic
+        debugLog('QUIZ-ASK-AI', `Asking AI for help with model: ${model}, customPrompt: ${customPrompt ? 'yes' : 'no'}`);
+        res.json({ success: true, message: 'AI assistance requested (feature coming soon!)', model, customPrompt });
+    } catch (error) {
+        debugLog('QUIZ-ASK-AI', `✗ ERROR: ${error.message}`);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Start quiz and take initial screenshot
 app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, res) => {
     const { courseId, assignmentId } = req.body;
@@ -3214,6 +3229,9 @@ app.get('/api/quiz/content', requireBrowserFeatures, async (req, res) => {
 // Perform a click on the actual quiz page (using index-based targeting)
 app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), async (req, res) => {
     try {
+        if (!quizPage) {
+            return res.status(400).json({ success: false, error: 'No active quiz page. Please load a quiz first.' });
+        }
         const { type, index } = req.body;
         const result = await quizPage.evaluate((args) => {
             const { type, index } = args;
@@ -3292,16 +3310,33 @@ app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), asyn
     }
 });
 
+// New endpoint for entering multiple answers
+app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), async (req, res) => {
+    try {
+        if (!quizPage) {
+            return res.status(400).json({ success: false, error: 'No active quiz page. Please load a quiz first.' });
+        }
+        const { answers } = req.body;
+        // TODO: Implement logic to process 'answers' array and interact with quizPage
+        // This will likely involve iterating through 'answers' and calling evaluate/type/click based on answer type
+        // For now, just return success
+        debugLog('QUIZ-ENTER-ANSWERS', `Received answers: ${JSON.stringify(answers)}`);
+        res.json({ success: true, message: 'Answers received (processing not yet implemented)' });
+    } catch (error) {
+        debugLog('QUIZ-ENTER-ANSWERS', `Error: ${error.message}`);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Sync text input (using index-based targeting)
 app.post('/api/quiz/type-text', requireBrowserFeatures, express.json(), async (req, res) => {
-    const { type, index, text } = req.body;
-    debugLog('SYNC-TYPE', `Typing "${text}" into ${type} at index ${index}`);
-
-    if (!quizPage) {
-        return res.json({ success: false, error: 'No active quiz page' });
-    }
-
     try {
+        if (!quizPage) {
+            return res.status(400).json({ success: false, error: 'No active quiz page. Please load a quiz first.' });
+        }
+        const { type, index, text } = req.body;
+        // ... rest of implementation matching previous logic but ensuring safety
+        debugLog('SYNC-TYPE', `Typing "${text}" into ${type} at index ${index}`);
         // We use Puppeteer to find the element handle so we can use page.type for realistic typing
         // But first we need to find it using evaluate logic to match the container
         const boundingBox = await quizPage.evaluate((args) => {
@@ -3369,12 +3404,6 @@ app.post('/api/quiz/type-text', requireBrowserFeatures, express.json(), async (r
 
 // Sync select option (using index-based targeting)
 app.post('/api/quiz/select-option', requireBrowserFeatures, express.json(), async (req, res) => {
-    const { index, value } = req.body;
-    debugLog('SYNC-SELECT', `Selecting "${value}" in dropdown index ${index}`);
-
-    if (!quizPage) {
-        return res.json({ success: false, error: 'No active quiz page' });
-    }
 
     try {
         const result = await quizPage.evaluate((args) => {
