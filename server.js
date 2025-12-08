@@ -3768,11 +3768,75 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
         ]);
     };
 
+    // Helper: Ensure Browser is Active (Vercel Rehydration)
+    const ensureQuizPage = async (reqUrl, reqCookie) => {
+        if (quizPage && !quizPage.isClosed()) {
+            if (quizPage.url().includes('schoology.com')) {
+                return true;
+            }
+        }
+
+        debugLog('VERCEL', 'Browser session lost/closed. Rehydrating...');
+
+        if (!browserInstance) {
+            const launchOptions = IS_VERCEL && chromiumPack ? {
+                args: [...chromiumPack.args, '--no-sandbox', '--disable-dev-shm-usage', '--disable-setuid-sandbox', '--no-zygote', '--single-process'],
+                defaultViewport: chromiumPack.defaultViewport,
+                executablePath: await chromiumPack.executablePath(),
+                headless: chromiumPack.headless,
+                ignoreHTTPSErrors: true
+            } : { headless: false, args: ['--start-maximized'] };
+
+            browserInstance = await chromium.launch(launchOptions);
+            browserContext = await browserInstance.newContext();
+
+            // 2. Inject Cookie
+            if (reqCookie) {
+                const decrypted = decryptToken(reqCookie);
+                if (decrypted) {
+                    const cookies = [{
+                        name: 'SESS' + crypto.createHash('md5').update('fuhsd.schoology.com').digest('hex'),
+                        value: decrypted,
+                        domain: '.schoology.com',
+                        path: '/'
+                    }];
+                    await browserContext.addCookies(cookies);
+                    isLoggedIn = true;
+                }
+            }
+        }
+
+        if (!quizPage || quizPage.isClosed()) {
+            quizPage = await browserContext.newPage();
+            await quizPage.route('**/*', (route) => {
+                const type = route.request().resourceType();
+                if (type === 'font' || type === 'media' || route.request().url().includes('google-analytics')) route.abort();
+                else route.continue();
+            });
+        }
+
+        // 3. Navigate to Quiz
+        if (reqUrl && quizPage.url() !== reqUrl) {
+            debugLog('VERCEL', `Navigating to ${reqUrl}...`);
+            await quizPage.goto(reqUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        }
+        return true;
+    };
+
+
     if (!answers || !Array.isArray(answers) || answers.length === 0) {
         return res.json({
             success: false,
             error: 'No answers provided'
         });
+    }
+
+    // Attempt Rehydration
+    const { quizUrl } = req.body;
+    try {
+        await ensureQuizPage(quizUrl, req.cookies?.schoology_sess);
+    } catch (e) {
+        debugLog('VERCEL', `Rehydration failed: ${e.message}`);
     }
 
     if (!quizPage) {
@@ -4758,6 +4822,7 @@ app.get('/quiz', async (req, res) => {
             courseId,
             sectionId,
             assignmentId,
+            quizUrl: assignment.web_url, // Pass URL for Vercel rehydration
             authenticated: true,
             userName: req.session.userName
         });

@@ -1442,11 +1442,15 @@
                         try {
                             // Set lock
                             window.isAutoEntering = true;
+                            const currentQuizUrl = "<%= quizUrl %>";
 
                             const enterResponse = await fetch('/api/quiz/enter-answers', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ answers: window.currentParsedAnswers })
+                                body: JSON.stringify({
+                                    answers: window.currentParsedAnswers,
+                                    quizUrl: currentQuizUrl
+                                })
                             });
                             const enterData = await enterResponse.json();
 
