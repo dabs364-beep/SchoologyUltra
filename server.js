@@ -3311,9 +3311,36 @@ const rehydrateQuizPage = async (reqUrl, reqCookie) => {
     }
 
     // 5. Navigate to Quiz
-    if (reqUrl && quizPage.url() !== reqUrl) {
+    if (reqUrl && reqUrl.startsWith('http') && quizPage.url() !== reqUrl) {
         debugLog('VERCEL', `Navigating to ${reqUrl}...`);
-        await quizPage.goto(reqUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        try {
+            await quizPage.goto(reqUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+            // Wait for quiz content to appear
+            debugLog('VERCEL', 'Waiting for quiz content...');
+            const quizSelectors = [
+                '.question-view',
+                '.assessment-content',
+                '.slides-container',
+                '.question-body',
+                '#assessment-view',
+                '.assessment-player'
+            ];
+            // Try to wait for any of these
+            try {
+                await Promise.race([
+                    quizPage.waitForSelector(quizSelectors.join(','), { timeout: 15000 }),
+                    quizPage.waitForSelector('iframe', { timeout: 10000 }) // Maybe it's in an iframe
+                ]);
+                debugLog('VERCEL', '✓ Quiz content detected');
+            } catch (waitError) {
+                debugLog('VERCEL', '⚠️ Timeout waiting for specific selectors, proceeding anyway...');
+            }
+
+        } catch (navError) {
+            debugLog('VERCEL', `✗ Navigation failed: ${navError.message}`);
+            throw navError;
+        }
     }
     return true;
 };
@@ -3873,6 +3900,14 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
 
     try {
         debugLog('ENTER-ANSWERS', `Attempting to enter ${answers.length} answer(s): ${JSON.stringify(answers)}`);
+
+        // Wait for inputs to be available
+        try {
+            debugLog('ENTER-ANSWERS', 'Waiting for interactive elements...');
+            await quizPage.waitForSelector('input[type="text"], textarea, .lrn_btn_drag, select', { state: 'visible', timeout: 10000 });
+        } catch (e) {
+            debugLog('ENTER-ANSWERS', '⚠️ Timeout waiting for inputs, trying to proceed...');
+        }
 
         const log = [];
         let answered = false;
