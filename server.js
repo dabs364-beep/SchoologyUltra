@@ -4132,32 +4132,46 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
             // We need to type into inputs using Puppeteer for reliability
             // First, find the elements we need to type into
             const inputsToFill = await quizPage.evaluate((answersArr) => {
-                // Simple, robust visibility check
+                // Robust visibility check
                 const isVisible = (el) => {
                     if (!el) return false;
-                    // Check standard visibility properties
-                    return (el.offsetWidth > 0 || el.offsetHeight > 0) &&
-                        window.getComputedStyle(el).display !== 'none' &&
-                        window.getComputedStyle(el).visibility !== 'hidden';
+
+                    // Use native checkVisibility if available
+                    if (el.checkVisibility) {
+                        return el.checkVisibility({
+                            checkOpacity: true,
+                            checkVisibilityCSS: true
+                        });
+                    }
+
+                    const style = window.getComputedStyle(el);
+                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+                    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
                 };
 
-                // Find active container - Keep it simple!
-                // If we find a specific "active" question, use it. Otherwise, look at the whole form/body.
-                let container = document.querySelector('.question-view.active') ||
-                    document.querySelector('.question-container.current') ||
-                    document.querySelector('.slides-container') ||
-                    document.body;
+                // Find active container
+                let container = null;
+                const activeSelectors = [
+                    '.question-view.active',
+                    '.slide.active',
+                    '.question-container.current',
+                    '.question-body:not([style*="display: none"])'
+                ];
+                for (const s of activeSelectors) {
+                    const el = document.querySelector(s);
+                    if (el && isVisible(el)) {
+                        container = el;
+                        break;
+                    }
+                }
+                if (!container) container = document.body;
 
                 console.log('Searching for inputs in:', container.className || container.tagName);
 
-                // Select ALL potential text inputs
-                // Exclude: hidden, checkbox, radio, submit, button, file, image, reset
-                const allInputs = Array.from(container.querySelectorAll('input, textarea'));
-                const inputs = allInputs.filter(input => {
-                    const type = input.type.toLowerCase();
-                    const isText = !['hidden', 'checkbox', 'radio', 'submit', 'button', 'file', 'image', 'reset'].includes(type);
-                    return isText && isVisible(input) && !input.disabled && !input.readOnly;
-                });
+                const inputs = Array.from(container.querySelectorAll('input[type="text"]:not([readonly]), textarea'))
+                    .filter(input => {
+                        return isVisible(input) && !input.disabled;
+                    });
 
                 console.log(`Found ${inputs.length} visible text inputs.`);
 
@@ -4238,15 +4252,34 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
             const selected = await quizPage.evaluate((answersArr) => {
                 const isVisible = (el) => {
                     if (!el) return false;
-                    return (el.offsetWidth > 0 || el.offsetHeight > 0) &&
-                        window.getComputedStyle(el).display !== 'none' &&
-                        window.getComputedStyle(el).visibility !== 'hidden';
+                    // Use native checkVisibility if available
+                    if (el.checkVisibility) {
+                        return el.checkVisibility({
+                            checkOpacity: true,
+                            checkVisibilityCSS: true
+                        });
+                    }
+                    const style = window.getComputedStyle(el);
+                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+                    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
                 };
 
-                let container = document.querySelector('.question-view.active') ||
-                    document.querySelector('.question-container.current') ||
-                    document.querySelector('.slides-container') ||
-                    document.body;
+                // Find active container
+                let container = null;
+                const activeSelectors = [
+                    '.question-view.active',
+                    '.slide.active',
+                    '.question-container.current',
+                    '.question-body:not([style*="display: none"])'
+                ];
+                for (const s of activeSelectors) {
+                    const el = document.querySelector(s);
+                    if (el && isVisible(el)) {
+                        container = el;
+                        break;
+                    }
+                }
+                if (!container) container = document.body;
 
                 const selects = Array.from(container.querySelectorAll('select'))
                     .filter(sel => isVisible(sel) && !sel.disabled);
