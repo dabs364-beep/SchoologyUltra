@@ -2854,11 +2854,16 @@ app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, 
 });
 
 // Navigate to next question
-app.post('/api/quiz/next', requireBrowserFeatures, async (req, res) => {
+app.post('/api/quiz/next', requireBrowserFeatures, express.json(), async (req, res) => {
     debugLog('QUIZ-NEXT', '=== Navigating to next question ===');
 
-    // Ensure we have a page (restore if needed)
-    await ensureQuizPage(req);
+    // Attempt Rehydration (CRITICAL for Vercel)
+    const { quizUrl } = req.body || {};
+    try {
+        await rehydrateQuizPage(quizUrl, req.cookies?.schoology_sess);
+    } catch (e) {
+        debugLog('QUIZ-NEXT', `Rehydration failed: ${e.message}`);
+    }
 
     if (!quizPage) {
         debugLog('QUIZ-NEXT', '✗ No active quiz page');
@@ -2913,11 +2918,16 @@ app.post('/api/quiz/next', requireBrowserFeatures, async (req, res) => {
 });
 
 // Navigate to previous question
-app.post('/api/quiz/prev', requireBrowserFeatures, async (req, res) => {
+app.post('/api/quiz/prev', requireBrowserFeatures, express.json(), async (req, res) => {
     debugLog('QUIZ-PREV', '=== Navigating to previous question ===');
 
-    // Ensure we have a page (restore if needed)
-    await ensureQuizPage(req);
+    // Attempt Rehydration (CRITICAL for Vercel)
+    const { quizUrl } = req.body || {};
+    try {
+        await rehydrateQuizPage(quizUrl, req.cookies?.schoology_sess);
+    } catch (e) {
+        debugLog('QUIZ-PREV', `Rehydration failed: ${e.message}`);
+    }
 
     if (!quizPage) {
         debugLog('QUIZ-PREV', '✗ No active quiz page');
@@ -3217,6 +3227,16 @@ app.post('/api/quiz/close', requireBrowserFeatures, async (req, res) => {
 app.get('/api/quiz/content', requireBrowserFeatures, async (req, res) => {
     debugLog('QUIZ-CONTENT', 'Fetching current quiz content...');
 
+    // Attempt Rehydration (CRITICAL for Vercel)
+    const quizUrl = req.query.quizUrl;
+    if (quizUrl) {
+        try {
+            await rehydrateQuizPage(quizUrl, req.cookies?.schoology_sess);
+        } catch (e) {
+            debugLog('QUIZ-CONTENT', `Rehydration failed: ${e.message}`);
+        }
+    }
+
     if (!quizPage) {
         return res.json({
             success: false,
@@ -3462,8 +3482,13 @@ app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), asyn
             await quizPage.waitForTimeout(500);
             res.json({ success: true });
         } else {
-            debugLog('SYNC-CLICK', `DEBUG: ${result.debug ? result.debug.join(', ') : 'No debug info'}`);
-            res.json(result);
+            const debugInfo = result.debug ? result.debug.join(' | ') : 'No debug info';
+            debugLog('SYNC-CLICK', `FAILED: ${result.error}`);
+            debugLog('SYNC-CLICK', `DEBUG INFO: ${debugInfo}`);
+            res.json({
+                success: false,
+                error: `${result.error}. Debug: ${debugInfo}`
+            });
         }
     } catch (error) {
         debugLog('SYNC-CLICK', `Error: ${error.message}`);
@@ -3742,8 +3767,20 @@ app.post('/api/quiz/ask-ai', requireBrowserFeatures, express.json(), async (req,
         });
     }
 
+    // Attempt Rehydration (CRITICAL for Vercel)
+    const { quizUrl } = req.body || {};
+    try {
+        await rehydrateQuizPage(quizUrl, req.cookies?.schoology_sess);
+    } catch (e) {
+        debugLog('ASK-AI', `Rehydration failed: ${e.message}`);
+        return res.json({
+            success: false,
+            error: `Failed to rehydrate quiz session: ${e.message}`
+        });
+    }
+
     if (!quizPage) {
-        debugLog('ASK-AI', '✗ No active quiz page');
+        debugLog('ASK-AI', '✗ No active quiz page after rehydration');
         return res.json({
             success: false,
             error: 'No active quiz. Please load a quiz first.'

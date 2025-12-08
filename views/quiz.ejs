@@ -1394,10 +1394,12 @@
             `;
 
                 try {
+                    const currentQuizUrl = "<%= quizUrl %>";
                     const response = await fetch('/api/quiz/ask-ai', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
+                            quizUrl: currentQuizUrl,
                             quizContext: quizContext.trim(),
                             questionContext: questionContext.trim(),
                             contextImages: activeImages
@@ -1536,7 +1538,8 @@
             // Refresh the quiz content display (called after answers are entered or after user interactions)
             async function refreshQuizContent() {
                 try {
-                    const response = await fetch('/api/quiz/content');
+                    const currentQuizUrl = "<%= quizUrl %>";
+                    const response = await fetch(`/api/quiz/content?quizUrl=${encodeURIComponent(currentQuizUrl)}`);
                     const data = await response.json();
 
                     if (!data.success || !data.content) {
@@ -1837,10 +1840,14 @@
                 enterStatus.innerHTML = '<div style="margin-top: 0.75rem; color: var(--text-tertiary);">Entering answers on the quiz page...</div>';
 
                 try {
+                    const currentQuizUrl = "<%= quizUrl %>";
                     const response = await fetch('/api/quiz/enter-answers', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ answers: window.currentParsedAnswers })
+                        body: JSON.stringify({ 
+                            answers: window.currentParsedAnswers,
+                            quizUrl: currentQuizUrl
+                        })
                     });
                     const data = await response.json();
 
@@ -1916,7 +1923,12 @@
                 navStatus.textContent = '⏳ Navigating...';
 
                 try {
-                    const response = await fetch('/api/quiz/next', { method: 'POST' });
+                    const currentQuizUrl = "<%= quizUrl %>";
+                    const response = await fetch('/api/quiz/next', { 
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ quizUrl: currentQuizUrl })
+                    });
                     const data = await response.json();
 
                     if (!data.success) {
@@ -2000,7 +2012,12 @@
                 navStatus.textContent = '⏳ Navigating...';
 
                 try {
-                    const response = await fetch('/api/quiz/prev', { method: 'POST' });
+                    const currentQuizUrl = "<%= quizUrl %>";
+                    const response = await fetch('/api/quiz/prev', { 
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ quizUrl: currentQuizUrl })
+                    });
                     const data = await response.json();
 
                     if (!data.success) {
