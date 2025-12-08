@@ -882,6 +882,8 @@
 
         <script src="/js/app.js"></script>
         <script>
+            const COURSE_ID = '<%= courseId %>';
+            const ASSIGNMENT_ID = '<%= assignmentId %>';
             // Quiz is automatically selected from URL params
             const selectedSectionId = '<%= sectionId %>';
             const selectedCourseId = '<%= courseId %>';
@@ -1508,7 +1510,7 @@
             // Refresh the quiz content display (called after answers are entered or after user interactions)
             async function refreshQuizContent() {
                 try {
-                    const response = await fetch('/api/quiz/content');
+                    const response = await fetch(`/api/quiz/content?courseId=${COURSE_ID}&assignmentId=${ASSIGNMENT_ID}`);
                     const data = await response.json();
 
                     if (!data.success || !data.content) {

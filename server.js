@@ -3199,10 +3199,91 @@ app.get('/api/quiz/content', requireBrowserFeatures, async (req, res) => {
     debugLog('QUIZ-CONTENT', 'Fetching current quiz content...');
 
     if (!quizPage) {
-        return res.json({
-            success: false,
-            error: 'No active quiz page'
-        });
+        // ATTEMPT SESSION RECOVERY
+        debugLog('QUIZ-CONTENT', '⚠ quizPage is null, attempting to recover session...');
+
+        try {
+            // 1. Get URL and Session
+            let assessmentUrl = req.cookies.current_assessment_url;
+            // Fallback to query params if cookie missing
+            if (!assessmentUrl && req.query.courseId && req.query.assignmentId) {
+                assessmentUrl = `https://fuhsd.schoology.com/course/${req.query.courseId}/assessments/${req.query.assignmentId}`;
+            }
+
+            const storedCookie = req.cookies.schoology_sess ? decryptToken(req.cookies.schoology_sess) : null;
+
+            if (!assessmentUrl || !storedCookie) {
+                return res.json({
+                    success: false,
+                    error: 'Session lost and cannot be recovered. Please return to dashboard and reload.'
+                });
+            }
+
+            // 2. Launch Browser (reusing start logic)
+            debugLog('QUIZ-CONTENT', 'Launching browser for recovery...');
+            let launchOptions = { headless: false, args: ['--start-maximized'] };
+            if (IS_VERCEL && chromiumPack) {
+                launchOptions = {
+                    args: chromiumPack.args,
+                    defaultViewport: chromiumPack.defaultViewport,
+                    executablePath: await chromiumPack.executablePath(),
+                    headless: chromiumPack.headless,
+                };
+            }
+
+            // Re-assign globals
+            browserInstance = await chromium.launch(launchOptions);
+            const contextOptions = {
+                viewport: { width: 1280, height: 800 },
+                userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            };
+            browserContext = await browserInstance.newContext(contextOptions);
+
+            // 3. Inject Cookies
+            const cookies = [];
+            const rawCookies = storedCookie.split(';');
+            for (const c of rawCookies) {
+                if (!c || !c.trim()) continue;
+                if (c.includes('=')) {
+                    const parts = c.trim().split('=');
+                    const name = parts[0].trim();
+                    const value = parts.slice(1).join('=').trim();
+                    if (name && value) cookies.push({ name, value, domain: '.schoology.com', path: '/' });
+                } else {
+                    const domain = 'fuhsd.schoology.com';
+                    const hash = crypto.createHash('md5').update(domain).digest('hex');
+                    cookies.push({ name: 'SESS' + hash, value: c.trim(), domain: '.schoology.com', path: '/' });
+                }
+            }
+            if (cookies.length) await browserContext.addCookies(cookies);
+            isLoggedIn = true;
+
+            // 4. Navigate
+            quizPage = await browserContext.newPage();
+            await quizPage.setViewportSize({ width: 1280, height: 800 });
+            debugLog('QUIZ-CONTENT', `Navigating to: ${assessmentUrl}`);
+            await quizPage.goto(assessmentUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+            // 5. Handle "Resume" if needed (simplified)
+            await quizPage.waitForTimeout(2000);
+            try {
+                const resumeButton = await quizPage.$('input[value*="Resume"], button:has-text("Resume"), a:has-text("Resume")');
+                if (resumeButton) {
+                    debugLog('QUIZ-CONTENT', 'Found Resume button, clicking...');
+                    await resumeButton.click();
+                    await quizPage.waitForTimeout(2000);
+                }
+            } catch (e) { /* ignore */ }
+
+            debugLog('QUIZ-CONTENT', '✓ Session successfully recovered!');
+
+        } catch (error) {
+            debugLog('QUIZ-CONTENT', `✗ Recovery failed: ${error.message}`);
+            return res.json({
+                success: false,
+                error: 'Session recovery failed: ' + error.message
+            });
+        }
     }
 
     try {
