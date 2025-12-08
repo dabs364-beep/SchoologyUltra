@@ -3314,7 +3314,14 @@ const rehydrateQuizPage = async (reqUrl, reqCookie) => {
     if (reqUrl && reqUrl.startsWith('http') && quizPage.url() !== reqUrl) {
         debugLog('VERCEL', `Navigating to ${reqUrl}...`);
         try {
+            await quizPage.setViewportSize({ width: 1920, height: 1080 }); // Force desktop
             await quizPage.goto(reqUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+            // Check if we got redirected to login
+            if (quizPage.url().includes('login') || quizPage.url().includes('google.com')) {
+                debugLog('VERCEL', '⚠️ Redirected to Login page! Session might be invalid.');
+                throw new Error('Redirected to login page. Please refresh your session.');
+            }
 
             // Wait for quiz content to appear
             debugLog('VERCEL', 'Waiting for quiz content...');
@@ -3324,17 +3331,18 @@ const rehydrateQuizPage = async (reqUrl, reqCookie) => {
                 '.slides-container',
                 '.question-body',
                 '#assessment-view',
-                '.assessment-player'
+                '.assessment-player',
+                'body' // Fallback
             ];
             // Try to wait for any of these
             try {
                 await Promise.race([
                     quizPage.waitForSelector(quizSelectors.join(','), { timeout: 15000 }),
-                    quizPage.waitForSelector('iframe', { timeout: 10000 }) // Maybe it's in an iframe
+                    quizPage.waitForSelector('iframe', { timeout: 10000 })
                 ]);
-                debugLog('VERCEL', '✓ Quiz content detected');
+                debugLog('VERCEL', `✓ Quiz content detected. URL: ${quizPage.url()}`);
             } catch (waitError) {
-                debugLog('VERCEL', '⚠️ Timeout waiting for specific selectors, proceeding anyway...');
+                debugLog('VERCEL', `⚠️ Timeout waiting for specific selectors. Current URL: ${quizPage.url()}`);
             }
 
         } catch (navError) {
@@ -3363,10 +3371,20 @@ app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), asyn
             // Robust visibility check matching extractQuizContent
             const isVisible = (el) => {
                 if (!el) return false;
+                // Use native checkVisibility if available
+                if (el.checkVisibility) {
+                    return el.checkVisibility({
+                        checkOpacity: true,
+                        checkVisibilityCSS: true
+                    });
+                }
                 const style = window.getComputedStyle(el);
                 if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
                 return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
             };
+
+            // Capture debug logs
+            const debugInfo = [];
 
             // Find container logic matching extractQuizContent
             let container = null;
@@ -3381,6 +3399,7 @@ app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), asyn
                 const el = document.querySelector(s);
                 if (el && isVisible(el)) {
                     container = el;
+                    debugInfo.push(`Found active container: ${s}`);
                     break;
                 }
             }
@@ -3393,6 +3412,7 @@ app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), asyn
                     for (const el of elements) {
                         if (isVisible(el)) {
                             container = el;
+                            debugInfo.push(`Found generic container: ${s}`);
                             break;
                         }
                     }
@@ -3401,13 +3421,19 @@ app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), asyn
             }
 
             // Final fallback
-            if (!container) container = document.body;
+            if (!container) {
+                container = document.body;
+                debugInfo.push('Fallback to document.body');
+            }
 
             let elements;
+            let selector = '';
             if (type === 'radio') {
-                elements = Array.from(container.querySelectorAll('input[type="radio"]'));
+                selector = 'input[type="radio"]';
+                elements = Array.from(container.querySelectorAll(selector));
             } else if (type === 'checkbox') {
-                elements = Array.from(container.querySelectorAll('input[type="checkbox"]'));
+                selector = 'input[type="checkbox"]';
+                elements = Array.from(container.querySelectorAll(selector));
             } else {
                 return { success: false, error: 'Unknown type' };
             }
@@ -3415,17 +3441,26 @@ app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), asyn
             // Filter by visibility to match extraction
             const visibleElements = elements.filter(isVisible);
 
+            debugInfo.push(`Total ${selector} in container: ${elements.length}`);
+            debugInfo.push(`Visible ${selector}: ${visibleElements.length}`);
+
             if (index >= 0 && index < visibleElements.length) {
                 const el = visibleElements[index];
                 el.click();
-                return { success: true };
+                return { success: true, debug: debugInfo };
             }
-            return { success: false, error: `Element not found at index ${index} (found ${visibleElements.length} visible)` };
+
+            return {
+                success: false,
+                error: `Element not found at index ${index} (found ${visibleElements.length} visible)`,
+                debug: debugInfo
+            };
         }, { type, index });
 
         if (result.success) {
             res.json({ success: true });
         } else {
+            debugLog('SYNC-CLICK', `DEBUG: ${result.debug ? result.debug.join(', ') : 'No debug info'}`);
             res.json(result);
         }
     } catch (error) {
