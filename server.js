@@ -2419,11 +2419,25 @@ app.post('/api/browser/login', requireBrowserFeatures, express.json(), async (re
         };
 
         if (IS_VERCEL && chromiumPack) {
+            // Memory optimization for Vercel (1024MB limit typical)
+            const additionalArgs = [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage', // Essential for serverless
+                '--disable-accelerated-2d-canvas',
+                '--disable-gpu',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process', // Aggressive memory saving, might be unstable but good for static pages
+                '--disable-extensions'
+            ];
+
             launchOptions = {
-                args: chromiumPack.args,
+                args: [...chromiumPack.args, ...additionalArgs],
                 defaultViewport: chromiumPack.defaultViewport,
                 executablePath: await chromiumPack.executablePath(),
                 headless: chromiumPack.headless,
+                ignoreHTTPSErrors: true,
             };
         }
 
@@ -2494,6 +2508,26 @@ app.post('/api/browser/login', requireBrowserFeatures, express.json(), async (re
         }
 
         const page = await browserContext.newPage();
+
+        // OPTIMIZATION: Block unnecessary resources
+        await page.route('**/*', (route) => {
+            const request = route.request();
+            const resourceType = request.resourceType();
+
+            // Block fonts and heavy media (we need images for screenshots, but maybe we can block larger ones?)
+            // We KEEP images because the user interface relies on screenshots.
+            if (resourceType === 'font' || resourceType === 'media') {
+                return route.abort();
+            }
+
+            // Block analytics and trackers
+            const url = request.url();
+            if (url.includes('google-analytics') || url.includes('segment.io') || url.includes('hotjar')) {
+                return route.abort();
+            }
+
+            route.continue();
+        });
 
         // Navigate to Schoology
         debugLog('BROWSER', 'Navigating to fuhsd.schoology.com...');
@@ -2619,8 +2653,6 @@ app.post('/api/browser/close', requireBrowserFeatures, async (req, res) => {
 // Fetch quiz using browser automation
 // Store the current quiz page reference
 let quizPage = null;
-
-
 
 // Start quiz and take initial screenshot
 app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, res) => {
@@ -3186,91 +3218,10 @@ app.get('/api/quiz/content', requireBrowserFeatures, async (req, res) => {
     debugLog('QUIZ-CONTENT', 'Fetching current quiz content...');
 
     if (!quizPage) {
-        // ATTEMPT SESSION RECOVERY
-        debugLog('QUIZ-CONTENT', '⚠ quizPage is null, attempting to recover session...');
-
-        try {
-            // 1. Get URL and Session
-            let assessmentUrl = req.cookies.current_assessment_url;
-            // Fallback to query params if cookie missing
-            if (!assessmentUrl && req.query.courseId && req.query.assignmentId) {
-                assessmentUrl = `https://fuhsd.schoology.com/course/${req.query.courseId}/assessments/${req.query.assignmentId}`;
-            }
-
-            const storedCookie = req.cookies.schoology_sess ? decryptToken(req.cookies.schoology_sess) : null;
-
-            if (!assessmentUrl || !storedCookie) {
-                return res.json({
-                    success: false,
-                    error: 'Session lost and cannot be recovered. Please return to dashboard and reload.'
-                });
-            }
-
-            // 2. Launch Browser (reusing start logic)
-            debugLog('QUIZ-CONTENT', 'Launching browser for recovery...');
-            let launchOptions = { headless: false, args: ['--start-maximized'] };
-            if (IS_VERCEL && chromiumPack) {
-                launchOptions = {
-                    args: chromiumPack.args,
-                    defaultViewport: chromiumPack.defaultViewport,
-                    executablePath: await chromiumPack.executablePath(),
-                    headless: chromiumPack.headless,
-                };
-            }
-
-            // Re-assign globals
-            browserInstance = await chromium.launch(launchOptions);
-            const contextOptions = {
-                viewport: { width: 1280, height: 800 },
-                userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            };
-            browserContext = await browserInstance.newContext(contextOptions);
-
-            // 3. Inject Cookies
-            const cookies = [];
-            const rawCookies = storedCookie.split(';');
-            for (const c of rawCookies) {
-                if (!c || !c.trim()) continue;
-                if (c.includes('=')) {
-                    const parts = c.trim().split('=');
-                    const name = parts[0].trim();
-                    const value = parts.slice(1).join('=').trim();
-                    if (name && value) cookies.push({ name, value, domain: '.schoology.com', path: '/' });
-                } else {
-                    const domain = 'fuhsd.schoology.com';
-                    const hash = crypto.createHash('md5').update(domain).digest('hex');
-                    cookies.push({ name: 'SESS' + hash, value: c.trim(), domain: '.schoology.com', path: '/' });
-                }
-            }
-            if (cookies.length) await browserContext.addCookies(cookies);
-            isLoggedIn = true;
-
-            // 4. Navigate
-            quizPage = await browserContext.newPage();
-            await quizPage.setViewportSize({ width: 1280, height: 800 });
-            debugLog('QUIZ-CONTENT', `Navigating to: ${assessmentUrl}`);
-            await quizPage.goto(assessmentUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-
-            // 5. Handle "Resume" if needed (simplified)
-            await quizPage.waitForTimeout(2000);
-            try {
-                const resumeButton = await quizPage.$('input[value*="Resume"], button:has-text("Resume"), a:has-text("Resume")');
-                if (resumeButton) {
-                    debugLog('QUIZ-CONTENT', 'Found Resume button, clicking...');
-                    await resumeButton.click();
-                    await quizPage.waitForTimeout(2000);
-                }
-            } catch (e) { /* ignore */ }
-
-            debugLog('QUIZ-CONTENT', '✓ Session successfully recovered!');
-
-        } catch (error) {
-            debugLog('QUIZ-CONTENT', `✗ Recovery failed: ${error.message}`);
-            return res.json({
-                success: false,
-                error: 'Session recovery failed: ' + error.message
-            });
-        }
+        return res.json({
+            success: false,
+            error: 'No active quiz page'
+        });
     }
 
     try {
@@ -3297,9 +3248,6 @@ app.get('/api/quiz/content', requireBrowserFeatures, async (req, res) => {
 // Perform a click on the actual quiz page (using index-based targeting)
 app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), async (req, res) => {
     try {
-        if (!quizPage) {
-            return res.status(400).json({ success: false, error: 'No active quiz page. Please load a quiz first.' });
-        }
         const { type, index } = req.body;
         const result = await quizPage.evaluate((args) => {
             const { type, index } = args;
@@ -3378,33 +3326,16 @@ app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), asyn
     }
 });
 
-// New endpoint for entering multiple answers
-app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), async (req, res) => {
-    try {
-        if (!quizPage) {
-            return res.status(400).json({ success: false, error: 'No active quiz page. Please load a quiz first.' });
-        }
-        const { answers } = req.body;
-        // TODO: Implement logic to process 'answers' array and interact with quizPage
-        // This will likely involve iterating through 'answers' and calling evaluate/type/click based on answer type
-        // For now, just return success
-        debugLog('QUIZ-ENTER-ANSWERS', `Received answers: ${JSON.stringify(answers)}`);
-        res.json({ success: true, message: 'Answers received (processing not yet implemented)' });
-    } catch (error) {
-        debugLog('QUIZ-ENTER-ANSWERS', `Error: ${error.message}`);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
 // Sync text input (using index-based targeting)
 app.post('/api/quiz/type-text', requireBrowserFeatures, express.json(), async (req, res) => {
+    const { type, index, text } = req.body;
+    debugLog('SYNC-TYPE', `Typing "${text}" into ${type} at index ${index}`);
+
+    if (!quizPage) {
+        return res.json({ success: false, error: 'No active quiz page' });
+    }
+
     try {
-        if (!quizPage) {
-            return res.status(400).json({ success: false, error: 'No active quiz page. Please load a quiz first.' });
-        }
-        const { type, index, text } = req.body;
-        // ... rest of implementation matching previous logic but ensuring safety
-        debugLog('SYNC-TYPE', `Typing "${text}" into ${type} at index ${index}`);
         // We use Puppeteer to find the element handle so we can use page.type for realistic typing
         // But first we need to find it using evaluate logic to match the container
         const boundingBox = await quizPage.evaluate((args) => {
@@ -3472,6 +3403,12 @@ app.post('/api/quiz/type-text', requireBrowserFeatures, express.json(), async (r
 
 // Sync select option (using index-based targeting)
 app.post('/api/quiz/select-option', requireBrowserFeatures, express.json(), async (req, res) => {
+    const { index, value } = req.body;
+    debugLog('SYNC-SELECT', `Selecting "${value}" in dropdown index ${index}`);
+
+    if (!quizPage) {
+        return res.json({ success: false, error: 'No active quiz page' });
+    }
 
     try {
         const result = await quizPage.evaluate((args) => {
@@ -3819,6 +3756,17 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
     debugLog('ENTER-ANSWERS', '=== Entering answers on quiz page ===');
 
     const { answers } = req.body;
+
+    // Helper: Timeout wrapper
+    const withTimeout = (promise, ms, fallback) => {
+        return Promise.race([
+            promise,
+            new Promise(resolve => setTimeout(() => {
+                debugLog('TIMEOUT', `Operation timed out after ${ms}ms`);
+                resolve(fallback);
+            }, ms))
+        ]);
+    };
 
     if (!answers || !Array.isArray(answers) || answers.length === 0) {
         return res.json({
@@ -4184,36 +4132,34 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
             // We need to type into inputs using Puppeteer for reliability
             // First, find the elements we need to type into
             const inputsToFill = await quizPage.evaluate((answersArr) => {
-                // Robust visibility check
+                // Simple, robust visibility check
                 const isVisible = (el) => {
                     if (!el) return false;
-                    const style = window.getComputedStyle(el);
-                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
-                    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+                    // Check standard visibility properties
+                    return (el.offsetWidth > 0 || el.offsetHeight > 0) &&
+                        window.getComputedStyle(el).display !== 'none' &&
+                        window.getComputedStyle(el).visibility !== 'hidden';
                 };
 
-                // Find active container
-                let container = null;
-                const activeSelectors = [
-                    '.question-view.active',
-                    '.slide.active',
-                    '.question-container.current',
-                    '.question-body:not([style*="display: none"])'
-                ];
-                for (const s of activeSelectors) {
-                    const el = document.querySelector(s);
-                    if (el && isVisible(el)) {
-                        container = el;
-                        break;
-                    }
-                }
-                if (!container) container = document.body;
+                // Find active container - Keep it simple!
+                // If we find a specific "active" question, use it. Otherwise, look at the whole form/body.
+                let container = document.querySelector('.question-view.active') ||
+                    document.querySelector('.question-container.current') ||
+                    document.querySelector('.slides-container') ||
+                    document.body;
 
-                const inputs = Array.from(container.querySelectorAll('input[type="text"]:not([readonly]), textarea'))
-                    .filter(input => {
-                        const style = window.getComputedStyle(input);
-                        return style.display !== 'none' && style.visibility !== 'hidden' && !input.disabled;
-                    });
+                console.log('Searching for inputs in:', container.className || container.tagName);
+
+                // Select ALL potential text inputs
+                // Exclude: hidden, checkbox, radio, submit, button, file, image, reset
+                const allInputs = Array.from(container.querySelectorAll('input, textarea'));
+                const inputs = allInputs.filter(input => {
+                    const type = input.type.toLowerCase();
+                    const isText = !['hidden', 'checkbox', 'radio', 'submit', 'button', 'file', 'image', 'reset'].includes(type);
+                    return isText && isVisible(input) && !input.disabled && !input.readOnly;
+                });
+
+                console.log(`Found ${inputs.length} visible text inputs.`);
 
                 // Mark the inputs we want to fill
                 const indices = [];
@@ -4231,12 +4177,33 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
                     const answer = answers[idx];
 
                     try {
+                        debugLog('ENTER-ANSWERS', `Processing input ${i + 1}/${inputsToFill.length} (Index: ${idx})`);
                         const inputHandle = await quizPage.$(`[data-ai-fill-target="${idx}"]`);
+
                         if (inputHandle) {
-                            // Clear and type
-                            await inputHandle.click({ clickCount: 3 });
+                            // Guarded Click
+                            debugLog('ENTER-ANSWERS', `Clicking input ${idx}...`);
+                            try {
+                                await withTimeout(
+                                    inputHandle.click({ clickCount: 3 }),
+                                    1000,
+                                    'timeout'
+                                );
+                            } catch (e) {
+                                debugLog('ENTER-ANSWERS', `Click warning: ${e.message}`);
+                            }
+
+                            // Guarded Clear
+                            debugLog('ENTER-ANSWERS', `Clearing input ${idx}...`);
                             await inputHandle.press('Backspace');
-                            await inputHandle.type(answer, { delay: 30 });
+
+                            // Guarded Type
+                            debugLog('ENTER-ANSWERS', `Typing "${answer.substring(0, 10)}..." into input ${idx}...`);
+                            await withTimeout(
+                                inputHandle.type(answer, { delay: 10 }), // Faster typing
+                                2000,
+                                'timeout'
+                            );
 
                             // Trigger extra events just in case
                             await quizPage.evaluate((el) => {
@@ -4246,8 +4213,12 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
                             }, inputHandle);
 
                             log.push(`✓ Typed into field ${idx + 1}: "${answer}"`);
+                            debugLog('ENTER-ANSWERS', `✓ Done with input ${idx}`);
+                        } else {
+                            debugLog('ENTER-ANSWERS', `⚠ Handle lost for input ${idx}`);
                         }
                     } catch (e) {
+                        debugLog('ENTER-ANSWERS', `⚠ Error typing answer ${idx + 1}: ${e.message}`);
                         log.push(`⚠ Error typing answer ${idx + 1}: ${e.message}`);
                     }
                 }
@@ -4265,36 +4236,20 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
             log.push(`Trying dropdown selects`);
 
             const selected = await quizPage.evaluate((answersArr) => {
-                // Robust visibility check
                 const isVisible = (el) => {
                     if (!el) return false;
-                    const style = window.getComputedStyle(el);
-                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
-                    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+                    return (el.offsetWidth > 0 || el.offsetHeight > 0) &&
+                        window.getComputedStyle(el).display !== 'none' &&
+                        window.getComputedStyle(el).visibility !== 'hidden';
                 };
 
-                // Find active container
-                let container = null;
-                const activeSelectors = [
-                    '.question-view.active',
-                    '.slide.active',
-                    '.question-container.current',
-                    '.question-body:not([style*="display: none"])'
-                ];
-                for (const s of activeSelectors) {
-                    const el = document.querySelector(s);
-                    if (el && isVisible(el)) {
-                        container = el;
-                        break;
-                    }
-                }
-                if (!container) container = document.body;
+                let container = document.querySelector('.question-view.active') ||
+                    document.querySelector('.question-container.current') ||
+                    document.querySelector('.slides-container') ||
+                    document.body;
 
                 const selects = Array.from(container.querySelectorAll('select'))
-                    .filter(sel => {
-                        const style = window.getComputedStyle(sel);
-                        return style.display !== 'none' && style.visibility !== 'hidden';
-                    });
+                    .filter(sel => isVisible(sel) && !sel.disabled);
 
                 const results = [];
                 for (let i = 0; i < Math.min(selects.length, answersArr.length); i++) {
@@ -4331,10 +4286,15 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
         const screenshot = await takeQuizScreenshot(quizPage);
         const screenshotBase64 = screenshot.toString('base64');
 
+        // Extract the updated content immediately to ensure sync
+        const updatedContent = await extractQuizContent(quizPage);
+
         res.json({
             success: answered,
             log: log,
             screenshot: screenshotBase64,
+            html: updatedContent.html, // Send updated HTML
+            text: updatedContent.text, // Send updated Text
             message: answered ? 'Answers entered successfully' : 'Could not enter answers automatically'
         });
 
@@ -4378,29 +4338,39 @@ async function extractQuizContent(page) {
     debugLog('EXTRACT', 'Extracting quiz content...');
 
     try {
-        // Wait for loading to finish
+        // Wait for loading to finish (shorter timeout)
         debugLog('EXTRACT', 'Waiting for loading indicators to disappear...');
         try {
             await page.waitForFunction(() => {
                 const text = document.body.innerText;
                 return !text.includes('Loading question') && !text.includes('Just a moment please');
-            }, { timeout: 5000 });
+            }, { timeout: 2000 }); // Reduced to 2s
         } catch (e) {
             debugLog('EXTRACT', 'Timeout waiting for loading text to disappear, proceeding anyway...');
         }
 
-        // Wait for question content
+        // Wait for question content (shorter timeout)
         debugLog('EXTRACT', 'Waiting for question content...');
         try {
-            await page.waitForSelector('.question-body, .question-text, .multiple-choice-question, .ordering-question, .matching-question', { timeout: 5000 });
+            await page.waitForSelector('.question-body, .question-text, .multiple-choice-question, .ordering-question, .matching-question', { timeout: 2000 }); // Reduced to 2s
         } catch (e) {
             debugLog('EXTRACT', 'Timeout waiting for specific question selector, trying generic containers...');
         }
 
         const content = await page.evaluate(async () => {
-            // Helper to check visibility
+            // Helper to check visibility (Performance Optimized)
             const isVisible = (el) => {
                 if (!el) return false;
+
+                // Use native checkVisibility if available (Chrome 105+), extremely fast
+                if (el.checkVisibility) {
+                    return el.checkVisibility({
+                        checkOpacity: true,
+                        checkVisibilityCSS: true
+                    });
+                }
+
+                // Fallback for older browsers (Expensive!)
                 const style = window.getComputedStyle(el);
                 if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
                 return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
@@ -4469,10 +4439,8 @@ async function extractQuizContent(page) {
                     return node.cloneNode(true);
                 }
                 if (node.nodeType === Node.ELEMENT_NODE) {
-                    const style = window.getComputedStyle(node);
-                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-                        return null;
-                    }
+                    // Use optimized isVisible check
+                    if (!isVisible(node)) return null;
 
                     // Skip script/style tags
                     if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'IFRAME'].includes(node.tagName)) {
