@@ -1704,7 +1704,11 @@
                     const response = await fetch('/api/quiz/click-element', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ type, index })
+                        body: JSON.stringify({
+                            type,
+                            index,
+                            quizUrl: "<%= quizUrl %>"
+                        })
                     });
                     const data = await response.json();
                     if (data.success) {
@@ -1731,7 +1735,12 @@
                     const response = await fetch('/api/quiz/type-text', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ type, index, text })
+                        body: JSON.stringify({
+                            type,
+                            index,
+                            text,
+                            quizUrl: "<%= quizUrl %>"
+                        })
                     });
                     const data = await response.json();
                     if (data.success) {
@@ -1758,7 +1767,11 @@
                     const response = await fetch('/api/quiz/select-option', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ index, value })
+                        body: JSON.stringify({
+                            index,
+                            value,
+                            quizUrl: "<%= quizUrl %>"
+                        })
                     });
                     const data = await response.json();
                     if (data.success) {

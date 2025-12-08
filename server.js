@@ -3245,10 +3245,91 @@ app.get('/api/quiz/content', requireBrowserFeatures, async (req, res) => {
     }
 });
 
+// ==========================================
+// VERCEL STATELESS HELPERS
+// ==========================================
+
+// Helper: Timeout wrapper
+const withTimeout = (promise, ms, fallback) => {
+    return Promise.race([
+        promise,
+        new Promise(resolve => setTimeout(() => {
+            debugLog('TIMEOUT', `Operation timed out after ${ms}ms`);
+            resolve(fallback);
+        }, ms))
+    ]);
+};
+
+// Helper: Ensure Browser is Active (Vercel Rehydration)
+const rehydrateQuizPage = async (reqUrl, reqCookie) => {
+    // 1. Check if existing session is valid
+    if (quizPage && !quizPage.isClosed()) {
+        if (quizPage.url().includes('schoology.com')) {
+            return true;
+        }
+    }
+
+    debugLog('VERCEL', 'Browser session lost/closed. Rehydrating...');
+
+    // 2. Launch Browser if needed
+    if (!browserInstance) {
+        const launchOptions = IS_VERCEL && chromiumPack ? {
+            args: [...chromiumPack.args, '--no-sandbox', '--disable-dev-shm-usage', '--disable-setuid-sandbox', '--no-zygote', '--single-process'],
+            defaultViewport: chromiumPack.defaultViewport,
+            executablePath: await chromiumPack.executablePath(),
+            headless: chromiumPack.headless,
+            ignoreHTTPSErrors: true
+        } : { headless: false, args: ['--start-maximized'] };
+
+        browserInstance = await chromium.launch(launchOptions);
+        browserContext = await browserInstance.newContext();
+
+        // 3. Inject Cookie
+        if (reqCookie) {
+            const decrypted = decryptToken(reqCookie);
+            if (decrypted) {
+                const cookies = [{
+                    name: 'SESS' + crypto.createHash('md5').update('fuhsd.schoology.com').digest('hex'),
+                    value: decrypted,
+                    domain: '.schoology.com',
+                    path: '/'
+                }];
+                await browserContext.addCookies(cookies);
+                isLoggedIn = true;
+            }
+        }
+    }
+
+    // 4. Create Page if needed
+    if (!quizPage || quizPage.isClosed()) {
+        quizPage = await browserContext.newPage();
+        await quizPage.route('**/*', (route) => {
+            const type = route.request().resourceType();
+            if (type === 'font' || type === 'media' || route.request().url().includes('google-analytics')) route.abort();
+            else route.continue();
+        });
+    }
+
+    // 5. Navigate to Quiz
+    if (reqUrl && quizPage.url() !== reqUrl) {
+        debugLog('VERCEL', `Navigating to ${reqUrl}...`);
+        await quizPage.goto(reqUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    }
+    return true;
+};
+
 // Perform a click on the actual quiz page (using index-based targeting)
 app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), async (req, res) => {
+    const { type, index, quizUrl } = req.body;
+
+    // Stateless Rehydration
     try {
-        const { type, index } = req.body;
+        await rehydrateQuizPage(quizUrl, req.cookies?.schoology_sess);
+    } catch (e) { }
+
+    if (!quizPage) return res.json({ success: false, error: 'No active quiz page' });
+
+    try {
         const result = await quizPage.evaluate((args) => {
             const { type, index } = args;
 
@@ -3328,8 +3409,13 @@ app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), asyn
 
 // Sync text input (using index-based targeting)
 app.post('/api/quiz/type-text', requireBrowserFeatures, express.json(), async (req, res) => {
-    const { type, index, text } = req.body;
+    const { type, index, text, quizUrl } = req.body;
     debugLog('SYNC-TYPE', `Typing "${text}" into ${type} at index ${index}`);
+
+    // Stateless Rehydration
+    try {
+        await rehydrateQuizPage(quizUrl, req.cookies?.schoology_sess);
+    } catch (e) { }
 
     if (!quizPage) {
         return res.json({ success: false, error: 'No active quiz page' });
@@ -3403,8 +3489,13 @@ app.post('/api/quiz/type-text', requireBrowserFeatures, express.json(), async (r
 
 // Sync select option (using index-based targeting)
 app.post('/api/quiz/select-option', requireBrowserFeatures, express.json(), async (req, res) => {
-    const { index, value } = req.body;
+    const { index, value, quizUrl } = req.body;
     debugLog('SYNC-SELECT', `Selecting "${value}" in dropdown index ${index}`);
+
+    // Stateless Rehydration
+    try {
+        await rehydrateQuizPage(quizUrl, req.cookies?.schoology_sess);
+    } catch (e) { }
 
     if (!quizPage) {
         return res.json({ success: false, error: 'No active quiz page' });
@@ -3757,72 +3848,6 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
 
     const { answers } = req.body;
 
-    // Helper: Timeout wrapper
-    const withTimeout = (promise, ms, fallback) => {
-        return Promise.race([
-            promise,
-            new Promise(resolve => setTimeout(() => {
-                debugLog('TIMEOUT', `Operation timed out after ${ms}ms`);
-                resolve(fallback);
-            }, ms))
-        ]);
-    };
-
-    // Helper: Ensure Browser is Active (Vercel Rehydration)
-    const ensureQuizPage = async (reqUrl, reqCookie) => {
-        if (quizPage && !quizPage.isClosed()) {
-            if (quizPage.url().includes('schoology.com')) {
-                return true;
-            }
-        }
-
-        debugLog('VERCEL', 'Browser session lost/closed. Rehydrating...');
-
-        if (!browserInstance) {
-            const launchOptions = IS_VERCEL && chromiumPack ? {
-                args: [...chromiumPack.args, '--no-sandbox', '--disable-dev-shm-usage', '--disable-setuid-sandbox', '--no-zygote', '--single-process'],
-                defaultViewport: chromiumPack.defaultViewport,
-                executablePath: await chromiumPack.executablePath(),
-                headless: chromiumPack.headless,
-                ignoreHTTPSErrors: true
-            } : { headless: false, args: ['--start-maximized'] };
-
-            browserInstance = await chromium.launch(launchOptions);
-            browserContext = await browserInstance.newContext();
-
-            // 2. Inject Cookie
-            if (reqCookie) {
-                const decrypted = decryptToken(reqCookie);
-                if (decrypted) {
-                    const cookies = [{
-                        name: 'SESS' + crypto.createHash('md5').update('fuhsd.schoology.com').digest('hex'),
-                        value: decrypted,
-                        domain: '.schoology.com',
-                        path: '/'
-                    }];
-                    await browserContext.addCookies(cookies);
-                    isLoggedIn = true;
-                }
-            }
-        }
-
-        if (!quizPage || quizPage.isClosed()) {
-            quizPage = await browserContext.newPage();
-            await quizPage.route('**/*', (route) => {
-                const type = route.request().resourceType();
-                if (type === 'font' || type === 'media' || route.request().url().includes('google-analytics')) route.abort();
-                else route.continue();
-            });
-        }
-
-        // 3. Navigate to Quiz
-        if (reqUrl && quizPage.url() !== reqUrl) {
-            debugLog('VERCEL', `Navigating to ${reqUrl}...`);
-            await quizPage.goto(reqUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        }
-        return true;
-    };
-
 
     if (!answers || !Array.isArray(answers) || answers.length === 0) {
         return res.json({
@@ -3834,7 +3859,7 @@ app.post('/api/quiz/enter-answers', requireBrowserFeatures, express.json(), asyn
     // Attempt Rehydration
     const { quizUrl } = req.body;
     try {
-        await ensureQuizPage(quizUrl, req.cookies?.schoology_sess);
+        await rehydrateQuizPage(quizUrl, req.cookies?.schoology_sess);
     } catch (e) {
         debugLog('VERCEL', `Rehydration failed: ${e.message}`);
     }
