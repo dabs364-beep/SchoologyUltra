@@ -1680,17 +1680,47 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ type, index })
                     });
-                    const data = await response.json();
+                    let data = await response.json();
+
+                    // AUTO-RETRY LOGIC FOR SESSION RECOVERY
+                    if (!data.success && data.error && data.error.includes('No active quiz page')) {
+                        console.log('[SYNC] Session lost, attempting auto-recovery...');
+                        showToast('Session expired, recovering...', 'info');
+
+                        // Force session recovery via content endpoint
+                        await refreshQuizContent();
+
+                        // Retry the action once
+                        console.log('[SYNC] Retrying click action...');
+                        const retryResponse = await fetch('/api/quiz/click-element', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ type, index })
+                        });
+                        const retryData = await retryResponse.json();
+
+                        if (retryData.success) {
+                            console.log('[SYNC] Recovery successful!');
+                            showToast('Session recovered!', 'success');
+                            await refreshQuizContent();
+                            return;
+                        } else {
+                            // If retry failed, use the retryData for error reporting
+                            data = retryData;
+                        }
+                    }
+
                     if (data.success) {
                         console.log('[SYNC] Click success');
                         // Refresh to ensure state is synced
                         await refreshQuizContent();
                     } else {
-                        console.error('[SYNC] Click failed:', data.error);
-                        showToast('Failed to sync click: ' + data.error, 'error');
+                        console.error('[SYNC] Failed to sync click:', data.error);
+                        showToast(`Sync failed: ${data.error}`, 'error');
                     }
                 } catch (error) {
-                    console.error('[SYNC] Error syncing click:', error);
+                    console.error('[SYNC] Network error:', error);
+                    showToast('Connection error', 'error');
                 }
             }
 

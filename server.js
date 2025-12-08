@@ -2620,20 +2620,7 @@ app.post('/api/browser/close', requireBrowserFeatures, async (req, res) => {
 // Store the current quiz page reference
 let quizPage = null;
 
-app.post('/api/quiz/ask-ai', requireBrowserFeatures, express.json(), async (req, res) => {
-    try {
-        if (!quizPage) {
-            return res.status(400).json({ success: false, error: 'No active quiz page. Please load a quiz first.' });
-        }
-        const { model = 'llama3.1-8b', customPrompt } = req.body;
-        // Placeholder for AI logic
-        debugLog('QUIZ-ASK-AI', `Asking AI for help with model: ${model}, customPrompt: ${customPrompt ? 'yes' : 'no'}`);
-        res.json({ success: true, message: 'AI assistance requested (feature coming soon!)', model, customPrompt });
-    } catch (error) {
-        debugLog('QUIZ-ASK-AI', `✗ ERROR: ${error.message}`);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
+
 
 // Start quiz and take initial screenshot
 app.post('/api/quiz/start', requireBrowserFeatures, express.json(), async (req, res) => {
