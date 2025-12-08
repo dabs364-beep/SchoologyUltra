@@ -3458,6 +3458,8 @@ app.post('/api/quiz/click-element', requireBrowserFeatures, express.json(), asyn
         }, { type, index });
 
         if (result.success) {
+            // Wait for potential auto-save or state update
+            await quizPage.waitForTimeout(500);
             res.json({ success: true });
         } else {
             debugLog('SYNC-CLICK', `DEBUG: ${result.debug ? result.debug.join(', ') : 'No debug info'}`);
@@ -3536,6 +3538,8 @@ app.post('/api/quiz/type-text', requireBrowserFeatures, express.json(), async (r
                     document.querySelectorAll('[data-puppeteer-typing-target]').forEach(e => e.removeAttribute('data-puppeteer-typing-target'));
                 });
 
+                // Wait for state save
+                await quizPage.waitForTimeout(500);
                 res.json({ success: true });
             } else {
                 res.json({ success: false, error: 'Input handle not found' });
@@ -3599,6 +3603,9 @@ app.post('/api/quiz/select-option', requireBrowserFeatures, express.json(), asyn
             return { success: false, error: 'Select not found at index' };
         }, { index, value });
 
+        if (result.success) {
+            await quizPage.waitForTimeout(500);
+        }
         res.json(result);
     } catch (error) {
         debugLog('SYNC-SELECT', `Error: ${error.message}`);

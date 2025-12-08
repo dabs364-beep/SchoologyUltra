@@ -1464,28 +1464,15 @@
                                 </div>
                             `;
 
-                                // Update the screenshot to show the filled answers
-                                if (enterData.screenshot) {
-                                    const screenshotImg = document.querySelector('.screenshot-image');
-                                    if (screenshotImg) {
-                                        screenshotImg.src = `data:image/png;base64,${enterData.screenshot}`;
-                                    }
-                                }
-
-                                // CRITICAL: Update content directly from response (Atomic Sync)
+                                // CRITICAL: Use atomic content update only - don't rebuild entire interface
                                 if (enterData.html) {
                                     renderQuizContent(enterData.html, enterData.text);
                                     console.log('[SYNC] Updated UI with atomic content from auto-enter');
-                                } else {
-                                    await refreshQuizContent();
                                 }
 
                                 showToast('Answers entered!', 'success');
-                                if (enterData.html) {
-                                    renderQuizContent(enterData.html, enterData.text);
-                                } else {
-                                    await refreshQuizContent();
-                                }
+                            } else {
+                                // Partial success or failure
                                 enterStatus.innerHTML = `
                                 <div style="margin-top: 0.75rem; color: var(--accent-warning);">
                                     ⚠ ${enterData.message || 'Could not enter answers automatically'}
@@ -1497,6 +1484,10 @@
                                     📝 Retry Enter Answers
                                 </button>
                             `;
+                                // Still update content if available
+                                if (enterData.html) {
+                                    renderQuizContent(enterData.html, enterData.text);
+                                }
                             }
                         } catch (enterError) {
                             enterStatus.innerHTML = `
@@ -1524,6 +1515,22 @@
                     askBtn.classList.remove('loading');
                     askBtn.innerHTML = '✨ Ask AI to Solve & Input Answers';
                 }
+            }
+
+            // Wrapper for atomic content updates - updates only the question body
+            function renderQuizContent(html, text) {
+                const questionBody = document.querySelector('.question-body');
+                if (!questionBody) {
+                    console.warn('[SYNC] No question-body element found for atomic update');
+                    return;
+                }
+
+                // Update the content
+                questionBody.innerHTML = html;
+
+                // CRITICAL: Re-attach handlers to the new content!
+                attachInteractiveHandlers(questionBody);
+                console.log('[SYNC] Atomic content update complete');
             }
 
             // Refresh the quiz content display (called after answers are entered or after user interactions)
@@ -1712,9 +1719,9 @@
                     });
                     const data = await response.json();
                     if (data.success) {
-                        console.log('[SYNC] Click success');
-                        // Refresh to ensure state is synced
-                        await refreshQuizContent();
+                        console.log('[SYNC] Click synced successfully');
+                        // Don't refresh - the user's interaction is already visible
+                        // Refreshing causes unnecessary state loss and delays
                     } else {
                         console.error('[SYNC] Click failed:', data.error);
                         showToast('Failed to sync click: ' + data.error, 'error');
@@ -1744,9 +1751,8 @@
                     });
                     const data = await response.json();
                     if (data.success) {
-                        console.log('[SYNC] Type success');
-                        // Refresh to ensure state is synced
-                        await refreshQuizContent();
+                        console.log('[SYNC] Text synced successfully');
+                        // Don't refresh - the user's text is already visible
                     } else {
                         console.error('[SYNC] Type failed:', data.error);
                         showToast('Failed to sync text: ' + data.error, 'error');
@@ -1775,9 +1781,8 @@
                     });
                     const data = await response.json();
                     if (data.success) {
-                        console.log('[SYNC] Select success');
-                        // Refresh to ensure state is synced
-                        await refreshQuizContent();
+                        console.log('[SYNC] Select synced successfully');
+                        // Don't refresh - the user's selection is already visible
                     } else {
                         console.error('[SYNC] Select failed:', data.error);
                         showToast('Failed to sync select: ' + data.error, 'error');
@@ -1849,28 +1854,17 @@
                         </div>
                     `;
 
-                        // Update the screenshot to show the filled answers
-                        if (data.screenshot) {
-                            const screenshotImg = document.querySelector('.screenshot-image');
-                            if (screenshotImg) {
-                                screenshotImg.src = `data:image/png;base64,${data.screenshot}`;
-                            }
-                        }
-
-                        // CRITICAL: Update content directly from response
+                        // CRITICAL: Update content directly from response (Atomic update only)
                         if (data.html) {
                             renderQuizContent(data.html, data.text);
                             console.log('[SYNC] Updated UI with atomic content from enter-answers');
-                        } else {
-                            await refreshQuizContent();
                         }
 
                         showToast('Answers entered!', 'success');
                     } else {
+                        // Still update content if available even on partial failure
                         if (data.html) {
                             renderQuizContent(data.html, data.text);
-                        } else {
-                            await refreshQuizContent();
                         }
                         enterStatus.innerHTML = `
                         <div style="margin-top: 0.75rem; color: var(--accent-warning);">
@@ -2183,24 +2177,6 @@
                 const div = document.createElement('div');
                 div.textContent = text;
                 return div.innerHTML;
-            }
-
-            // Wrapper for atomic updates
-            function renderQuizContent(html, text) {
-                const viewerContent = document.getElementById('viewer-content');
-                viewerContent.innerHTML = `
-                    <div class="screenshot-container">
-                        <div class="quiz-content-display">
-                            ${html}
-                        </div>
-                    </div>
-                `;
-
-                // CRITICAL: Re-attach handlers to the new content!
-                const container = viewerContent.querySelector('.quiz-content-display');
-                if (container) {
-                    attachInteractiveHandlers(container);
-                }
             }
 
             function updateQuizDisplay(data) {
