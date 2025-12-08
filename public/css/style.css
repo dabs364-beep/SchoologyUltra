@@ -1513,15 +1513,77 @@ body {
 /* ============================================
    RESPONSIVE DESIGN
    ============================================ */
+/* Mobile hamburger menu button */
+.mobile-menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    transition: all var(--duration-fast) var(--ease-out);
+}
+
+.mobile-menu-toggle:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.mobile-menu-toggle.active {
+    background: var(--bg-hover);
+}
+
 @media (max-width: 768px) {
+    /* Navigation Mobile */
     .nav-container {
         padding: 0 var(--space-4);
+        position: relative;
+    }
+    
+    .mobile-menu-toggle {
+        display: flex;
+    }
+    
+    .nav-brand span {
+        display: none;
     }
     
     .nav-links {
         display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-light);
+        box-shadow: var(--shadow-lg);
+        flex-direction: column;
+        padding: var(--space-4);
+        gap: var(--space-2);
+        z-index: 1000;
     }
     
+    .nav-links.mobile-open {
+        display: flex;
+    }
+    
+    .nav-link {
+        width: 100%;
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-md);
+    }
+    
+    .nav-user {
+        margin-left: auto;
+        gap: var(--space-2);
+    }
+    
+    /* Container and Layout */
     .container {
         padding: var(--space-6) var(--space-4);
     }
@@ -1536,6 +1598,14 @@ body {
         font-size: 1.5rem;
     }
     
+    .page-actions {
+        width: 100%;
+    }
+    
+    .page-actions .btn {
+        width: 100%;
+    }
+    
     .welcome-section h1 {
         font-size: 1.75rem;
     }
@@ -1544,8 +1614,10 @@ body {
         grid-template-columns: 1fr;
     }
     
+    /* Assignment Items */
     .assignment-item {
         flex-wrap: wrap;
+        padding: var(--space-4);
     }
     
     .assignment-points {
@@ -1553,28 +1625,109 @@ body {
         margin-top: var(--space-2);
     }
     
+    /* Course Cards */
+    .course-card {
+        padding: var(--space-4);
+    }
+    
     .course-header {
         flex-wrap: wrap;
+        padding: var(--space-3);
+    }
+    
+    .course-info h2 {
+        font-size: 1.125rem;
     }
     
     .course-grade {
         width: 100%;
-        justify-content: flex-end;
-        margin-top: var(--space-2);
+        justify-content: flex-start;
+        margin-top: var(--space-3);
     }
     
+    .toggle-icon {
+        position: absolute;
+        top: var(--space-3);
+        right: var(--space-3);
+    }
+    
+    /* Category Sections */
+    .category-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3);
+    }
+    
+    .category-right {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    /* Grades Table - Responsive */
     .grades-table {
+        font-size: 0.75rem;
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .grades-table thead {
+        display: block;
+    }
+    
+    .grades-table tbody {
+        display: block;
+    }
+    
+    .grades-table tr {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+    }
+    
+    .grades-table th,
+    .grades-table td {
+        padding: var(--space-2);
+    }
+    
+    .grades-table th:first-child,
+    .grades-table td:first-child {
+        width: 40%;
+        min-width: 120px;
+    }
+    
+    .assignment-name {
         font-size: 0.8125rem;
+        white-space: normal;
+        word-break: break-word;
     }
     
     .grade-input,
     .max-input {
-        width: 60px;
+        width: 50px;
+        font-size: 0.75rem;
+        padding: var(--space-1);
     }
     
+    /* Section Grade Display */
+    .section-grade-display {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+    }
+    
+    .edited-grade {
+        padding-left: 0;
+        border-left: none;
+        padding-top: var(--space-2);
+        border-top: 2px solid var(--accent-warning);
+    }
+    
+    /* Forms */
     .add-assignment-form {
         flex-direction: column;
         align-items: stretch;
+        gap: var(--space-3);
     }
     
     .add-assignment-form input[type="text"],
@@ -1588,6 +1741,38 @@ body {
     
     .custom-form input {
         width: 100%;
+    }
+    
+    /* Grade Actions */
+    .grade-actions {
+        width: 100%;
+    }
+    
+    .grade-actions .btn {
+        width: 100%;
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Quiz Viewer */
+    .quiz-viewer {
+        margin: 0 calc(var(--space-4) * -1);
+        border-radius: 0;
+    }
+    
+    .assignment-header {
+        padding: var(--space-4);
+    }
+    
+    .assignment-title {
+        font-size: 1.25rem;
+    }
+    
+    .assignment-meta {
+        flex-wrap: wrap;
     }
 }
 
@@ -1665,3 +1850,28 @@ body {
 .mb-4 { margin-bottom: var(--space-4); }
 .mb-6 { margin-bottom: var(--space-6); }
 .mb-8 { margin-bottom: var(--space-8); }
+
+/* ============================================
+   CLICKABLE ROWS (for grades table)
+   ============================================ */
+.clickable-row {
+    cursor: pointer;
+    transition: background-color var(--duration-fast) ease;
+}
+
+.clickable-row:hover {
+    background: var(--bg-hover);
+}
+
+.clickable-row:active {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.clickable-row input {
+    pointer-events: auto;
+}
+
+.clickable-row input:focus {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}

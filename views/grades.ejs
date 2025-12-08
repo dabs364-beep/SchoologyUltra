@@ -306,7 +306,10 @@
                                                    data-section="<%= course.section_id %>"
                                                    data-cat-index="<%= catIndex %>">
                                                 <% cat.grades.forEach((grade, gradeIndex) => { %>
-                                                    <tr class="grade-row" data-section="<%= course.section_id %>" data-assignment="<%= grade.assignment_id %>">
+                                                    <tr class="grade-row clickable-row" 
+                                                        data-section="<%= course.section_id %>" 
+                                                        data-assignment="<%= grade.assignment_id %>"
+                                                        onclick="navigateToAssignment('<%= course.section_id %>', '<%= grade.assignment_id %>')">
                                                         <td class="assignment-name"><%= grade.title %></td>
                                                         <td class="due-date">
                                                             <% if (grade.due && grade.due.trim() !== '') { %>
@@ -327,6 +330,7 @@
                                                                        data-original="<%= grade.grade %>"
                                                                        data-section="<%= course.section_id %>"
                                                                        onchange="updateGrade(this)"
+                                                                       onclick="event.stopPropagation()"
                                                                        step="0.5">
                                                             <% } else { %>
                                                                 <span class="no-grade">-</span>
@@ -339,6 +343,7 @@
                                                                    data-original="<%= grade.max_points %>"
                                                                    data-section="<%= course.section_id %>"
                                                                    onchange="updateMaxPoints(this)"
+                                                                   onclick="event.stopPropagation()"
                                                                    step="0.5">
                                                         </td>
                                                         <td class="percentage">
@@ -414,6 +419,16 @@
             if (percentage >= 70) return 'grade-c';
             if (percentage >= 60) return 'grade-d';
             return 'grade-f';
+        }
+
+        // Navigate to assignment page when clicking on a grade row
+        function navigateToAssignment(sectionId, assignmentId) {
+            // Don't navigate if clicking on an input field
+            if (event.target.tagName === 'INPUT' || event.target.closest('input')) {
+                event.stopPropagation();
+                return;
+            }
+            window.location.href = `/assignment?section=${sectionId}&id=${assignmentId}`;
         }
     </script>
 </body>

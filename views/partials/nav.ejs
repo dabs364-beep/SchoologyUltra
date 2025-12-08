@@ -4,6 +4,13 @@
             <img src="/images/logo.png" alt="Logo" style="width: 32px; height: 32px; object-fit: contain;">
             <span>Schoology Pro Max</span>
         </a>
+        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
         <div class="nav-links">
             <a href="/dashboard" class="nav-link <%= active === 'dashboard' ? 'active' : '' %>">
                 <span>Dashboard</span>
@@ -67,4 +74,24 @@
         })
         .catch(() => {});
 })();
+
+// Mobile menu toggle
+function toggleMobileMenu() {
+    const navLinks = document.querySelector('.nav-links');
+    const toggle = document.querySelector('.mobile-menu-toggle');
+    navLinks.classList.toggle('mobile-open');
+    toggle.classList.toggle('active');
+}
+
+// Close mobile menu when clicking outside
+document.addEventListener('click', function(event) {
+    const nav = document.querySelector('.nav');
+    const navLinks = document.querySelector('.nav-links');
+    const toggle = document.querySelector('.mobile-menu-toggle');
+    
+    if (navLinks.classList.contains('mobile-open') && !nav.contains(event.target)) {
+        navLinks.classList.remove('mobile-open');
+        toggle.classList.remove('active');
+    }
+});
 </script>
