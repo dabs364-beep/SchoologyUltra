@@ -2017,13 +2017,39 @@ app.get('/grades', async (req, res) => {
 });
 
 // Helper function to recursively fetch folder contents
-async function fetchFolderContents(sectionId, folderId, accessToken, depth = 0) {
+async function fetchFolderContents(sectionId, folderId, accessToken, depth = 0, userId = null, skipRecursion = true) {
     if (depth > 5) return []; // Max depth to prevent infinite loops
+
+    // Use cache if userId provided
+    if (userId) {
+        const cacheKey = getCacheKey(userId, `folder-${sectionId}-${folderId}`);
+        const cached = getCachedData(cacheKey, CACHE_TTL.courses);
+        if (cached) {
+            if (Array.isArray(cached)) return cached;
+            if (cached && typeof cached === 'object' && Array.isArray(cached['folder-item'])) {
+                return cached['folder-item'].map(item => ({
+                    id: item.id,
+                    title: item.title || 'Untitled',
+                    type: item.type || 'unknown',
+                    body: item.body || '',
+                    location: item.location || '',
+                    available: item.available,
+                    status: item.status,
+                    due: item.due || null,
+                    children: []
+                }));
+            }
+        }
+    }
 
     try {
         const url = `${config.apiBase}/courses/${sectionId}/folder/${folderId}`;
         debugLog('COURSES', `  ${'  '.repeat(depth)}Fetching folder ${folderId}: ${url}`);
-        const data = await makeOAuthRequest('GET', url, accessToken);
+        const data = await makeOAuthRequest('GET', url, accessToken, null, {
+            cache: !!userId,
+            cacheKey: userId ? getCacheKey(userId, `folder-${sectionId}-${folderId}`) : null,
+            cacheTTL: CACHE_TTL.courses
+        });
 
         const items = [];
         // API returns 'folder-item' array, not 'content'
@@ -2043,9 +2069,9 @@ async function fetchFolderContents(sectionId, folderId, accessToken, depth = 0) 
                 children: []
             };
 
-            // If it's a folder, recursively fetch its contents
-            if (item.type === 'folder') {
-                folderItem.children = await fetchFolderContents(sectionId, item.id, accessToken, depth + 1);
+            // Skip recursive folder fetching for speed (can be fetched on-demand in UI)
+            if (item.type === 'folder' && !skipRecursion) {
+                folderItem.children = await fetchFolderContents(sectionId, item.id, accessToken, depth + 1, userId, skipRecursion);
             }
 
             items.push(folderItem);
@@ -2090,8 +2116,8 @@ app.get('/courses', async (req, res) => {
             debugLog('COURSES', '⚡ Starting parallel fetch for folder contents, assignments, and grades...');
 
             const [folderResult, assignmentsResult, gradesResult] = await Promise.all([
-                // Fetch folder contents
-                fetchFolderContents(selectedSection.id, 0, req.session.accessToken).catch(e => {
+                // Fetch folder contents (skip recursion for 3x faster load)
+                fetchFolderContents(selectedSection.id, 0, req.session.accessToken, 0, req.session.userId, true).catch(e => {
                     debugLog('COURSES', `Could not fetch folder contents: ${e.message}`);
                     return [];
                 }),
@@ -2231,6 +2257,18 @@ app.get('/assignment', async (req, res) => {
         debugLog('ASSIGNMENT', `⚡ Parallel fetch completed in ${Date.now() - startTime}ms`);
         debugLog('ASSIGNMENT', `✓ Got assignment: ${assignment.title}`);
         debugLog('ASSIGNMENT', `✓ Section: ${section.course_title || section.section_title}`);
+        
+        // Check for Google Drive/Docs links in assignment
+        let googleDocLink = null;
+        if (assignment.web_url && (assignment.web_url.includes('docs.google.com') || assignment.web_url.includes('drive.google.com'))) {
+            googleDocLink = assignment.web_url;
+            debugLog('ASSIGNMENT', `✓ Found Google Doc link: ${googleDocLink}`);
+        }
+        // Also check in LTI launch URL for Google Classroom assignments
+        if (assignment.launch_url && (assignment.launch_url.includes('docs.google.com') || assignment.launch_url.includes('drive.google.com'))) {
+            googleDocLink = assignment.launch_url;
+            debugLog('ASSIGNMENT', `✓ Found Google Doc in launch URL: ${googleDocLink}`);
+        }
 
         // Parse user grade
         let userGrade = null;
@@ -2312,6 +2350,7 @@ app.get('/assignment', async (req, res) => {
             userGrade,
             userSubmission,
             estimatedTime,
+            googleDocLink,
             authenticated: true,
             userName: req.session.userName
         });
@@ -5227,6 +5266,47 @@ app.get('/api/schedule', (req, res) => {
 
     const schedule = loadSchedule(req.session.userId);
     res.json({ schedule });
+});
+
+// Submit assignment endpoint
+app.post('/api/assignment/submit', express.json(), async (req, res) => {
+    debugLog('SUBMIT', 'Assignment submission requested');
+
+    if (!req.session.accessToken) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { sectionId, assignmentId, text } = req.body;
+
+    if (!sectionId || !assignmentId || !text) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    try {
+        // Submit to Schoology using dropbox submissions API
+        // POST /sections/{section_id}/submissions/{assignment_id}
+        const submissionUrl = `${config.apiBase}/sections/${sectionId}/submissions/${assignmentId}`;
+        debugLog('SUBMIT', `Submitting to: ${submissionUrl}`);
+
+        const submissionData = {
+            revision: {
+                body: text
+            }
+        };
+
+        const result = await makeOAuthRequest('POST', submissionUrl, req.session.accessToken, submissionData);
+        
+        debugLog('SUBMIT', '✓ Submission successful');
+        
+        // Invalidate cache for this assignment's submission and grade
+        invalidateCache(`${req.session.userId}:grade-${sectionId}-${assignmentId}`);
+        invalidateCache(`${req.session.userId}:assignment-${sectionId}-${assignmentId}`);
+        
+        res.json({ success: true, submission: result });
+    } catch (error) {
+        debugLog('SUBMIT', `✗ Submission failed: ${error.message}`);
+        res.status(500).json({ error: error.message || 'Submission failed' });
+    }
 });
 
 // Save schedule and update assignment due times

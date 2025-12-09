@@ -11,11 +11,11 @@
 </head>
 <body>
     <div class="login-container">
-        <div class="login-card">
+        <div class="login-card float" style="animation-delay: 0.2s;">
             <div class="logo">
-                <h1><img src="/images/logo.png" alt="Logo" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 10px;">Schoology Pro Max</h1>
+                <h1><img src="/images/logo.png" alt="Logo" class="icon-rotate" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 10px;">Schoology Pro Max</h1>
             </div>
-            <p class="tagline">Your enhanced Schoology experience</p>
+            <p class="tagline gradient-text">Your enhanced Schoology experience</p>
             <p class="description">
                 View your assignments, track your grades, and stay organized with custom features.
             </p>
@@ -31,5 +31,36 @@
             </p>
         </div>
     </div>
+    <script src="/js/particles.js"></script>
+    <script>
+        // Animated entrance
+        document.addEventListener('DOMContentLoaded', () => {
+            const card = document.querySelector('.login-card');
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.8) translateY(40px)';
+            card.style.transition = 'all 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+            
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'scale(1) translateY(0)';
+            }, 200);
+            
+            // Add rainbow border effect to card
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes rainbowBorder {
+                    0%, 100% { border-color: rgba(102, 126, 234, 0.3); }
+                    25% { border-color: rgba(245, 87, 108, 0.3); }
+                    50% { border-color: rgba(67, 233, 123, 0.3); }
+                    75% { border-color: rgba(250, 112, 154, 0.3); }
+                }
+                .login-card {
+                    animation: rainbowBorder 8s linear infinite, float 6s ease-in-out infinite;
+                    box-shadow: 0 20px 60px rgba(102, 126, 234, 0.2), 0 0 100px rgba(102, 126, 234, 0.1);
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
 </body>
 </html>

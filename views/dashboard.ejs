@@ -362,5 +362,25 @@
     </main>
 
     <script src="/js/app.js"></script>
+    <script src="/js/particles.js"></script>
+    <script>
+        // Page transition effect
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.style.opacity = '0';
+            document.body.style.transform = 'translateY(20px)';
+            document.body.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+                document.body.style.transform = 'translateY(0)';
+            }, 100);
+        });
+        
+        // Add gradient text to title
+        const pageTitle = document.querySelector('.page-title');
+        if (pageTitle) {
+            pageTitle.classList.add('gradient-text');
+        }
+    </script>
 </body>
 </html>
