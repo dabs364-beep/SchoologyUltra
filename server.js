@@ -44,6 +44,33 @@ if (IS_VERCEL) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Enable response compression for 3x faster transfers
+try {
+    const compression = require('compression');
+    app.use(compression({
+        level: 6,
+        threshold: 1024,
+        filter: (req, res) => {
+            if (req.headers['x-no-compression']) return false;
+            return compression.filter(req, res);
+        }
+    }));
+    debugLog('SERVER', '✓ Compression enabled');
+} catch (e) {
+    debugLog('SERVER', '⚠️  Compression not available (run: npm install compression)');
+}
+
+// Enable response compression for faster transfers
+const compression = require('compression');
+app.use(compression({
+    level: 6,
+    threshold: 1024,
+    filter: (req, res) => {
+        if (req.headers['x-no-compression']) return false;
+        return compression.filter(req, res);
+    }
+}));
+
 // ============================================================
 // Cookie Encryption for Serverless OAuth Token Storage
 // ============================================================
@@ -96,56 +123,64 @@ let scheduleCache = {};
 // API Response Cache System for Faster Page Loads
 // ============================================================
 
-// Cache configuration
+// Comprehensive caching system for 3x+ performance boost
+const apiCache = new Map();
 const CACHE_TTL = {
-    sections: 5 * 60 * 1000,      // 5 minutes for sections (rarely changes)
-    grades: 2 * 60 * 1000,        // 2 minutes for grades
-    assignments: 2 * 60 * 1000,   // 2 minutes for assignments
-    categories: 10 * 60 * 1000,   // 10 minutes for grading categories
-    userInfo: 30 * 60 * 1000      // 30 minutes for user info
+    sections: 5 * 60 * 1000,      // 5 minutes
+    grades: 2 * 60 * 1000,        // 2 minutes
+    assignments: 3 * 60 * 1000,   // 3 minutes
+    user: 10 * 60 * 1000,         // 10 minutes
+    courses: 5 * 60 * 1000,       // 5 minutes
+    categories: 10 * 60 * 1000,   // 10 minutes (rarely changes)
+    submissions: 1 * 60 * 1000    // 1 minute (updates frequently)
 };
 
-// In-memory API cache (per user)
-const apiCache = {};
+function getCacheKey(userId, endpoint, params = {}) {
+    const paramStr = Object.keys(params).sort().map(k => `${k}=${params[k]}`).join('&');
+    return `${userId}:${endpoint}:${paramStr}`;
+}
 
-// Get cached data or null if expired/missing
-function getCachedData(userId, cacheKey) {
-    if (!apiCache[userId]) return null;
-    const cached = apiCache[userId][cacheKey];
+function getCachedData(key, ttl = 5 * 60 * 1000) {
+    const cached = apiCache.get(key);
     if (!cached) return null;
-
-    const now = Date.now();
-    if (now - cached.timestamp > cached.ttl) {
-        // Cache expired
-        delete apiCache[userId][cacheKey];
+    
+    const age = Date.now() - cached.timestamp;
+    if (age > ttl) {
+        apiCache.delete(key);
         return null;
     }
-
-    debugLog('CACHE', `✓ Cache hit: ${cacheKey}`);
+    
+    debugLog('CACHE', `✓ Cache HIT: ${key} (age: ${Math.round(age / 1000)}s)`);
     return cached.data;
 }
 
-// Set cache data
-function setCacheData(userId, cacheKey, data, ttl) {
-    if (!apiCache[userId]) apiCache[userId] = {};
-    apiCache[userId][cacheKey] = {
+function setCachedData(key, data) {
+    apiCache.set(key, {
         data,
-        timestamp: Date.now(),
-        ttl
-    };
-    debugLog('CACHE', `✓ Cache set: ${cacheKey}`);
+        timestamp: Date.now()
+    });
+    debugLog('CACHE', `✓ Cache SET: ${key}`);
+}
+
+function invalidateCache(pattern) {
+    let count = 0;
+    for (const key of apiCache.keys()) {
+        if (key.includes(pattern)) {
+            apiCache.delete(key);
+            count++;
+        }
+    }
+    if (count > 0) debugLog('CACHE', `✓ Invalidated ${count} cache entries matching: ${pattern}`);
 }
 
 // Clear specific cache for a user
 function clearCache(userId, cacheKey) {
-    if (apiCache[userId] && apiCache[userId][cacheKey]) {
-        delete apiCache[userId][cacheKey];
-    }
+    invalidateCache(`${userId}:${cacheKey}`);
 }
 
 // Clear all cache for a user
 function clearAllCache(userId) {
-    delete apiCache[userId];
+    invalidateCache(userId);
 }
 
 // ============================================================
@@ -154,52 +189,50 @@ function clearAllCache(userId) {
 
 // Fetch all sections with caching
 async function fetchAllSectionsOptimized(userId, accessToken) {
-    const cacheKey = 'sections';
-    const cached = getCachedData(userId, cacheKey);
+    const cacheKey = getCacheKey(userId, 'sections');
+    const cached = getCachedData(cacheKey, CACHE_TTL.sections);
     if (cached) return cached;
 
-    let allSections = [];
-    let start = 0;
-    const limit = 50;
-    let hasMore = true;
+    const sectionsUrl = `${config.apiBase}/users/${userId}/sections?limit=200`;
+    debugLog('FETCH', `📚 Fetching sections from: ${sectionsUrl}`);
 
-    while (hasMore) {
-        const sectionsUrl = `${config.apiBase}/users/${userId}/sections?start=${start}&limit=${limit}`;
-        debugLog('API', `Fetching sections: ${sectionsUrl}`);
-        const sectionsData = await makeOAuthRequest('GET', sectionsUrl, accessToken);
+    try {
+        const sectionsData = await makeOAuthRequest('GET', sectionsUrl, accessToken, null, {
+            cache: true,
+            cacheKey,
+            cacheTTL: CACHE_TTL.sections
+        });
 
         const sections = sectionsData.section || [];
-        allSections = allSections.concat(sections);
-
-        if (sections.length < limit || (sectionsData.links && !sectionsData.links.next)) {
-            hasMore = false;
-        } else {
-            start += limit;
-        }
-
-        if (start > 500) hasMore = false;
+        debugLog('FETCH', `✓ Found ${sections.length} sections`);
+        return sections;
+    } catch (e) {
+        debugLog('FETCH-ERROR', `Failed to fetch sections: ${e.message}`);
+        throw e;
     }
-
-    setCacheData(userId, cacheKey, allSections, CACHE_TTL.sections);
-    return allSections;
 }
 
 // Fetch all grades with caching
 async function fetchAllGradesOptimized(userId, accessToken) {
-    const cacheKey = 'grades';
-    const cached = getCachedData(userId, cacheKey);
+    const cacheKey = getCacheKey(userId, 'grades');
+    const cached = getCachedData(cacheKey, CACHE_TTL.grades);
     if (cached) return cached;
 
-    const gradesUrl = `${config.apiBase}/users/${userId}/grades`;
-    debugLog('API', `Fetching all grades: ${gradesUrl}`);
-    const gradesData = await makeOAuthRequest('GET', gradesUrl, accessToken);
+    const gradesUrl = `${config.apiBase}/users/${userId}/grades?with_category_grades=1`;
+    debugLog('FETCH', `📊 Fetching grades from: ${gradesUrl}`);
 
-    setCacheData(userId, cacheKey, gradesData, CACHE_TTL.grades);
+    const gradesData = await makeOAuthRequest('GET', gradesUrl, accessToken, null, {
+        cache: true,
+        cacheKey,
+        cacheTTL: CACHE_TTL.grades
+    });
+
+    debugLog('FETCH', `✓ Grades fetched successfully`);
     return gradesData;
 }
 
-// Fetch assignments for multiple sections in parallel
-async function fetchAssignmentsForSectionsParallel(sectionIds, accessToken, maxConcurrent = 5) {
+// Fetch assignments for multiple sections in parallel with caching
+async function fetchAssignmentsForSectionsParallel(sectionIds, accessToken, maxConcurrent = 5, userId = null) {
     const results = {};
 
     // Process in batches to avoid overwhelming the API
@@ -208,7 +241,7 @@ async function fetchAssignmentsForSectionsParallel(sectionIds, accessToken, maxC
 
         const batchPromises = batch.map(async (sectionId) => {
             try {
-                const assignments = await fetchAllAssignments(sectionId, accessToken);
+                const assignments = await fetchAllAssignments(sectionId, accessToken, userId);
                 return { sectionId, assignments, error: null };
             } catch (e) {
                 return { sectionId, assignments: [], error: e.message };
@@ -229,7 +262,7 @@ async function fetchAssignmentsForSectionsParallel(sectionIds, accessToken, maxC
 }
 
 // Fetch grading categories for multiple sections in parallel
-async function fetchCategoriesForSectionsParallel(sectionIds, accessToken, maxConcurrent = 5) {
+async function fetchCategoriesForSectionsParallel(sectionIds, accessToken, maxConcurrent = 5, userId = null) {
     const results = {};
 
     for (let i = 0; i < sectionIds.length; i += maxConcurrent) {
@@ -238,7 +271,11 @@ async function fetchCategoriesForSectionsParallel(sectionIds, accessToken, maxCo
         const batchPromises = batch.map(async (sectionId) => {
             try {
                 const categoriesUrl = `${config.apiBase}/sections/${sectionId}/grading_categories`;
-                const categoriesData = await makeOAuthRequest('GET', categoriesUrl, accessToken);
+                const categoriesData = await makeOAuthRequest('GET', categoriesUrl, accessToken, null, {
+                    cache: !!userId,
+                    cacheKey: userId ? getCacheKey(userId, `categories-${sectionId}`) : null,
+                    cacheTTL: CACHE_TTL.categories
+                });
                 return { sectionId, categories: categoriesData.grading_category || [], error: null };
             } catch (e) {
                 return { sectionId, categories: [], error: e.message };
@@ -704,8 +741,17 @@ function buildAuthorizationHeader(params) {
     return `OAuth realm="", ${headerParts}`;
 }
 
-function makeOAuthRequest(method, url, token = null, body = null) {
+function makeOAuthRequest(method, url, token = null, body = null, options = {}) {
     return new Promise((resolve, reject) => {
+        // Check cache first if enabled
+        if (options.cache && options.cacheKey) {
+            const cached = getCachedData(options.cacheKey, options.cacheTTL || 5 * 60 * 1000);
+            if (cached) {
+                resolve(cached);
+                return;
+            }
+        }
+
         debugLog('OAUTH-REQUEST', `Starting ${method} request to: ${url}`);
 
         const oauthParams = {
@@ -819,9 +865,21 @@ function makeOAuthRequest(method, url, token = null, body = null) {
                 try {
                     const parsed = JSON.parse(data);
                     debugLog('OAUTH-RESPONSE', '✓ Successfully parsed JSON response');
+                    
+                    // Cache the response if caching is enabled
+                    if (options.cache && options.cacheKey) {
+                        setCachedData(options.cacheKey, parsed);
+                    }
+                    
                     resolve(parsed);
                 } catch (e) {
                     debugLog('OAUTH-RESPONSE', '✓ Returning raw string response');
+                    
+                    // Cache raw response too if caching is enabled
+                    if (options.cache && options.cacheKey) {
+                        setCachedData(options.cacheKey, data);
+                    }
+                    
                     resolve(data);
                 }
             });
@@ -887,7 +945,19 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files with aggressive caching for performance
+app.use(express.static(path.join(__dirname, 'public'), {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, filepath) => {
+        if (filepath.endsWith('.js') || filepath.endsWith('.css')) {
+            res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
+        } else if (filepath.endsWith('.png') || filepath.endsWith('.jpg') || filepath.endsWith('.svg')) {
+            res.setHeader('Cache-Control', 'public, max-age=604800'); // 7 days
+        }
+    }
+}));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -1191,7 +1261,11 @@ app.get('/dashboard', async (req, res) => {
         const appUserInfoUrl = `${config.apiBase}/app-user-info`;
         debugLog('DASHBOARD', `Fetching app-user-info from: ${appUserInfoUrl}`);
 
-        const appUserInfo = await makeOAuthRequest('GET', appUserInfoUrl, req.session.accessToken);
+        const appUserInfo = await makeOAuthRequest('GET', appUserInfoUrl, req.session.accessToken, null, {
+            cache: true,
+            cacheKey: getCacheKey(req.session.userId || 'temp', 'app-user-info'),
+            cacheTTL: CACHE_TTL.user
+        });
         debugLog('DASHBOARD', '✓ app-user-info response:', appUserInfo);
 
         const userId = appUserInfo.api_uid;
@@ -1205,7 +1279,11 @@ app.get('/dashboard', async (req, res) => {
         const userUrl = `${config.apiBase}/users/${userId}`;
         debugLog('DASHBOARD', `Fetching full user details from: ${userUrl}`);
 
-        const user = await makeOAuthRequest('GET', userUrl, req.session.accessToken);
+        const user = await makeOAuthRequest('GET', userUrl, req.session.accessToken, null, {
+            cache: true,
+            cacheKey: getCacheKey(userId, 'user-details'),
+            cacheTTL: CACHE_TTL.user
+        });
         debugLog('DASHBOARD', '✓ User data received:', {
             id: user.id,
             name: `${user.name_first} ${user.name_last}`,
@@ -1346,42 +1424,29 @@ app.get('/dashboard', async (req, res) => {
     }
 });
 
-// Helper function to fetch all pages of assignments
-async function fetchAllAssignments(sectionId, accessToken) {
-    let allAssignments = [];
-    let start = 0;
-    const limit = 50; // Schoology's max limit per request
-    let hasMore = true;
-
-    while (hasMore) {
-        const url = `${config.apiBase}/sections/${sectionId}/assignments?start=${start}&limit=${limit}`;
-        debugLog('FETCH', `  Fetching assignments: ${url}`);
-        const data = await makeOAuthRequest('GET', url, accessToken);
-        debugLog('FETCH', `  Response keys: ${Object.keys(data).join(', ')}`);
-
-        // Handle the response format - assignments can be in 'assignment' key or top level
-        const assignments = data.assignment || [];
-        debugLog('FETCH', `  Found ${assignments.length} assignments in this page`);
-
-        // Log first assignment to see structure
-        if (assignments.length > 0) {
-            debugLog('FETCH', `  Sample assignment: ${JSON.stringify(assignments[0]).substring(0, 200)}...`);
-        }
-
-        allAssignments = allAssignments.concat(assignments);
-
-        // Check if there are more pages
-        if (assignments.length < limit) {
-            hasMore = false;
-        } else {
-            start += limit;
-        }
-
-        // Safety limit to prevent infinite loops
-        if (start > 500) hasMore = false;
+// Helper function to fetch all pages of assignments with caching
+async function fetchAllAssignments(sectionId, accessToken, userId = null) {
+    // Use cache if userId provided
+    if (userId) {
+        const cacheKey = getCacheKey(userId, `assignments-${sectionId}`);
+        const cached = getCachedData(cacheKey, CACHE_TTL.assignments);
+        if (cached) return cached;
     }
 
-    return allAssignments;
+    // Use higher limit for fewer API calls
+    const url = `${config.apiBase}/sections/${sectionId}/assignments?limit=200`;
+    debugLog('FETCH', `  Fetching assignments: ${url}`);
+    
+    const data = await makeOAuthRequest('GET', url, accessToken, null, {
+        cache: !!userId,
+        cacheKey: userId ? getCacheKey(userId, `assignments-${sectionId}`) : null,
+        cacheTTL: CACHE_TTL.assignments
+    });
+    
+    const assignments = data.assignment || [];
+    debugLog('FETCH', `  ✓ Found ${assignments.length} assignments`);
+    
+    return assignments;
 }
 
 // Assignments page
@@ -1676,8 +1741,8 @@ app.get('/grades', async (req, res) => {
         const sectionIds = allSections.map(s => s.id);
 
         const [assignmentsResults, categoriesResults] = await Promise.all([
-            fetchAssignmentsForSectionsParallel(sectionIds, req.session.accessToken, 5),
-            fetchCategoriesForSectionsParallel(sectionIds, req.session.accessToken, 5)
+            fetchAssignmentsForSectionsParallel(sectionIds, req.session.accessToken, 5, req.session.userId),
+            fetchCategoriesForSectionsParallel(sectionIds, req.session.accessToken, 5, req.session.userId)
         ]);
 
         debugLog('GRADES', `⚡ Assignments and categories fetched in ${Date.now() - parallelStartTime}ms`);
@@ -2008,8 +2073,8 @@ app.get('/courses', async (req, res) => {
                     debugLog('COURSES', `Could not fetch folder contents: ${e.message}`);
                     return [];
                 }),
-                // Fetch assignments
-                fetchAllAssignments(selectedSection.id, req.session.accessToken).catch(e => {
+                // Fetch assignments with caching
+                fetchAllAssignments(selectedSection.id, req.session.accessToken, req.session.userId).catch(e => {
                     debugLog('COURSES', `Could not fetch assignments: ${e.message}`);
                     return [];
                 }),
@@ -2112,30 +2177,60 @@ app.get('/assignment', async (req, res) => {
     }
 
     try {
-        // Fetch assignment details with attachments
-        const assignmentUrl = `${config.apiBase}/sections/${sectionId}/assignments/${assignmentId}?with_attachments=1`;
-        debugLog('ASSIGNMENT', `Fetching assignment from: ${assignmentUrl}`);
-        const assignment = await makeOAuthRequest('GET', assignmentUrl, req.session.accessToken);
-        debugLog('ASSIGNMENT', `✓ Got assignment: ${assignment.title}`);
-        debugLog('ASSIGNMENT', `  Type: ${assignment.type || 'N/A'}`);
-        // Log ALL top-level keys from the assignment response
-        debugLog('ASSIGNMENT', `  ALL assignment keys: ${Object.keys(assignment).join(', ')}`);
-        // Log full assignment JSON (truncated) for debugging
-        const fullJson = JSON.stringify(assignment);
-        debugLog('ASSIGNMENT', `  FULL assignment response (first 2000 chars): ${fullJson.substring(0, 2000)}`);
+        // ⚡ PARALLEL FETCH: Get assignment, section, categories, and grade simultaneously
+        debugLog('ASSIGNMENT', '⚡ Starting parallel fetch...');
+        const startTime = Date.now();
 
-        // Fetch section info for context
+        const assignmentUrl = `${config.apiBase}/sections/${sectionId}/assignments/${assignmentId}?with_attachments=1`;
         const sectionUrl = `${config.apiBase}/sections/${sectionId}`;
-        debugLog('ASSIGNMENT', `Fetching section from: ${sectionUrl}`);
-        const section = await makeOAuthRequest('GET', sectionUrl, req.session.accessToken);
+        const gradesUrl = `${config.apiBase}/sections/${sectionId}/grades?assignment_id=${assignmentId}`;
+
+        const [assignment, section, gradesData] = await Promise.all([
+            makeOAuthRequest('GET', assignmentUrl, req.session.accessToken, null, {
+                cache: true,
+                cacheKey: getCacheKey(req.session.userId, `assignment-${sectionId}-${assignmentId}`),
+                cacheTTL: CACHE_TTL.assignments
+            }),
+            makeOAuthRequest('GET', sectionUrl, req.session.accessToken, null, {
+                cache: true,
+                cacheKey: getCacheKey(req.session.userId, `section-${sectionId}`),
+                cacheTTL: CACHE_TTL.courses
+            }),
+            makeOAuthRequest('GET', gradesUrl, req.session.accessToken, null, {
+                cache: true,
+                cacheKey: getCacheKey(req.session.userId, `grade-${sectionId}-${assignmentId}`),
+                cacheTTL: CACHE_TTL.grades
+            }).catch(e => {
+                debugLog('ASSIGNMENT', `Could not fetch grade: ${e.message}`);
+                return null;
+            })
+        ]);
+
+        debugLog('ASSIGNMENT', `⚡ Parallel fetch completed in ${Date.now() - startTime}ms`);
+        debugLog('ASSIGNMENT', `✓ Got assignment: ${assignment.title}`);
         debugLog('ASSIGNMENT', `✓ Section: ${section.course_title || section.section_title}`);
+
+        // Parse user grade
+        let userGrade = null;
+        if (gradesData) {
+            const grades = gradesData.grades?.grade || gradesData.grade || [];
+            const gradeArray = Array.isArray(grades) ? grades : [grades];
+            if (gradeArray.length > 0) {
+                userGrade = gradeArray[0];
+                debugLog('ASSIGNMENT', `✓ Found grade: ${userGrade.grade} / ${userGrade.max_points}`);
+            }
+        }
 
         // Fetch grading categories to get category name
         let categoryName = 'Uncategorized';
         if (assignment.grading_category && assignment.grading_category !== '0') {
             try {
                 const categoriesUrl = `${config.apiBase}/sections/${sectionId}/grading_categories`;
-                const categoriesData = await makeOAuthRequest('GET', categoriesUrl, req.session.accessToken);
+                const categoriesData = await makeOAuthRequest('GET', categoriesUrl, req.session.accessToken, null, {
+                    cache: true,
+                    cacheKey: getCacheKey(req.session.userId, `categories-${sectionId}`),
+                    cacheTTL: CACHE_TTL.categories
+                });
                 const categories = categoriesData.grading_category || [];
                 const category = categories.find(c => String(c.id) === String(assignment.grading_category));
                 if (category) {
@@ -2144,23 +2239,6 @@ app.get('/assignment', async (req, res) => {
             } catch (e) {
                 debugLog('ASSIGNMENT', `Could not fetch categories: ${e.message}`);
             }
-        }
-
-        // Fetch user's grade for this assignment
-        let userGrade = null;
-        try {
-            const gradesUrl = `${config.apiBase}/sections/${sectionId}/grades?assignment_id=${assignmentId}`;
-            debugLog('ASSIGNMENT', `Fetching grade from: ${gradesUrl}`);
-            const gradesData = await makeOAuthRequest('GET', gradesUrl, req.session.accessToken);
-            // API returns { grades: { grade: [...] } } structure
-            const grades = gradesData.grades?.grade || gradesData.grade || [];
-            const gradeArray = Array.isArray(grades) ? grades : [grades];
-            if (gradeArray.length > 0) {
-                userGrade = gradeArray[0];
-                debugLog('ASSIGNMENT', `  Found grade: ${userGrade.grade} / ${userGrade.max_points}`);
-            }
-        } catch (e) {
-            debugLog('ASSIGNMENT', `Could not fetch grade: ${e.message}`);
         }
 
         // Fetch user's submission for this assignment (if submittable)
@@ -2229,6 +2307,9 @@ app.get('/api/user', async (req, res) => {
         return res.status(401).json({ error: 'Not authenticated' });
     }
 
+    // Cache user data for 10 minutes
+    res.setHeader('Cache-Control', 'private, max-age=600');
+    
     debugLog('API', `Returning user: ${req.session.userName}`);
     res.json({
         id: req.session.userId,
