@@ -1875,3 +1875,49 @@ body {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
 }
+
+/* ============================================
+   ASSIGNMENT DESCRIPTION LINKS
+   ============================================ */
+.description-content a {
+    color: var(--accent-primary);
+    text-decoration: underline;
+    font-weight: 500;
+    transition: color var(--duration-fast) ease;
+}
+
+.description-content a:hover {
+    color: var(--accent-primary-hover);
+    text-decoration: underline;
+}
+
+.description-content a:visited {
+    color: #5856d6;
+}
+
+/* Ensure description content has proper spacing */
+.description-content {
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.description-content p {
+    margin-bottom: var(--space-4);
+}
+
+.description-content ul,
+.description-content ol {
+    margin-bottom: var(--space-4);
+    padding-left: var(--space-6);
+}
+
+.description-content li {
+    margin-bottom: var(--space-2);
+}
+
+.description-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    margin: var(--space-4) 0;
+}

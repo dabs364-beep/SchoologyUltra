@@ -712,7 +712,7 @@
                 <div class="section-title">Description</div>
                 <% if (assignment.description && assignment.description.trim()) { %>
                 <div class="description-content">
-                    <%- assignment.description %>
+                    <%- assignment.description.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ') %>
                 </div>
                 <% } else { %>
                 <p class="no-description">No description provided.</p>

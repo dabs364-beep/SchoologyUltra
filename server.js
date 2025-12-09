@@ -341,15 +341,13 @@ function saveSchedule(userId, schedule) {
     }
     scheduleCache[userId] = schedule;
 
-    // On Vercel, skip filesystem write
-    if (IS_VERCEL) {
+    // On Vercel or if fs is not available, skip filesystem write
+    if (IS_VERCEL || !fs) {
         return;
     }
 
     try {
-        if (fs) {
-            fs.writeFileSync(SCHEDULE_PATH, JSON.stringify(scheduleCache, null, 2));
-        }
+        fs.writeFileSync(SCHEDULE_PATH, JSON.stringify(scheduleCache, null, 2));
     } catch (e) {
         debugLog('SCHEDULE', `Error saving schedule: ${e.message}`);
     }
@@ -3867,14 +3865,15 @@ Do not add explanations after ===RESULT===. Do not say "So the answer is" or "Th
         }
 
         const requestBody = {
-            model: "qwen-3-32b",
+            model: "gpt-oss-120b",
             messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userPrompt }
             ],
             temperature: 0.2,
             max_completion_tokens: 8192,
-            top_p: 1
+            top_p: 1,
+            reasoning_effort: "high"
         };
 
         // Log the prompts for debugging
@@ -5233,7 +5232,13 @@ app.post('/api/schedule/save', express.json(), async (req, res) => {
         }
 
         // Save the updated cache with adjusted times
-        fs.writeFileSync(SCHEDULE_PATH, JSON.stringify(scheduleCache, null, 2));
+        if (!IS_VERCEL && fs) {
+            try {
+                fs.writeFileSync(SCHEDULE_PATH, JSON.stringify(scheduleCache, null, 2));
+            } catch (e) {
+                debugLog('SCHEDULE', `Error persisting schedule cache: ${e.message}`);
+            }
+        }
 
         debugLog('SCHEDULE', `Schedule saved. ${assignmentsUpdated} assignments adjusted.`);
         res.json({ success: true, assignmentsUpdated });

@@ -832,6 +832,11 @@
             if (assignment.description && assignment.description.trim()) {
                 descEl.style.display = 'block';
                 descContent.innerHTML = assignment.description;
+                // Make all links open in new tab
+                descContent.querySelectorAll('a').forEach(link => {
+                    link.setAttribute('target', '_blank');
+                    link.setAttribute('rel', 'noopener noreferrer');
+                });
             } else {
                 descEl.style.display = 'block';
                 descContent.innerHTML = '<p class="no-description">No description provided</p>';
