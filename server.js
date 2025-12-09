@@ -741,11 +741,11 @@ function buildAuthorizationHeader(params) {
     return `OAuth realm="", ${headerParts}`;
 }
 
-function makeOAuthRequest(method, url, token = null, body = null, options = {}) {
+function makeOAuthRequest(method, url, token = null, body = null, cacheOptions = {}) {
     return new Promise((resolve, reject) => {
         // Check cache first if enabled
-        if (options.cache && options.cacheKey) {
-            const cached = getCachedData(options.cacheKey, options.cacheTTL || 5 * 60 * 1000);
+        if (cacheOptions.cache && cacheOptions.cacheKey) {
+            const cached = getCachedData(cacheOptions.cacheKey, cacheOptions.cacheTTL || 5 * 60 * 1000);
             if (cached) {
                 resolve(cached);
                 return;
@@ -791,7 +791,7 @@ function makeOAuthRequest(method, url, token = null, body = null, options = {}) 
         // Generate a mobile session cookie (mimics Schoology mobile app)
         const sessionCookie = `s_mobile=${crypto.randomBytes(16).toString('hex')}`;
 
-        const options = {
+        const requestOptions = {
             hostname: urlObj.hostname,
             port: 443,
             path: urlObj.pathname + urlObj.search,
@@ -809,11 +809,11 @@ function makeOAuthRequest(method, url, token = null, body = null, options = {}) 
         };
 
         debugLog('OAUTH-REQUEST', 'Request headers:', {
-            'User-Agent': options.headers['User-Agent'],
-            'Cookie': options.headers['Cookie']
+            'User-Agent': requestOptions.headers['User-Agent'],
+            'Cookie': requestOptions.headers['Cookie']
         });
 
-        const req = https.request(options, (res) => {
+        const req = https.request(requestOptions, (res) => {
             debugLog('OAUTH-RESPONSE', `Response status: ${res.statusCode} ${res.statusMessage}`);
             debugLog('OAUTH-RESPONSE', 'Response headers:', res.headers);
 
@@ -841,7 +841,7 @@ function makeOAuthRequest(method, url, token = null, body = null, options = {}) 
                     const redirectUrl = res.headers.location.startsWith('http')
                         ? res.headers.location
                         : `https://${urlObj.hostname}${res.headers.location}`;
-                    makeOAuthRequest(method, redirectUrl, token, body)
+                    makeOAuthRequest(method, redirectUrl, token, body, cacheOptions)
                         .then(resolve)
                         .catch(reject);
                     return;
@@ -867,8 +867,8 @@ function makeOAuthRequest(method, url, token = null, body = null, options = {}) 
                     debugLog('OAUTH-RESPONSE', '✓ Successfully parsed JSON response');
                     
                     // Cache the response if caching is enabled
-                    if (options.cache && options.cacheKey) {
-                        setCachedData(options.cacheKey, parsed);
+                    if (cacheOptions.cache && cacheOptions.cacheKey) {
+                        setCachedData(cacheOptions.cacheKey, parsed);
                     }
                     
                     resolve(parsed);
@@ -876,8 +876,8 @@ function makeOAuthRequest(method, url, token = null, body = null, options = {}) 
                     debugLog('OAUTH-RESPONSE', '✓ Returning raw string response');
                     
                     // Cache raw response too if caching is enabled
-                    if (options.cache && options.cacheKey) {
-                        setCachedData(options.cacheKey, data);
+                    if (cacheOptions.cache && cacheOptions.cacheKey) {
+                        setCachedData(cacheOptions.cacheKey, data);
                     }
                     
                     resolve(data);
