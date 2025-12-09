@@ -191,7 +191,13 @@ function clearAllCache(userId) {
 async function fetchAllSectionsOptimized(userId, accessToken) {
     const cacheKey = getCacheKey(userId, 'sections');
     const cached = getCachedData(cacheKey, CACHE_TTL.sections);
-    if (cached) return cached;
+    if (cached) {
+        // Cache may contain either the raw API response or the processed array.
+        // Normalize both shapes to always return an array of sections.
+        if (Array.isArray(cached)) return cached;
+        if (cached && typeof cached === 'object' && Array.isArray(cached.section)) return cached.section;
+        // If cached is unexpected shape, fall through and re-fetch.
+    }
 
     const sectionsUrl = `${config.apiBase}/users/${userId}/sections?limit=200`;
     debugLog('FETCH', `📚 Fetching sections from: ${sectionsUrl}`);
@@ -203,8 +209,16 @@ async function fetchAllSectionsOptimized(userId, accessToken) {
             cacheTTL: CACHE_TTL.sections
         });
 
-        const sections = sectionsData.section || [];
+        const sections = sectionsData && Array.isArray(sectionsData.section) ? sectionsData.section : [];
         debugLog('FETCH', `✓ Found ${sections.length} sections`);
+
+        // Store the processed array in cache to keep later reads consistent
+        try {
+            setCachedData(cacheKey, sections);
+        } catch (e) {
+            debugLog('CACHE', `Could not set sections cache: ${e.message}`);
+        }
+
         return sections;
     } catch (e) {
         debugLog('FETCH-ERROR', `Failed to fetch sections: ${e.message}`);
@@ -1430,7 +1444,11 @@ async function fetchAllAssignments(sectionId, accessToken, userId = null) {
     if (userId) {
         const cacheKey = getCacheKey(userId, `assignments-${sectionId}`);
         const cached = getCachedData(cacheKey, CACHE_TTL.assignments);
-        if (cached) return cached;
+        if (cached) {
+            // Normalize cached shapes: either array or raw API response
+            if (Array.isArray(cached)) return cached;
+            if (cached && typeof cached === 'object' && Array.isArray(cached.assignment)) return cached.assignment;
+        }
     }
 
     // Use higher limit for fewer API calls
@@ -1443,7 +1461,11 @@ async function fetchAllAssignments(sectionId, accessToken, userId = null) {
         cacheTTL: CACHE_TTL.assignments
     });
     
-    const assignments = data.assignment || [];
+    const assignments = data && Array.isArray(data.assignment) ? data.assignment : [];
+    // Cache the processed assignments array for consistent reads
+    if (userId) {
+        try { setCachedData(getCacheKey(userId, `assignments-${sectionId}`), assignments); } catch (e) { debugLog('CACHE', `Could not set assignments cache: ${e.message}`); }
+    }
     debugLog('FETCH', `  ✓ Found ${assignments.length} assignments`);
     
     return assignments;
