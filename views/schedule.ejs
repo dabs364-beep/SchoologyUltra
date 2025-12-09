@@ -42,6 +42,60 @@
             gap: var(--space-3);
         }
         
+        .duplicate-day-container {
+            position: relative;
+        }
+        
+        .duplicate-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            padding: var(--space-2);
+            min-width: 180px;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.2s;
+        }
+        
+        .duplicate-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .duplicate-dropdown-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            padding: var(--space-2) var(--space-3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .duplicate-day-option {
+            width: 100%;
+            padding: var(--space-2) var(--space-3);
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .duplicate-day-option:hover {
+            background: var(--bg-secondary);
+            color: var(--accent-primary);
+        }
+        
         .schedule-layout {
             display: flex;
             gap: var(--space-6);
@@ -391,6 +445,17 @@
             </div>
             <div class="schedule-actions">
                 <button class="btn btn-secondary" onclick="clearSchedule()">Clear All</button>
+                <div class="duplicate-day-container">
+                    <button class="btn btn-secondary" onclick="toggleDuplicateDropdown()">📋 Duplicate Day</button>
+                    <div class="duplicate-dropdown" id="duplicate-dropdown">
+                        <div class="duplicate-dropdown-header">Copy schedule from:</div>
+                        <button class="duplicate-day-option" onclick="selectSourceDay(1)">Monday</button>
+                        <button class="duplicate-day-option" onclick="selectSourceDay(2)">Tuesday</button>
+                        <button class="duplicate-day-option" onclick="selectSourceDay(3)">Wednesday</button>
+                        <button class="duplicate-day-option" onclick="selectSourceDay(4)">Thursday</button>
+                        <button class="duplicate-day-option" onclick="selectSourceDay(5)">Friday</button>
+                    </div>
+                </div>
                 <button class="btn btn-primary" onclick="saveSchedule()">Save Schedule</button>
             </div>
         </div>
@@ -743,6 +808,90 @@
             renderSchedule();
             showToast('Schedule cleared', 'success');
         }
+        
+        let selectedSourceDay = null;
+        
+        function toggleDuplicateDropdown() {
+            const dropdown = document.getElementById('duplicate-dropdown');
+            dropdown.classList.toggle('active');
+        }
+        
+        function selectSourceDay(sourceDay) {
+            selectedSourceDay = sourceDay;
+            const dropdown = document.getElementById('duplicate-dropdown');
+            dropdown.classList.remove('active');
+            
+            // Check if source day has any blocks
+            if (!schedule[sourceDay] || schedule[sourceDay].length === 0) {
+                showToast('No classes scheduled on that day', 'error');
+                return;
+            }
+            
+            // Show target day selection
+            showTargetDaySelection(sourceDay);
+        }
+        
+        function showTargetDaySelection(sourceDay) {
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const sourceName = dayNames[sourceDay];
+            
+            // Create a list of target days (excluding source day and weekends)
+            const targetDays = [1, 2, 3, 4, 5].filter(d => d !== sourceDay);
+            const targetOptions = targetDays.map(d => dayNames[d]).join(', ');
+            
+            const targetDay = prompt(`Copy ${sourceName}'s schedule to which day?\n\nOptions: ${targetOptions}\n\nEnter day name:`);
+            
+            if (!targetDay) return;
+            
+            const targetDayNum = dayNames.findIndex(name => name.toLowerCase() === targetDay.toLowerCase());
+            
+            if (targetDayNum < 1 || targetDayNum > 5) {
+                showToast('Invalid day. Please enter Monday-Friday only.', 'error');
+                return;
+            }
+            
+            if (targetDayNum === sourceDay) {
+                showToast('Cannot duplicate to the same day', 'error');
+                return;
+            }
+            
+            // Check if target day has existing blocks
+            if (schedule[targetDayNum] && schedule[targetDayNum].length > 0) {
+                if (!confirm(`${dayNames[targetDayNum]} already has classes scheduled. Replace them with ${sourceName}'s schedule?`)) {
+                    return;
+                }
+            }
+            
+            duplicateDay(sourceDay, targetDayNum);
+        }
+        
+        function duplicateDay(sourceDay, targetDay) {
+            if (!schedule[sourceDay] || schedule[sourceDay].length === 0) {
+                showToast('No classes to duplicate', 'error');
+                return;
+            }
+            
+            // Deep copy the source day's blocks to target day
+            schedule[targetDay] = schedule[sourceDay].map(block => ({
+                ...block,
+                id: Date.now() + Math.random() // Generate new unique ID
+            }));
+            
+            renderSchedule();
+            
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            showToast(`Duplicated ${dayNames[sourceDay]}'s schedule to ${dayNames[targetDay]}`, 'success');
+        }
+        
+        // Close duplicate dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('duplicate-dropdown');
+            const container = document.querySelector('.duplicate-day-container');
+            
+            if (dropdown && container && !container.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
         
         async function saveSchedule() {
             try {
