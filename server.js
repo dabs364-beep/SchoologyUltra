@@ -921,16 +921,23 @@ app.use(cookieParser());
 // For production, consider using a Redis-based session store
 app.use(session({
     secret: process.env.SESSION_SECRET || 'schoology-pro-max-secret',
+    name: 'schoology.sid', // Unique session name to avoid conflicts
     resave: false,
     saveUninitialized: false,
     cookie: {
         maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
         httpOnly: true,
         secure: IS_VERCEL, // Use secure cookies on Vercel (HTTPS)
-        sameSite: IS_VERCEL ? 'none' : 'lax' // Required for cross-origin on Vercel
+        sameSite: IS_VERCEL ? 'lax' : 'lax', // Use 'lax' for better security
+        path: '/', // Explicit path
+        domain: undefined // Don't set domain to avoid subdomain issues
     },
     // Trust proxy on Vercel
-    ...(IS_VERCEL && { proxy: true })
+    ...(IS_VERCEL && { proxy: true }),
+    // Generate unique session ID for each user
+    genid: function(req) {
+        return crypto.randomBytes(16).toString('hex');
+    }
 }));
 
 // Trust proxy on Vercel
@@ -946,16 +953,39 @@ app.use((req, res, next) => {
         if (decrypted) {
             try {
                 const tokenData = JSON.parse(decrypted);
-                req.session.accessToken = tokenData;
-                if (req.cookies.user_id) {
-                    req.session.userId = req.cookies.user_id;
+                const cookieUserId = req.cookies.user_id;
+                
+                // Validate that the session belongs to the same user
+                if (cookieUserId) {
+                    req.session.accessToken = tokenData;
+                    req.session.userId = cookieUserId;
+                    // Store user ID hash to validate session consistency
+                    req.session.userHash = crypto.createHash('sha256').update(cookieUserId).digest('hex');
+                    debugLog('AUTH', `✓ Access token restored for user ${cookieUserId}`);
+                } else {
+                    debugLog('AUTH', '✗ No user_id cookie found, cannot restore session');
                 }
-                debugLog('AUTH', '✓ Access token restored from cookie');
             } catch (e) {
                 debugLog('AUTH', '✗ Failed to parse access token from cookie');
             }
         }
     }
+    
+    // Validate session consistency - ensure session userId matches cookie userId
+    if (req.session.userId && req.cookies.user_id) {
+        if (req.session.userId !== req.cookies.user_id) {
+            // Session mismatch detected - clear invalid session
+            debugLog('AUTH', `⚠️  Session mismatch detected! Session user: ${req.session.userId}, Cookie user: ${req.cookies.user_id}`);
+            req.session.destroy((err) => {
+                if (err) debugLog('AUTH', '✗ Error destroying mismatched session');
+            });
+            // Clear cookies
+            res.clearCookie('access_token');
+            res.clearCookie('user_id');
+            res.clearCookie('schoology.sid');
+        }
+    }
+    
     next();
 });
 
@@ -1159,8 +1189,9 @@ app.get('/auth/complete', async (req, res) => {
         res.cookie('access_token', encryptToken(accessTokenData), {
             httpOnly: true,
             secure: IS_VERCEL,
-            sameSite: IS_VERCEL ? 'none' : 'lax',
-            maxAge: 365 * 24 * 60 * 60 * 1000 // 1 year
+            sameSite: 'lax', // Changed from 'none' for better security
+            maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
+            path: '/' // Explicit path
         });
 
         debugLog('OAUTH-STEP4', '✓ Access token stored in session and cookie');
@@ -1306,13 +1337,16 @@ app.get('/dashboard', async (req, res) => {
 
         req.session.userId = user.id;
         req.session.userName = `${user.name_first} ${user.name_last}`;
+        // Store user ID hash for session validation
+        req.session.userHash = crypto.createHash('sha256').update(user.id.toString()).digest('hex');
 
         // Store user ID in cookie for Vercel serverless persistence
         res.cookie('user_id', user.id, {
             httpOnly: true,
             secure: IS_VERCEL,
-            sameSite: IS_VERCEL ? 'none' : 'lax',
-            maxAge: 365 * 24 * 60 * 60 * 1000 // 1 year
+            sameSite: 'lax', // Changed from 'none' for better security
+            maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
+            path: '/' // Explicit path
         });
 
         // Step 3: PARALLEL FETCH - Get sections and grades simultaneously
@@ -5733,11 +5767,29 @@ app.get('/settings', async (req, res) => {
 // Logout
 app.get('/logout', (req, res) => {
     debugLog('LOGOUT', 'User logging out');
-    req.session.destroy();
-    // Clear authentication cookies
-    res.clearCookie('access_token');
-    res.clearCookie('user_id');
-    res.clearCookie('oauth_request_token');
+    const userId = req.session.userId;
+    
+    // Clear all session data
+    req.session.destroy((err) => {
+        if (err) {
+            debugLog('LOGOUT', '✗ Error destroying session:', err);
+        } else {
+            debugLog('LOGOUT', `✓ Session destroyed for user ${userId}`);
+        }
+    });
+    
+    // Clear all authentication cookies
+    res.clearCookie('access_token', { path: '/' });
+    res.clearCookie('user_id', { path: '/' });
+    res.clearCookie('oauth_request_token', { path: '/' });
+    res.clearCookie('schoology.sid', { path: '/' }); // Clear session ID cookie
+    
+    // Clear user-specific cache
+    if (userId) {
+        clearAllCache(userId);
+        debugLog('LOGOUT', `✓ Cleared cache for user ${userId}`);
+    }
+    
     res.redirect('/');
 });
 
