@@ -1,0 +1,2469 @@
+{
+  "132642346": {
+    "notifications": [
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962764760,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "fabda06618dad2c7",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.888Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765812,
+        "grade": 10,
+        "maxPoints": 10,
+        "id": "43c91b7e82cae312",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.887Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765804,
+        "grade": 10,
+        "maxPoints": 10,
+        "id": "549012b6f5a2768f",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.886Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765433,
+        "grade": 10,
+        "maxPoints": 10,
+        "id": "824351e0239a7bab",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.886Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765396,
+        "grade": 10,
+        "maxPoints": 10,
+        "id": "41115c0d5fcdb5a9",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.886Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765349,
+        "grade": 10,
+        "maxPoints": 10,
+        "id": "2a12411b5221fab0",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.885Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765312,
+        "grade": 10,
+        "maxPoints": 10,
+        "id": "0406b51daa23a6e2",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.884Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962764865,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "e4a97bb81d26f2d9",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.884Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962764766,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "a7a681af0002e6fd",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.883Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "World History - 1620",
+        "courseId": "7920966727",
+        "sectionId": "7920967076",
+        "assignmentId": 8022202678,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "6516428ecf02d253",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.883Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "World History - 1620",
+        "courseId": "7920966727",
+        "sectionId": "7920967076",
+        "assignmentId": 8008686809,
+        "grade": 3,
+        "maxPoints": 3,
+        "id": "5d5f910931076361",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.882Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "World History - 1620",
+        "courseId": "7920966727",
+        "sectionId": "7920967076",
+        "assignmentId": 7994667676,
+        "grade": 1,
+        "maxPoints": 1,
+        "id": "bc190c8b15b177be",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.882Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "World History - 1620",
+        "courseId": "7920966727",
+        "sectionId": "7920967076",
+        "assignmentId": 7993024417,
+        "grade": 2,
+        "maxPoints": 2,
+        "id": "2e6c09f9c8c800b5",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.881Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "World History - 1620",
+        "courseId": "7920966727",
+        "sectionId": "7920967076",
+        "assignmentId": 7977817258,
+        "grade": 1,
+        "maxPoints": 1,
+        "id": "cb3525ca0e806f65",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.881Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "World History - 1620",
+        "courseId": "7920966727",
+        "sectionId": "7920967076",
+        "assignmentId": 7962226744,
+        "grade": 1,
+        "maxPoints": 1,
+        "id": "a4a21d1306d32b50",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.881Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "World History - 1620",
+        "courseId": "7920966727",
+        "sectionId": "7920967076",
+        "assignmentId": 8022210366,
+        "grade": 8,
+        "maxPoints": 10,
+        "id": "40ac019cd149a656",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.880Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8060086680,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "7eb1a01225f807cf",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.879Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8056628974,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "316b901b70633980",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.879Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8052953897,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "d4d313695a659f13",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.879Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8049222254,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "206c539b2c701b26",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.878Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8045909451,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "6c5e63f85e942543",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.878Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8033253997,
+        "grade": 23,
+        "maxPoints": 24,
+        "id": "3afbf744a17ddda7",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.877Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8036011340,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "f6304cb47eac2ac9",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.877Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8032062615,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "56b143aebe7b265b",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.876Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8023251928,
+        "grade": 3,
+        "maxPoints": 5,
+        "id": "49bb92974cbf91c1",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.876Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8025693062,
+        "grade": 31.8,
+        "maxPoints": 53,
+        "id": "dbf659d616ab3255",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.875Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7984557670,
+        "grade": 0,
+        "maxPoints": 10,
+        "id": "7ebffc635761481a",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.874Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8018659646,
+        "grade": 4,
+        "maxPoints": 5,
+        "id": "a75b3a357d93c67f",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.874Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8013744498,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "9a648a1b7a2376cb",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.873Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7998575816,
+        "grade": 10,
+        "maxPoints": 10,
+        "id": "f20d6e99724c5444",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.872Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8005068203,
+        "grade": 18.7,
+        "maxPoints": 24,
+        "id": "df242cbb96b6b465",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.871Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7989966393,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "90aa207f998c901e",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.870Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7984562045,
+        "grade": 4.25,
+        "maxPoints": 5,
+        "id": "2545b2e125b89474",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.869Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7994795037,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "d7f8531bb86cf7a1",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.868Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7994779530,
+        "grade": 4.5,
+        "maxPoints": 5,
+        "id": "e613b934c7a4a742",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.867Z"
+      },
+      {
+        "type": "graded",
+        "title": "Assignment",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7984553331,
+        "grade": 5,
+        "maxPoints": 5,
+        "id": "d58cd49d9b770616",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:42.866Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "APP1 Graphing Worksheet",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7997275931,
+        "dueDate": "2025-08-29T15:30:00.000Z",
+        "id": "95c51f29f70f6363",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.679Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "WS 1.0 and 1.1 Intro to Physics",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765371,
+        "dueDate": "2025-08-27T15:30:00.000Z",
+        "id": "a35092bb921330c4",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.679Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Worksheet 1.1 Displacement and Velocity",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765433,
+        "dueDate": "2025-08-27T15:30:00.000Z",
+        "id": "93c05fc3098297fe",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.678Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Worksheet 1.0 Introduction to Physics",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765396,
+        "dueDate": "2025-08-27T15:30:00.000Z",
+        "id": "5cc367f74d67b6a1",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.678Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Textbook reading and notes 2.3",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765342,
+        "dueDate": "2025-08-27T15:30:00.000Z",
+        "id": "2358280c948c6e09",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.677Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Student Questionnaire",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962764766,
+        "dueDate": "2025-08-27T15:30:00.000Z",
+        "id": "e2bef5e592924eab",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.677Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Policy Sheet Signatures",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962764865,
+        "dueDate": "2025-08-27T15:30:00.000Z",
+        "id": "4ef8fa79821d30e0",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.676Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Homework Quiz 2.3",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765349,
+        "dueDate": "2025-08-27T15:30:00.000Z",
+        "id": "23362dbe98e8406d",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.676Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Lab: Constant Velocity",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765812,
+        "dueDate": "2025-08-25T18:50:00.000Z",
+        "id": "826271d084e66eda",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.676Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Name Pronunciation and Introduction",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962764760,
+        "dueDate": "2025-08-25T15:30:00.000Z",
+        "id": "f77af07f4bf32839",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.675Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "AP Physics 1 Materials- Checked in Class",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962764872,
+        "dueDate": "2025-08-25T15:30:00.000Z",
+        "id": "75c3f21474c9bff0",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.674Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Textbook Reading and Notes 1.4, 2.1, 2.2",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765306,
+        "dueDate": "2025-08-22T15:30:00.000Z",
+        "id": "ddd6ab37a2772f92",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.674Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Lab: Buggy Collision",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765804,
+        "dueDate": "2025-08-22T15:30:00.000Z",
+        "id": "d61086ce16f7e1aa",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.673Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Homework Quiz 1.4, 2.1, 2.2",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 7962765312,
+        "dueDate": "2025-08-22T15:30:00.000Z",
+        "id": "519e680c1a257fae",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.672Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Unit 2a test corrrections",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 8038254284,
+        "dueDate": "2024-11-22T18:05:00.000Z",
+        "id": "9e519951a0da6bee",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.671Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Read and notes on Chapter Sections 6.1-6.3 (please read description)",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 8038254931,
+        "dueDate": "2024-10-21T15:30:00.000Z",
+        "id": "59352f8128e87ad3",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.670Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Worksheet 2.3 Forces and Friction",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 8038254753,
+        "dueDate": "2024-10-15T21:20:00.000Z",
+        "id": "c801ec538528b539",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.670Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "HW: Review Tension in Static Systems",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 8065614596,
+        "dueDate": null,
+        "id": "00ad61e1c6c659e2",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.669Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "APP1- 5th Period Slides & Expectations",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 8026604548,
+        "dueDate": null,
+        "id": "83a9ba175115261a",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.668Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "111925 P5 APP1 Slides & Expectations",
+        "courseName": "AP Physics 1 - 3750",
+        "courseId": "7920966642",
+        "sectionId": "7920966643",
+        "assignmentId": 8132443092,
+        "dueDate": null,
+        "id": "3e91b23b3252462d",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.667Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "TEST YOUR LOCKDOWN BROWSER-Take this Quiz",
+        "courseName": "Lockdown Browser",
+        "courseId": "5237237069",
+        "sectionId": "5237237093",
+        "assignmentId": 5237284158,
+        "dueDate": null,
+        "id": "ebe0b30a1898a17b",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.308Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Schoology Navigation Basics",
+        "courseName": "CHS Hub",
+        "courseId": "2670361859",
+        "sectionId": "2670361877",
+        "assignmentId": 5168584608,
+        "dueDate": null,
+        "id": "2cddfa51ee5d9e6e",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.141Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Practice Annotation Assignment",
+        "courseName": "CHS Hub",
+        "courseId": "2670361859",
+        "sectionId": "2670361877",
+        "assignmentId": 6046028064,
+        "dueDate": null,
+        "id": "66b77660db1db080",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.140Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "How to Submit an Assignment",
+        "courseName": "CHS Hub",
+        "courseId": "2670361859",
+        "sectionId": "2670361877",
+        "assignmentId": 5168585012,
+        "dueDate": null,
+        "id": "6634bd48d89f63be",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.140Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "How to Submit a Google Drive Assigment",
+        "courseName": "CHS Hub",
+        "courseId": "2670361859",
+        "sectionId": "2670361877",
+        "assignmentId": 5168585776,
+        "dueDate": null,
+        "id": "90782cb5a48e2413",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.139Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "How to Record a Video in Schoology",
+        "courseName": "CHS Hub",
+        "courseId": "2670361859",
+        "sectionId": "2670361877",
+        "assignmentId": 5168586512,
+        "dueDate": null,
+        "id": "36dd187ac291d8c0",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.138Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "How to Participate in a Discussion",
+        "courseName": "CHS Hub",
+        "courseId": "2670361859",
+        "sectionId": "2670361877",
+        "assignmentId": 5168586156,
+        "dueDate": null,
+        "id": "159aaad047007284",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.136Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "How to Link Schoology to your Google Drive",
+        "courseName": "CHS Hub",
+        "courseId": "2670361859",
+        "sectionId": "2670361877",
+        "assignmentId": 5168585382,
+        "dueDate": null,
+        "id": "677a3ae04ddce669",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:41.135Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Week 16 D&S Book Club Passage Reflection",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8142988977,
+        "dueDate": "2025-12-02T06:00:00.000Z",
+        "id": "2434fc57593c6e87",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.843Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Week 14 Passage Reflection D&S Book Club Unit",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8131589383,
+        "dueDate": "2025-11-24T06:00:00.000Z",
+        "id": "27e5222336440178",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.843Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Diversity / Dominant vs. Minority Culture Notetaker",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8124839459,
+        "dueDate": "2025-11-13T21:30:00.000Z",
+        "id": "f0bc084f2a40f0da",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.842Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Memoir Mentor Text #3",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8092430551,
+        "dueDate": "2025-10-28T20:30:00.000Z",
+        "id": "6e9dca075f7d39a1",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.842Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "The Magical Language of Others Reading Quiz Chapter 16",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8085077011,
+        "dueDate": "2025-10-14T22:30:00.000Z",
+        "id": "2250fe3f4977d170",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.841Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Poetry Foundation and  tMLoO Chapter 14",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8075074492,
+        "dueDate": "2025-10-14T05:00:00.000Z",
+        "id": "d72082db3a12390d",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.841Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Philosophy Minis and Engagement",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8119492772,
+        "dueDate": "2025-10-10T06:59:00.000Z",
+        "id": "5213c13de4177896",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.840Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "tMLoO Chapter 10 - Jeju Uprising - Expanding our Understanding",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8064786734,
+        "dueDate": "2025-10-07T05:00:00.000Z",
+        "id": "1b10f287d8f491bc",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.839Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Memoir-Mentor Text #2 - Meaningful Dialogue",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8061269899,
+        "dueDate": "2025-09-30T20:30:00.000Z",
+        "id": "d4da747db95d72db",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.838Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Micro-Memoir Mentor Texts 1 - Voice",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8004902537,
+        "dueDate": "2025-09-18T05:00:00.000Z",
+        "id": "6df3c7e6c4504e72",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.837Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Storytelling and Identity Summative Assessment",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8046161459,
+        "dueDate": "2025-09-09T20:30:00.000Z",
+        "id": "8c578712334d2167",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.837Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "\"The Hawk\" by Jules Chung Short Story Close Reading Questions",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8004131516,
+        "dueDate": "2025-09-02T18:35:00.000Z",
+        "id": "d5366bd31fe4bbf0",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.836Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Philosophy Mini - Think and Write - Durring-Kruger Effect",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8002166899,
+        "dueDate": "2025-08-28T20:30:00.000Z",
+        "id": "258c203fea7be8f5",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.835Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Philosophy Mini - Think and Write - Grocery Cart Litmus Test",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8002165339,
+        "dueDate": "2025-08-21T20:30:00.000Z",
+        "id": "916ee2c79b1a87f1",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.834Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Personal Reading History",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 8002164506,
+        "dueDate": "2025-08-21T20:30:00.000Z",
+        "id": "02a33c90e64e9080",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.834Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Google Slides \"Note Card\" Assignment",
+        "courseName": "World Lit/Writ - 1020",
+        "courseId": "7920966702",
+        "sectionId": "7920967012",
+        "assignmentId": 7935517985,
+        "dueDate": "2025-08-21T05:00:00.000Z",
+        "id": "3d51393484a7ed8c",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.832Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Hw#16: The green handout from today. Due Thursday but work on the ch5 AP question before Wednesday",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8060086680,
+        "dueDate": "2025-10-02T06:59:59.000Z",
+        "id": "b64cef95734b8b66",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.625Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Hw#15: Finish the slope fields handout and Pg313: 9-39 (multiples of 3) and 51. For slope fields see note below",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8056628974,
+        "dueDate": "2025-09-30T06:59:59.000Z",
+        "id": "faff770c8c2a9bf3",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.625Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Hw#14: The ch5 practice test. Check attached answers.",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8052953897,
+        "dueDate": "2025-09-27T06:59:59.000Z",
+        "id": "2c4d6a5b23edacd4",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.624Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Hw#13: Pg295: 1-9(odd) and finish the lilac \"Ch5 practice problems\" handout",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8049222254,
+        "dueDate": "2025-09-25T06:59:59.000Z",
+        "id": "cf8adfbd2e194005",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.624Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Hw#12: Finish the 5-4 handout started in class and Pg286:  37-47(o), 53, 55",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8045909451,
+        "dueDate": "2025-09-23T06:59:59.000Z",
+        "id": "861b316599aec99f",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.623Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "5.1-5.3 Quiz",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8033253997,
+        "dueDate": "2025-09-20T06:59:00.000Z",
+        "id": "a3d025a20c7e35f5",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.623Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Hw#11: Pg286: 3-21(x3), 13, 19, 27",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8036011340,
+        "dueDate": "2025-09-18T06:59:59.000Z",
+        "id": "254f57fda879bf23",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.623Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "HW#10: Pg275: 1-11 (odd), 19, 21, 25-33(odd), 30. Info on use of Calculators below.",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8032062615,
+        "dueDate": "2025-09-16T06:59:59.000Z",
+        "id": "7ecaa1a7448c0588",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.622Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Hw#9: Pg 256: 20, 21 and finish green 5-1(day2) handout from class",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8023251928,
+        "dueDate": "2025-09-13T06:59:59.000Z",
+        "id": "a40c6a7919fdac39",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.621Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Chapter 3 and 4 Exam",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8025693062,
+        "dueDate": "2025-09-11T06:59:00.000Z",
+        "id": "c9db7a14c09a4830",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.620Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Hw#3: The white packet, \"Limits and Derivatives Review Questions\". Answers on the last page.",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7984557670,
+        "dueDate": "2025-09-11T06:59:59.000Z",
+        "id": "ecc7d8a079cc78a6",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.619Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Hw#8: Pg267: 5, 9-42 (multiples of 3)",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8018659646,
+        "dueDate": "2025-09-09T06:59:59.000Z",
+        "id": "b13cb25e71555cba",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.618Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Hw#7: Finish 5.1 yellow packet and Pg254:1, 3, 5, 11. also fill out the friendship google form in the course information folder.",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8013744498,
+        "dueDate": "2025-09-06T06:59:59.000Z",
+        "id": "5672734660929c65",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.618Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Hw#6: Book Pg237: 3, 9, 12, 13, 18, 24 and finish the blue and pink  4-4/4-6 handout started in class. Answers below.",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7998575816,
+        "dueDate": "2025-09-04T06:59:59.000Z",
+        "id": "363b1af7eba9f175",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.617Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "3.8/3.9 Quiz",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 8005068203,
+        "dueDate": "2025-08-30T06:59:00.000Z",
+        "id": "075f3a07ced90680",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.617Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "HW#5: Pg192: 15, 17, 20, 45 and continue working on the packet (hw#3)",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7989966393,
+        "dueDate": "2025-08-28T06:59:59.000Z",
+        "id": "7b0dbc5521909491",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.616Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Hw#4: The Blue handout and book problems mentioned on Pg162 and Pg170",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7984562045,
+        "dueDate": "2025-08-26T06:59:59.000Z",
+        "id": "c676319389331999",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.616Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Practice Problems (ln and inverse trig) - yellow",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7994779530,
+        "dueDate": "2025-08-23T06:59:00.000Z",
+        "id": "04b3a5539ef05fe0",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.615Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "Hw#2: Pg162: 20, 21 and pink handout “3.8 Derivatives of inverse functions”",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7994795037,
+        "dueDate": "2025-08-23T06:59:00.000Z",
+        "id": "5d250e1ba6c57024",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.614Z"
+      },
+      {
+        "type": "new_assignment",
+        "title": "3.8 Practice Problems Green",
+        "courseName": "AP Calculus BC - 2440",
+        "courseId": "7920966758",
+        "sectionId": "7920966870",
+        "assignmentId": 7984553331,
+        "dueDate": "2025-08-23T06:59:00.000Z",
+        "id": "b24ffa6911f7974c",
+        "read": false,
+        "timestamp": "2025-12-10T17:43:40.613Z"
+      }
+    ],
+    "knownAssignments": {
+      "7920966824_8095821106": {
+        "firstSeen": "2025-12-10T17:43:39.815Z",
+        "hasGrade": false,
+        "lastUpdated": "1761853069"
+      },
+      "7920966824_8136818953": {
+        "firstSeen": "2025-12-10T17:43:39.816Z",
+        "hasGrade": false,
+        "lastUpdated": "1763745607"
+      },
+      "7920966824_8136886242": {
+        "firstSeen": "2025-12-10T17:43:39.817Z",
+        "hasGrade": false,
+        "lastUpdated": "1763745625"
+      },
+      "7920966824_8004142895": {
+        "firstSeen": "2025-12-10T17:43:39.817Z",
+        "hasGrade": false,
+        "lastUpdated": "1756835687"
+      },
+      "7920966824_8083070218": {
+        "firstSeen": "2025-12-10T17:43:39.817Z",
+        "hasGrade": false,
+        "lastUpdated": "1760549659"
+      },
+      "7920966824_8083071546": {
+        "firstSeen": "2025-12-10T17:43:39.818Z",
+        "hasGrade": false,
+        "lastUpdated": "1764613842"
+      },
+      "7920966824_8061839804": {
+        "firstSeen": "2025-12-10T17:43:39.818Z",
+        "hasGrade": false,
+        "lastUpdated": "1759258176"
+      },
+      "7920966824_7974914046": {
+        "firstSeen": "2025-12-10T17:43:39.818Z",
+        "hasGrade": false,
+        "lastUpdated": "1755703456"
+      },
+      "7920966824_7982928946": {
+        "firstSeen": "2025-12-10T17:43:39.819Z",
+        "hasGrade": false,
+        "lastUpdated": "1756501241"
+      },
+      "7920966824_7982895218": {
+        "firstSeen": "2025-12-10T17:43:39.819Z",
+        "hasGrade": false,
+        "lastUpdated": "1762464659"
+      },
+      "7920966824_8021615439": {
+        "firstSeen": "2025-12-10T17:43:39.820Z",
+        "hasGrade": false,
+        "lastUpdated": "1764096343"
+      },
+      "7920966824_8029705262": {
+        "firstSeen": "2025-12-10T17:43:39.821Z",
+        "hasGrade": false,
+        "lastUpdated": "1764787052"
+      },
+      "7920966824_8034612657": {
+        "firstSeen": "2025-12-10T17:43:39.822Z",
+        "hasGrade": false,
+        "lastUpdated": "1757971620"
+      },
+      "7920966824_8035510820": {
+        "firstSeen": "2025-12-10T17:43:39.822Z",
+        "hasGrade": false,
+        "lastUpdated": "1759345077"
+      },
+      "7920966824_8035517505": {
+        "firstSeen": "2025-12-10T17:43:39.823Z",
+        "hasGrade": false,
+        "lastUpdated": "1759345068"
+      },
+      "7920966824_8062167101": {
+        "firstSeen": "2025-12-10T17:43:39.823Z",
+        "hasGrade": false,
+        "lastUpdated": "1760132653"
+      },
+      "7920966824_8035518517": {
+        "firstSeen": "2025-12-10T17:43:39.823Z",
+        "hasGrade": false,
+        "lastUpdated": "1760723591"
+      },
+      "7920966824_8035509148": {
+        "firstSeen": "2025-12-10T17:43:39.824Z",
+        "hasGrade": false,
+        "lastUpdated": "1758923726"
+      },
+      "7920966824_8035643710": {
+        "firstSeen": "2025-12-10T17:43:39.824Z",
+        "hasGrade": false,
+        "lastUpdated": "1758821193"
+      },
+      "7920966824_8069645777": {
+        "firstSeen": "2025-12-10T17:43:39.824Z",
+        "hasGrade": false,
+        "lastUpdated": "1761167673"
+      },
+      "7920967076_8035000555": {
+        "firstSeen": "2025-12-10T17:43:40.363Z",
+        "hasGrade": false,
+        "lastUpdated": "1759158524"
+      },
+      "7920967076_8035000626": {
+        "firstSeen": "2025-12-10T17:43:40.364Z",
+        "hasGrade": false,
+        "lastUpdated": "1759158828"
+      },
+      "7920967076_8035000595": {
+        "firstSeen": "2025-12-10T17:43:40.365Z",
+        "hasGrade": false,
+        "lastUpdated": "1759158570"
+      },
+      "7920967076_8059670934": {
+        "firstSeen": "2025-12-10T17:43:40.365Z",
+        "hasGrade": false,
+        "lastUpdated": "1759168980"
+      },
+      "7920967076_8035000251": {
+        "firstSeen": "2025-12-10T17:43:40.366Z",
+        "hasGrade": false,
+        "lastUpdated": "1757954123"
+      },
+      "7920967076_8035000222": {
+        "firstSeen": "2025-12-10T17:43:40.366Z",
+        "hasGrade": false,
+        "lastUpdated": "1757954079"
+      },
+      "7920967076_8035000142": {
+        "firstSeen": "2025-12-10T17:43:40.367Z",
+        "hasGrade": false,
+        "lastUpdated": "1757954316"
+      },
+      "7920967076_7994667477": {
+        "firstSeen": "2025-12-10T17:43:40.368Z",
+        "hasGrade": false,
+        "lastUpdated": "1756238116"
+      },
+      "7920967076_7962228845": {
+        "firstSeen": "2025-12-10T17:43:40.368Z",
+        "hasGrade": false,
+        "lastUpdated": "1756143545"
+      },
+      "7920967076_7967833101": {
+        "firstSeen": "2025-12-10T17:43:40.368Z",
+        "hasGrade": false,
+        "lastUpdated": "1756143631"
+      },
+      "7920967076_7977817258": {
+        "firstSeen": "2025-12-10T17:43:40.369Z",
+        "hasGrade": true,
+        "lastUpdated": "1757539192"
+      },
+      "7920967076_7993024417": {
+        "firstSeen": "2025-12-10T17:43:40.369Z",
+        "hasGrade": true,
+        "lastUpdated": "1757539232"
+      },
+      "7920967076_7993091553": {
+        "firstSeen": "2025-12-10T17:43:40.370Z",
+        "hasGrade": false,
+        "lastUpdated": "1756331418"
+      },
+      "7920967076_7962226744": {
+        "firstSeen": "2025-12-10T17:43:40.371Z",
+        "hasGrade": true,
+        "lastUpdated": "1755553091"
+      },
+      "7920967076_7994667676": {
+        "firstSeen": "2025-12-10T17:43:40.371Z",
+        "hasGrade": true,
+        "lastUpdated": "1757539260"
+      },
+      "7920967076_8008681699": {
+        "firstSeen": "2025-12-10T17:43:40.371Z",
+        "hasGrade": false,
+        "lastUpdated": "1756826482"
+      },
+      "7920967076_8008686809": {
+        "firstSeen": "2025-12-10T17:43:40.372Z",
+        "hasGrade": true,
+        "lastUpdated": "1757539293"
+      },
+      "7920967076_8022202678": {
+        "firstSeen": "2025-12-10T17:43:40.372Z",
+        "hasGrade": true,
+        "lastUpdated": "1757539329"
+      },
+      "7920967076_8022210366": {
+        "firstSeen": "2025-12-10T17:43:40.373Z",
+        "hasGrade": true,
+        "lastUpdated": "1760481753"
+      },
+      "7920967076_8034989372": {
+        "firstSeen": "2025-12-10T17:43:40.373Z",
+        "hasGrade": false,
+        "lastUpdated": "1757963051"
+      },
+      "7920966870_7984553331": {
+        "firstSeen": "2025-12-10T17:43:40.613Z",
+        "hasGrade": true,
+        "lastUpdated": "1756240191"
+      },
+      "7920966870_7994795037": {
+        "firstSeen": "2025-12-10T17:43:40.614Z",
+        "hasGrade": true,
+        "lastUpdated": "1756240224"
+      },
+      "7920966870_7994779530": {
+        "firstSeen": "2025-12-10T17:43:40.615Z",
+        "hasGrade": true,
+        "lastUpdated": "1756239973"
+      },
+      "7920966870_7984562045": {
+        "firstSeen": "2025-12-10T17:43:40.616Z",
+        "hasGrade": true,
+        "lastUpdated": "1755898719"
+      },
+      "7920966870_7989966393": {
+        "firstSeen": "2025-12-10T17:43:40.616Z",
+        "hasGrade": true,
+        "lastUpdated": "1756167608"
+      },
+      "7920966870_8005068203": {
+        "firstSeen": "2025-12-10T17:43:40.617Z",
+        "hasGrade": true,
+        "lastUpdated": "1756784684"
+      },
+      "7920966870_7998575816": {
+        "firstSeen": "2025-12-10T17:43:40.617Z",
+        "hasGrade": true,
+        "lastUpdated": "1756326588"
+      },
+      "7920966870_8013744498": {
+        "firstSeen": "2025-12-10T17:43:40.618Z",
+        "hasGrade": true,
+        "lastUpdated": "1756949924"
+      },
+      "7920966870_8018659646": {
+        "firstSeen": "2025-12-10T17:43:40.618Z",
+        "hasGrade": true,
+        "lastUpdated": "1757109077"
+      },
+      "7920966870_7984557670": {
+        "firstSeen": "2025-12-10T17:43:40.619Z",
+        "hasGrade": true,
+        "lastUpdated": "1755898572"
+      },
+      "7920966870_8025693062": {
+        "firstSeen": "2025-12-10T17:43:40.620Z",
+        "hasGrade": true,
+        "lastUpdated": "1758037853"
+      },
+      "7920966870_8023251928": {
+        "firstSeen": "2025-12-10T17:43:40.621Z",
+        "hasGrade": true,
+        "lastUpdated": "1757373902"
+      },
+      "7920966870_8032062615": {
+        "firstSeen": "2025-12-10T17:43:40.622Z",
+        "hasGrade": true,
+        "lastUpdated": "1757710697"
+      },
+      "7920966870_8036011340": {
+        "firstSeen": "2025-12-10T17:43:40.623Z",
+        "hasGrade": true,
+        "lastUpdated": "1757987312"
+      },
+      "7920966870_8033253997": {
+        "firstSeen": "2025-12-10T17:43:40.623Z",
+        "hasGrade": true,
+        "lastUpdated": "1758500832"
+      },
+      "7920966870_8045909451": {
+        "firstSeen": "2025-12-10T17:43:40.623Z",
+        "hasGrade": true,
+        "lastUpdated": "1758585425"
+      },
+      "7920966870_8049222254": {
+        "firstSeen": "2025-12-10T17:43:40.624Z",
+        "hasGrade": true,
+        "lastUpdated": "1758585514"
+      },
+      "7920966870_8052953897": {
+        "firstSeen": "2025-12-10T17:43:40.624Z",
+        "hasGrade": true,
+        "lastUpdated": "1758753331"
+      },
+      "7920966870_8056628974": {
+        "firstSeen": "2025-12-10T17:43:40.625Z",
+        "hasGrade": true,
+        "lastUpdated": "1758915182"
+      },
+      "7920966870_8060086680": {
+        "firstSeen": "2025-12-10T17:43:40.625Z",
+        "hasGrade": true,
+        "lastUpdated": "1759181404"
+      },
+      "7920967012_7935517985": {
+        "firstSeen": "2025-12-10T17:43:40.832Z",
+        "hasGrade": false,
+        "lastUpdated": "1754705277"
+      },
+      "7920967012_8002164506": {
+        "firstSeen": "2025-12-10T17:43:40.834Z",
+        "hasGrade": false,
+        "lastUpdated": "1756424448"
+      },
+      "7920967012_8002165339": {
+        "firstSeen": "2025-12-10T17:43:40.834Z",
+        "hasGrade": false,
+        "lastUpdated": "1756424533"
+      },
+      "7920967012_8002166899": {
+        "firstSeen": "2025-12-10T17:43:40.835Z",
+        "hasGrade": false,
+        "lastUpdated": "1756424669"
+      },
+      "7920967012_8004131516": {
+        "firstSeen": "2025-12-10T17:43:40.836Z",
+        "hasGrade": false,
+        "lastUpdated": "1756914119"
+      },
+      "7920967012_8046161459": {
+        "firstSeen": "2025-12-10T17:43:40.837Z",
+        "hasGrade": false,
+        "lastUpdated": "1758402623"
+      },
+      "7920967012_8004902537": {
+        "firstSeen": "2025-12-10T17:43:40.837Z",
+        "hasGrade": false,
+        "lastUpdated": "1757606445"
+      },
+      "7920967012_8061269899": {
+        "firstSeen": "2025-12-10T17:43:40.838Z",
+        "hasGrade": false,
+        "lastUpdated": "1759336448"
+      },
+      "7920967012_8064786734": {
+        "firstSeen": "2025-12-10T17:43:40.839Z",
+        "hasGrade": false,
+        "lastUpdated": "1759416969"
+      },
+      "7920967012_8119492772": {
+        "firstSeen": "2025-12-10T17:43:40.839Z",
+        "hasGrade": false,
+        "lastUpdated": "1762788919"
+      },
+      "7920967012_8075074492": {
+        "firstSeen": "2025-12-10T17:43:40.841Z",
+        "hasGrade": false,
+        "lastUpdated": "1760026080"
+      },
+      "7920967012_8085077011": {
+        "firstSeen": "2025-12-10T17:43:40.841Z",
+        "hasGrade": false,
+        "lastUpdated": "1760647044"
+      },
+      "7920967012_8092430551": {
+        "firstSeen": "2025-12-10T17:43:40.842Z",
+        "hasGrade": false,
+        "lastUpdated": "1761242992"
+      },
+      "7920967012_8124839459": {
+        "firstSeen": "2025-12-10T17:43:40.842Z",
+        "hasGrade": false,
+        "lastUpdated": "1763047138"
+      },
+      "7920967012_8131589383": {
+        "firstSeen": "2025-12-10T17:43:40.843Z",
+        "hasGrade": false,
+        "lastUpdated": "1763479939"
+      },
+      "7920967012_8142988977": {
+        "firstSeen": "2025-12-10T17:43:40.843Z",
+        "hasGrade": false,
+        "lastUpdated": "1764605349"
+      },
+      "2670361877_5168585382": {
+        "firstSeen": "2025-12-10T17:43:41.135Z",
+        "hasGrade": false,
+        "lastUpdated": "1628262763"
+      },
+      "2670361877_5168586156": {
+        "firstSeen": "2025-12-10T17:43:41.136Z",
+        "hasGrade": false,
+        "lastUpdated": "1628262772"
+      },
+      "2670361877_5168586512": {
+        "firstSeen": "2025-12-10T17:43:41.137Z",
+        "hasGrade": false,
+        "lastUpdated": "1628262778"
+      },
+      "2670361877_5168585776": {
+        "firstSeen": "2025-12-10T17:43:41.139Z",
+        "hasGrade": false,
+        "lastUpdated": "1628264646"
+      },
+      "2670361877_5168585012": {
+        "firstSeen": "2025-12-10T17:43:41.140Z",
+        "hasGrade": false,
+        "lastUpdated": "1628262758"
+      },
+      "2670361877_6046028064": {
+        "firstSeen": "2025-12-10T17:43:41.140Z",
+        "hasGrade": false,
+        "lastUpdated": "1659564539"
+      },
+      "2670361877_5168584608": {
+        "firstSeen": "2025-12-10T17:43:41.141Z",
+        "hasGrade": false,
+        "lastUpdated": "1628264552"
+      },
+      "5237237093_5237284158": {
+        "firstSeen": "2025-12-10T17:43:41.308Z",
+        "hasGrade": false,
+        "lastUpdated": "1692728086"
+      },
+      "7920966643_8132443092": {
+        "firstSeen": "2025-12-10T17:43:41.666Z",
+        "hasGrade": false,
+        "lastUpdated": "1763576622"
+      },
+      "7920966643_8026604548": {
+        "firstSeen": "2025-12-10T17:43:41.668Z",
+        "hasGrade": false,
+        "lastUpdated": "1757524960"
+      },
+      "7920966643_8065614596": {
+        "firstSeen": "2025-12-10T17:43:41.669Z",
+        "hasGrade": false,
+        "lastUpdated": "1759524332"
+      },
+      "7920966643_8038254753": {
+        "firstSeen": "2025-12-10T17:43:41.670Z",
+        "hasGrade": false,
+        "lastUpdated": "1759879515"
+      },
+      "7920966643_8038254931": {
+        "firstSeen": "2025-12-10T17:43:41.670Z",
+        "hasGrade": false,
+        "lastUpdated": "1761261377"
+      },
+      "7920966643_8038254284": {
+        "firstSeen": "2025-12-10T17:43:41.671Z",
+        "hasGrade": false,
+        "lastUpdated": "1761919787"
+      },
+      "7920966643_7962765312": {
+        "firstSeen": "2025-12-10T17:43:41.672Z",
+        "hasGrade": true,
+        "lastUpdated": "1756248986"
+      },
+      "7920966643_7962765804": {
+        "firstSeen": "2025-12-10T17:43:41.673Z",
+        "hasGrade": true,
+        "lastUpdated": "1756145458"
+      },
+      "7920966643_7962765306": {
+        "firstSeen": "2025-12-10T17:43:41.674Z",
+        "hasGrade": false,
+        "lastUpdated": "1755708399"
+      },
+      "7920966643_7962764872": {
+        "firstSeen": "2025-12-10T17:43:41.674Z",
+        "hasGrade": false,
+        "lastUpdated": "1755471001"
+      },
+      "7920966643_7962764760": {
+        "firstSeen": "2025-12-10T17:43:41.675Z",
+        "hasGrade": true,
+        "lastUpdated": "1755471016"
+      },
+      "7920966643_7962765812": {
+        "firstSeen": "2025-12-10T17:43:41.676Z",
+        "hasGrade": true,
+        "lastUpdated": "1756145524"
+      },
+      "7920966643_7962765349": {
+        "firstSeen": "2025-12-10T17:43:41.676Z",
+        "hasGrade": true,
+        "lastUpdated": "1755885009"
+      },
+      "7920966643_7962764865": {
+        "firstSeen": "2025-12-10T17:43:41.676Z",
+        "hasGrade": true,
+        "lastUpdated": "1755470970"
+      },
+      "7920966643_7962764766": {
+        "firstSeen": "2025-12-10T17:43:41.677Z",
+        "hasGrade": true,
+        "lastUpdated": "1757550468"
+      },
+      "7920966643_7962765342": {
+        "firstSeen": "2025-12-10T17:43:41.677Z",
+        "hasGrade": false,
+        "lastUpdated": "1755885003"
+      },
+      "7920966643_7962765396": {
+        "firstSeen": "2025-12-10T17:43:41.678Z",
+        "hasGrade": true,
+        "lastUpdated": "1755884989"
+      },
+      "7920966643_7962765433": {
+        "firstSeen": "2025-12-10T17:43:41.678Z",
+        "hasGrade": true,
+        "lastUpdated": "1756421726"
+      },
+      "7920966643_7962765371": {
+        "firstSeen": "2025-12-10T17:43:41.679Z",
+        "hasGrade": false,
+        "lastUpdated": "1757697709"
+      },
+      "7920966643_7997275931": {
+        "firstSeen": "2025-12-10T17:43:41.679Z",
+        "hasGrade": false,
+        "lastUpdated": "1759353593"
+      },
+      "7920966783_7963769737": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_7963769715": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_7963769688": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_7964905297": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_7964905292": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_7964905486": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_7964905491": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_7977991495": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_7964905510": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_7977991502": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_7964905518": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_7992424684": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_7992424695": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8008806107": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8014873107": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8008806127": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8014873114": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8025406479": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_7992424708": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8023340346": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8023340345": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8023340350": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8014873127": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8034426410": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8043685062": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8043685071": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8043685072": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050035509": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8036110772": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8034426421": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050138990": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050138978": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050139005": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050138997": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050139018": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8069408459": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8072460109": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050139049": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050139060": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050139008": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050139067": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050139075": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8077450735": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050139085": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050139046": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050139100": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8080653031": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8069408590": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8077450738": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8050139042": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8077450745": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8077450748": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8077450743": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8102224900": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8108844501": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8108844504": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8108844507": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8114777196": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966783_8151580067": {
+        "firstSeen": "2025-12-10T17:43:42.866Z",
+        "hasGrade": true
+      },
+      "7920966870_8067374410": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8056815988": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8070478179": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8070476886": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8070477451": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8077353133": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8077352815": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8089176037": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8092956306": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8095075592": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8103585531": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8113824663": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8117105800": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8123464760": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8127278922": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8130903926": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8134192033": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920966870_8137338138": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8067373930": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8035000187": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8035000291": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8042553087": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8076698218": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8081090351": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8094140271": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8096936285": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8101539652": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8101962200": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8123735366": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8090712518": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8029985409": {
+        "firstSeen": "2025-12-10T17:43:42.880Z",
+        "hasGrade": true
+      },
+      "7920967076_8124223023": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8150854274": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8138480490": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8135381630": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8135119376": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8125096236": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8130719978": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8116713144": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8109761642": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8035518517": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_7982895218": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8004142895": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8021615439": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8029705262": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8034612657": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8035510820": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8035517505": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8035643710": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8062167101": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8069645777": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8075215758": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8083071546": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8084426744": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8105113109": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966821_8106623655": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920967011_8075074492": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920967011_7935517985": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920967011_8002166899": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920967011_8004131516": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920967011_8004902537": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920967011_8046161459": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920967011_8061269899": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920967011_8064786734": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920967011_8085077011": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920967011_8092430551": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920967011_8119492772": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_7962764346": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038254775": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_7962765937": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8027907691": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038254391": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038254433": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038254488": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038254542": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038254701": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038254825": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038254977": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038255002": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038255086": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038255163": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038255556": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038255657": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038255698": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_7962765899": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_8038255839": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_7962765463": {
+        "firstSeen": "2025-12-10T17:43:42.883Z",
+        "hasGrade": true
+      },
+      "7920966643_7962765251": {
+        "firstSeen": "2025-12-10T17:43:42.884Z",
+        "hasGrade": true
+      },
+      "7920966643_7962765499": {
+        "firstSeen": "2025-12-10T17:43:42.886Z",
+        "hasGrade": true
+      },
+      "7920966643_7962765841": {
+        "firstSeen": "2025-12-10T17:43:42.886Z",
+        "hasGrade": true
+      },
+      "7920966643_7962765590": {
+        "firstSeen": "2025-12-10T17:43:42.886Z",
+        "hasGrade": true
+      },
+      "7920966643_7962765620": {
+        "firstSeen": "2025-12-10T17:43:42.886Z",
+        "hasGrade": true
+      },
+      "7920966643_7962765676": {
+        "firstSeen": "2025-12-10T17:43:42.886Z",
+        "hasGrade": true
+      },
+      "7920966643_7962765703": {
+        "firstSeen": "2025-12-10T17:43:42.886Z",
+        "hasGrade": true
+      },
+      "7920966643_7962765735": {
+        "firstSeen": "2025-12-10T17:43:42.886Z",
+        "hasGrade": true
+      },
+      "7920966643_8038255814": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8038455230": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8112126650": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8112126613": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8038690481": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8086459095": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8054800922": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8056768950": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8063704550": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8075743892": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8075744170": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8075814855": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8086458418": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8091333946": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8112126601": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8110236204": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8112068114": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8112126150": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8112126245": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8112126297": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8112126318": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      },
+      "7920966643_8112126398": {
+        "firstSeen": "2025-12-10T17:43:42.888Z",
+        "hasGrade": true
+      }
+    },
+    "knownGrades": {}
+  }
+}

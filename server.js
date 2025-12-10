@@ -2116,8 +2116,8 @@ app.get('/courses', async (req, res) => {
             debugLog('COURSES', '⚡ Starting parallel fetch for folder contents, assignments, and grades...');
 
             const [folderResult, assignmentsResult, gradesResult] = await Promise.all([
-                // Fetch folder contents (skip recursion for 3x faster load)
-                fetchFolderContents(selectedSection.id, 0, req.session.accessToken, 0, req.session.userId, true).catch(e => {
+                // Fetch folder contents (recursion enabled to show folder structure)
+                fetchFolderContents(selectedSection.id, 0, req.session.accessToken, 0, req.session.userId, false).catch(e => {
                     debugLog('COURSES', `Could not fetch folder contents: ${e.message}`);
                     return [];
                 }),

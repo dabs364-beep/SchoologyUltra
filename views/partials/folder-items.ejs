@@ -41,17 +41,17 @@
 %>
     <li class="folder-item">
         <div class="folder-item-content" 
-             onclick="<%= hasChildren ? 'toggleFolder(this, event)' : (isClickable ? `openItem('${sectionId}', '${item.id}', '${item.type}', '${itemUrl.replace(/'/g, "\\'")}')` : '') %>"
-             style="<%= isClickable ? 'cursor: pointer;' : '' %>">
+             onclick="handleFolderClick(this, event, <%= hasChildren %>, '<%= sectionId %>', '<%= item.id %>', '<%= item.type %>', '<%= itemUrl.replace(/'/g, "\\'") %>')"
+             style="cursor: pointer;">
             <% if (hasChildren) { %>
                 <span class="folder-toggle">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="9 18 15 12 9 6"></polyline>
                     </svg>
                 </span>
             <% } else { %>
                 <span class="folder-toggle" style="visibility: hidden;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </span>
             <% } %>
             <span class="folder-icon"><%- icon %></span>

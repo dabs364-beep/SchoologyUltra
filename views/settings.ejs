@@ -340,7 +340,7 @@
     <main class="container">
         <div class="settings-page">
             <div class="settings-header">
-                <h1 class="settings-title">⚙️ Settings</h1>
+                <h1 class="settings-title">⚙️ Settings - Eugene Kim</h1>
                 <p class="settings-subtitle">Customize your Schoology Pro Max experience</p>
             </div>
             
@@ -376,6 +376,19 @@
                         <option value="red">Red</option>
                         <option value="pink">Pink</option>
                     </select>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            💧 Liquid Glass Effect
+                        </div>
+                        <div class="setting-description">Enable semi-transparent glassmorphism backgrounds</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="liquidGlass" onchange="updateSetting('liquidGlass', this.checked)" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
             </div>
             
@@ -610,6 +623,7 @@
         const defaultSettings = {
             darkMode: false,
             accentColor: 'blue',
+            liquidGlass: true,
             timeEstimates: true,
             baseMultiplier: 1.0,
             courseMultipliers: defaultCourseMultipliers,
@@ -679,6 +693,13 @@
                 document.documentElement.classList.remove('dark-mode');
             }
             
+            // Apply liquid glass effect
+            if (settings.liquidGlass !== false) {
+                document.documentElement.classList.add('liquid-glass');
+            } else {
+                document.documentElement.classList.remove('liquid-glass');
+            }
+            
             // Apply accent color
             const colors = {
                 blue: '#0071e3',
@@ -701,6 +722,7 @@
         function initializeUI() {
             document.getElementById('darkMode').checked = settings.darkMode;
             document.getElementById('accentColor').value = settings.accentColor || 'blue';
+            document.getElementById('liquidGlass').checked = settings.liquidGlass !== false;
             document.getElementById('timeEstimates').checked = settings.timeEstimates !== false;
             document.getElementById('baseMultiplier').value = settings.baseMultiplier || 1.0;
             document.getElementById('adjustDueTimes').checked = settings.adjustDueTimes !== false;

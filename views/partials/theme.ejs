@@ -8,6 +8,10 @@
             if (settings.darkMode) {
                 document.documentElement.classList.add('dark-mode');
             }
+            // Apply liquid glass effect (enabled by default)
+            if (settings.liquidGlass !== false) {
+                document.documentElement.classList.add('liquid-glass');
+            }
             // Apply accent color
             const colors = {
                 blue: '#0071e3', purple: '#af52de', green: '#34c759',
@@ -21,7 +25,13 @@
                 document.documentElement.style.setProperty('--accent-primary', colors[settings.accentColor]);
                 document.documentElement.style.setProperty('--accent-primary-hover', hoverColors[settings.accentColor]);
             }
+        } else {
+            // Default: enable liquid glass
+            document.documentElement.classList.add('liquid-glass');
         }
-    } catch (e) {}
+    } catch (e) {
+        // Default: enable liquid glass on error
+        document.documentElement.classList.add('liquid-glass');
+    }
 })();
 </script>

@@ -93,10 +93,15 @@
             border-radius: var(--radius-md);
             cursor: pointer;
             transition: background 0.15s ease;
+            user-select: none;
         }
         
         .folder-item-content:hover {
             background: var(--bg-tertiary);
+        }
+        
+        .folder-item-content:active {
+            transform: scale(0.98);
         }
         
         .folder-icon {
@@ -114,29 +119,34 @@
             font-size: 0.75rem;
             padding: 2px 6px;
             border-radius: 4px;
-            background: rgba(107, 114, 128, 0.15);
+            background: transparent;
+            border: 1px solid rgba(107, 114, 128, 0.3);
             color: #6b7280;
             text-transform: capitalize;
             font-weight: 600;
         }
         
         .folder-type.assignment {
-            background: rgba(0, 113, 227, 0.15);
+            background: transparent;
+            border-color: rgba(0, 113, 227, 0.5);
             color: #0071e3;
         }
         
         .folder-type.discussion {
-            background: rgba(34, 197, 94, 0.15);
+            background: transparent;
+            border-color: rgba(34, 197, 94, 0.5);
             color: #16a34a;
         }
         
         .folder-type.page {
-            background: rgba(234, 179, 8, 0.15);
+            background: transparent;
+            border-color: rgba(234, 179, 8, 0.5);
             color: #ca8a04;
         }
         
         .folder-type.folder {
-            background: rgba(107, 114, 128, 0.15);
+            background: transparent;
+            border-color: rgba(107, 114, 128, 0.3);
             color: #6b7280;
         }
         
@@ -149,13 +159,25 @@
         }
         
         .folder-toggle {
-            width: 18px;
-            height: 18px;
-            display: flex;
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            display: inline-flex !important;
             align-items: center;
             justify-content: center;
-            color: var(--text-tertiary);
+            color: var(--text-primary);
             transition: transform 0.2s ease;
+            flex-shrink: 0;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        .folder-toggle svg {
+            width: 14px;
+            height: 14px;
+            display: block;
+            stroke: currentColor;
+            stroke-width: 2.5;
         }
         
         .folder-item.expanded > .folder-item-content .folder-toggle {
@@ -426,12 +448,53 @@
             window.location.href = '/courses?section=' + sectionId;
         }
         
+        function handleFolderClick(element, event, hasChildren, sectionId, itemId, itemType, itemUrl) {
+            // Prevent any default browser behavior immediately
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            
+            console.log('handleFolderClick', { hasChildren, itemType, itemId });
+            
+            // If it's a folder, we ALWAYS try to toggle it, never redirect
+            // This fixes the issue where clicking a folder icon redirects to Schoology
+            if (hasChildren || itemType === 'folder') {
+                toggleFolder(element, event);
+            } else {
+                openItem(sectionId, itemId, itemType, itemUrl);
+            }
+            return false;
+        }
+
         function toggleFolder(element, event) {
-            event.stopPropagation();
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            
             const folderItem = element.closest('.folder-item');
             if (folderItem) {
+                // Check if we have children to show
+                const childrenContainer = folderItem.querySelector('.folder-children');
+                
+                // If no children container, we can't expand, but we still stop propagation
+                if (!childrenContainer) {
+                    console.log('Folder has no children to expand');
+                    return false;
+                }
+
+                const wasExpanded = folderItem.classList.contains('expanded');
                 folderItem.classList.toggle('expanded');
+                console.log('Folder toggled:', folderItem.querySelector('.folder-title')?.textContent, wasExpanded ? 'collapsed' : 'expanded');
+                
+                // Rotate the toggle icon
+                const toggleIcon = folderItem.querySelector('.folder-toggle');
+                if (toggleIcon) {
+                    toggleIcon.style.transform = wasExpanded ? 'rotate(0deg)' : 'rotate(90deg)';
+                }
             }
+            return false;
         }
         
         function openItem(sectionId, itemId, itemType, itemUrl) {
