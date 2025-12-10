@@ -955,34 +955,17 @@ app.use((req, res, next) => {
                 const tokenData = JSON.parse(decrypted);
                 const cookieUserId = req.cookies.user_id;
                 
-                // Validate that the session belongs to the same user
+                // Restore session from cookies
                 if (cookieUserId) {
                     req.session.accessToken = tokenData;
                     req.session.userId = cookieUserId;
                     // Store user ID hash to validate session consistency
                     req.session.userHash = crypto.createHash('sha256').update(cookieUserId).digest('hex');
                     debugLog('AUTH', `✓ Access token restored for user ${cookieUserId}`);
-                } else {
-                    debugLog('AUTH', '✗ No user_id cookie found, cannot restore session');
                 }
             } catch (e) {
                 debugLog('AUTH', '✗ Failed to parse access token from cookie');
             }
-        }
-    }
-    
-    // Validate session consistency - ensure session userId matches cookie userId
-    if (req.session.userId && req.cookies.user_id) {
-        if (req.session.userId !== req.cookies.user_id) {
-            // Session mismatch detected - clear invalid session
-            debugLog('AUTH', `⚠️  Session mismatch detected! Session user: ${req.session.userId}, Cookie user: ${req.cookies.user_id}`);
-            req.session.destroy((err) => {
-                if (err) debugLog('AUTH', '✗ Error destroying mismatched session');
-            });
-            // Clear cookies
-            res.clearCookie('access_token');
-            res.clearCookie('user_id');
-            res.clearCookie('schoology.sid');
         }
     }
     
