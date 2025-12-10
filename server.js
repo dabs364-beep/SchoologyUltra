@@ -928,7 +928,7 @@ app.use(session({
         maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
         httpOnly: true,
         secure: IS_VERCEL, // Use secure cookies on Vercel (HTTPS)
-        sameSite: IS_VERCEL ? 'lax' : 'lax', // Use 'lax' for better security
+        sameSite: IS_VERCEL ? 'none' : 'lax', // 'none' needed for Vercel cross-origin
         path: '/', // Explicit path
         domain: undefined // Don't set domain to avoid subdomain issues
     },
@@ -1189,7 +1189,7 @@ app.get('/auth/complete', async (req, res) => {
         res.cookie('access_token', encryptToken(accessTokenData), {
             httpOnly: true,
             secure: IS_VERCEL,
-            sameSite: 'lax', // Changed from 'none' for better security
+            sameSite: IS_VERCEL ? 'none' : 'lax',
             maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
             path: '/' // Explicit path
         });
@@ -1344,7 +1344,7 @@ app.get('/dashboard', async (req, res) => {
         res.cookie('user_id', user.id, {
             httpOnly: true,
             secure: IS_VERCEL,
-            sameSite: 'lax', // Changed from 'none' for better security
+            sameSite: IS_VERCEL ? 'none' : 'lax',
             maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
             path: '/' // Explicit path
         });
