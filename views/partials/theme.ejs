@@ -35,3 +35,33 @@
     }
 })();
 </script>
+
+<!-- Vercel Analytics (Express/EJS fallback) -->
+<!--
+    This repo is an Express/EJS app (not Next.js), so the recommended
+    `import { Analytics } from "@vercel/analytics/next"` isn't usable here.
+    Instead we add a lightweight client script that enables Vercel's
+    analytics collection for non-Next projects. If you later migrate to
+    Next.js, move the `import` into your top-level `app` or `_app` file and
+    render `<Analytics />` instead.
+-->
+<script>
+    (function() {
+        try {
+            // Load Vercel analytics client script (non-Next runtime)
+            var s = document.createElement('script');
+            s.defer = true;
+            s.src = 'https://static.vercel.com/analytics/script.js';
+            s.onload = function() {
+                // Optional: signal that analytics were loaded
+                if (window && window.__VERCEL_ANALYTICS_LOADED === undefined) {
+                    window.__VERCEL_ANALYTICS_LOADED = true;
+                }
+            };
+            document.head.appendChild(s);
+        } catch (e) {
+            // ignore failures — analytics should be non-blocking
+            console.warn('Vercel Analytics failed to load:', e);
+        }
+    })();
+</script>
