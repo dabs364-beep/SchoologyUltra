@@ -51,6 +51,9 @@
         .category-original {
             font-size: 0.875rem;
             font-weight: 600;
+            display: inline-flex;
+            gap: var(--space-2);
+            align-items: center;
         }
         
         .category-edited {
@@ -157,12 +160,176 @@
         .remove-custom:hover {
             opacity: 1;
         }
+
+        /* Debug panel styling */
+        .grade-debug {
+            background: rgba(14, 165, 233, 0.06);
+            border: 1px solid rgba(14, 165, 233, 0.12);
+            padding: var(--space-3);
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        .grade-debug .row {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-4);
+            margin-bottom: var(--space-2);
+            flex-wrap: wrap;
+        }
+
+        .debug-toggle {
+            margin-left: var(--space-2);
+            padding: 6px 8px;
+            font-size: 0.8rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        .debug-toggle.active {
+            background: var(--accent-info);
+            color: white;
+        }
+
+        .grade-debug .muted {
+            color: var(--text-tertiary);
+            font-size: 0.8rem;
+        }
+
+        /* Hover row actions (edit/trash) */
+        .row-actions {
+            display: inline-flex;
+            gap: var(--space-2);
+            margin-left: var(--space-2);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+            vertical-align: middle;
+        }
+        .grade-row:hover .row-actions {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .row-actions button {
+            background: transparent;
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-sm);
+            padding: 2px 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            line-height: 1.2;
+            color: var(--text-primary);
+        }
+        .row-actions button:hover {
+            background: var(--bg-secondary);
+        }
+        /* Hide reset button unless the row is edited */
+        .grade-row .row-action-reset {
+            display: none;
+        }
+        .grade-row.edited .row-action-reset {
+            display: inline-block;
+        }
+        .grade-row.dropped {
+            opacity: 0.6;
+        }
+        .grade-row.dropped .assignment-name,
+        .grade-row.dropped .grade-value,
+        .grade-row.dropped .max-points,
+        .grade-row.dropped .percentage {
+            text-decoration: line-through;
+        }
+
+        /* Edit modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: var(--space-4);
+        }
+        .modal-overlay.open {
+            display: flex;
+        }
+        .modal {
+            width: 100%;
+            max-width: 420px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+        }
+        .modal h3 {
+            margin: 0 0 var(--space-3) 0;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+        .modal .field {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: var(--space-2);
+            margin-bottom: var(--space-3);
+        }
+        .modal label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .modal input[type="number"] {
+            padding: var(--space-2) var(--space-3);
+            font-size: 0.9rem;
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-md);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        .modal .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--space-2);
+            margin-top: var(--space-3);
+        }
     </style>
 </head>
-<body>
+    <body data-shell="<%= isShell ? '1' : '0' %>">
     <%- include('partials/nav', { active: 'grades' }) %>
-    
-    <%
+
+        <% if (isShell) { %>
+        <main class="container">
+            <div class="page-header">
+                <div class="skeleton skeleton-line" style="width: 120px; height: 22px;"></div>
+                <div class="grade-actions">
+                    <div class="skeleton skeleton-pill" style="width: 140px; height: 34px;"></div>
+                </div>
+            </div>
+
+            <div class="grades-container">
+                <% for (let i = 0; i < 3; i++) { %>
+                    <div class="course-card" style="pointer-events: none;">
+                        <div class="course-header">
+                            <div class="course-info">
+                                <div class="skeleton skeleton-line" style="width: 240px; height: 14px; margin-bottom: 8px;"></div>
+                                <div class="skeleton skeleton-line" style="width: 140px; height: 10px;"></div>
+                            </div>
+                            <div class="course-grade" style="display: flex; gap: var(--space-2);">
+                                <div class="skeleton skeleton-pill" style="width: 70px; height: 20px;"></div>
+                                <div class="skeleton skeleton-pill" style="width: 44px; height: 20px;"></div>
+                            </div>
+                        </div>
+                        <div style="padding: var(--space-4);">
+                            <div class="skeleton skeleton-line" style="width: 92%; height: 10px; margin-bottom: 8px;"></div>
+                            <div class="skeleton skeleton-line" style="width: 82%; height: 10px; margin-bottom: 8px;"></div>
+                            <div class="skeleton skeleton-line" style="width: 70%; height: 10px;"></div>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        </main>
+        <% } else { %>
+
+        <%
     // Helper function to convert percentage to letter grade
     function getLetterGrade(percentage) {
         if (percentage >= 97) return 'A+';
@@ -218,7 +385,7 @@
             <% } else { %>
                 <% gradesData.forEach((course, index) => { %>
                     <div class="course-card" data-section="<%= course.section_id %>">
-                        <div class="course-header" onclick="toggleCourse(<%= index %>)">
+                        <div class="course-header course-toggle" data-course-index="<%= index %>">
                             <div class="course-info">
                                 <h2><%= course.course_name %></h2>
                                 <% if (course.categories.length > 0) { %>
@@ -228,8 +395,8 @@
                             <div class="course-grade">
                                 <% if (course.percentage !== null && course.percentage !== undefined) { %>
                                     <div class="section-grade-display">
-                                        <div class="original-grade" data-original-pct="<%= course.percentage %>" title="Official grade from Schoology">
-                                            <span class="grade-pill <%= getGradeColorClass(course.percentage) %>" id="grade-<%= course.section_id %>"><%= course.percentage.toFixed(1) %>%</span>
+                                            <div class="original-grade" data-original-pct="<%= course.percentage %>" title="Official grade from Schoology">
+                                                <span class="grade-pill <%= getGradeColorClass(course.percentage) %>" id="grade-<%= course.section_id %>"><%= course.percentage.toFixed(2) %>%</span>
                                             <span class="grade-pill <%= getGradeColorClass(course.percentage) %>"><%= getLetterGrade(course.percentage) %></span>
                                         </div>
                                         <div class="edited-grade" id="edited-section-<%= course.section_id %>" style="display: none;" title="Calculated with your changes">
@@ -251,14 +418,15 @@
                                     </div>
                                 <% } %>
                             </div>
+                            <button class="btn btn-small" data-section="<%= course.section_id %>" onclick="(function(e){e.stopPropagation(); resetSection('<%= course.section_id %>');})(event)" title="Reset section changes">Reset</button>
                             <span class="toggle-icon">▼</span>
                         </div>
                         
                         <div class="course-grades" id="course-<%= index %>" style="display: none;">
                             <!-- Hidden: earned/total points -->
                             <div class="grade-summary" style="display: none;">
-                                <span>Earned: <strong id="earned-<%= course.section_id %>"><%= course.earnedPoints.toFixed(1) %></strong></span>
-                                <span>Total: <strong id="total-<%= course.section_id %>"><%= course.totalPoints.toFixed(1) %></strong></span>
+                                <span>Earned: <strong id="earned-<%= course.section_id %>"><%= course.earnedPoints.toFixed(2) %></strong></span>
+                                <span>Total: <strong id="total-<%= course.section_id %>"><%= course.totalPoints.toFixed(2) %></strong></span>
                             </div>
 
                             <% if (course.categories.length > 0) { 
@@ -271,7 +439,7 @@
                                 <% visibleCategories.forEach((cat, catIndex) => { 
                                     const catPct = getCategoryPercentage(cat);
                                 %>
-                                    <div class="category-section" data-section="<%= course.section_id %>" data-category="<%= catIndex %>">
+                                    <div class="category-section" data-section="<%= course.section_id %>" data-category="<%= catIndex %>" data-weight="<%= cat.weight || 0 %>">
                                         <div class="category-header">
                                             <div class="category-left">
                                                 <span class="category-title"><%= cat.title %></span>
@@ -280,9 +448,12 @@
                                                 <% } %>
                                             </div>
                                             <div class="category-right">
-                                                <div class="category-grade" data-original-pct="<%= catPct ? catPct.toFixed(1) : '' %>">
+                                                <div class="category-grade" data-original-pct="<%= catPct ? catPct.toFixed(2) : '' %>">
                                                     <% if (catPct !== null) { %>
-                                                        <span class="category-original grade-pill <%= getGradeColorClass(catPct) %>"><%= catPct.toFixed(1) %>% (<%= getLetterGrade(catPct) %>)</span>
+                                                        <span class="category-original">
+                                                            <span class="grade-pill <%= getGradeColorClass(catPct) %>"><%= catPct.toFixed(2) %>%</span>
+                                                            <span class="grade-pill <%= getGradeColorClass(catPct) %>"><%= getLetterGrade(catPct) %></span>
+                                                        </span>
                                                         <span class="category-edited" id="cat-edited-<%= course.section_id %>-<%= catIndex %>" style="display: none;">
                                                             → <span class="edited-val"></span>
                                                         </span>
@@ -309,6 +480,11 @@
                                                     <tr class="grade-row clickable-row" 
                                                         data-section="<%= course.section_id %>" 
                                                         data-assignment="<%= grade.assignment_id %>"
+                                                        data-kind="official"
+                                                        data-original-grade="<%= (grade.grade !== null && grade.grade !== undefined) ? grade.grade : '' %>"
+                                                        data-original-max="<%= grade.max_points %>"
+                                                        data-current-grade="<%= (grade.grade !== null && grade.grade !== undefined) ? grade.grade : '' %>"
+                                                        data-current-max="<%= grade.max_points %>"
                                                         onclick="navigateToAssignment('<%= course.section_id %>', '<%= grade.assignment_id %>')">
                                                         <td class="assignment-name"><%= grade.title %></td>
                                                         <td class="due-date">
@@ -324,36 +500,31 @@
                                                             <% } else if (grade.exception === 2) { %>
                                                                 <span class="grade-pill status-missing">Missing</span>
                                                             <% } else if (grade.grade !== null && grade.grade !== undefined) { %>
-                                                                <input type="number" 
-                                                                       class="grade-input" 
-                                                                       value="<%= grade.grade %>" 
-                                                                       data-original="<%= grade.grade %>"
-                                                                       data-section="<%= course.section_id %>"
-                                                                       onchange="updateGrade(this)"
-                                                                       onclick="event.stopPropagation()"
-                                                                       step="0.5">
+                                                                <span class="grade-display"><%= grade.grade %></span>
                                                             <% } else { %>
                                                                 <span class="no-grade">-</span>
                                                             <% } %>
                                                         </td>
                                                         <td class="max-points">
-                                                            <input type="number" 
-                                                                   class="max-input" 
-                                                                   value="<%= grade.max_points %>" 
-                                                                   data-original="<%= grade.max_points %>"
-                                                                   data-section="<%= course.section_id %>"
-                                                                   onchange="updateMaxPoints(this)"
-                                                                   onclick="event.stopPropagation()"
-                                                                   step="0.5">
+                                                            <span class="max-display"><%= grade.max_points %></span>
                                                         </td>
                                                         <td class="percentage">
                                                             <% if (grade.grade !== null && grade.grade !== undefined && grade.exception === 0) { 
                                                                 const pct = (grade.grade / grade.max_points * 100);
                                                             %>
-                                                                <span class="grade-pill <%= getGradeColorClass(pct) %>"><%= pct.toFixed(1) %>%</span>
+                                                                <span class="grade-pill <%= getGradeColorClass(pct) %>"><%= pct.toFixed(2) %>%</span>
+                                                            <% } else if (grade.exception === 1) { %>
+                                                                <span class="grade-pill status-excused">Excused</span>
+                                                            <% } else if (grade.exception === 2) { %>
+                                                                <span class="grade-pill status-missing">Missing</span>
                                                             <% } else { %>
-                                                                -
+                                                                <span class="no-grade">-</span>
                                                             <% } %>
+                                                            <span class="row-actions" aria-hidden="true">
+                                                                <button type="button" class="row-action-edit" title="Edit">✎</button>
+                                                                <button type="button" class="row-action-reset" title="Reset">↺</button>
+                                                                <button type="button" class="row-action-drop" title="Drop">🗑</button>
+                                                            </span>
                                                         </td>
                                                     </tr>
                                                 <% }) %>
@@ -376,7 +547,7 @@
                                                        id="custom-max-<%= course.section_id %>-<%= catIndex %>"
                                                        value="100"
                                                        step="0.5">
-                                                <button class="btn btn-small" onclick="addCustomAssignment('<%= course.section_id %>', <%= catIndex %>)">Add</button>
+                                                <button type="button" class="btn btn-small add-custom-assignment" data-section="<%= course.section_id %>" data-cat-index="<%= catIndex %>">Add</button>
                                             </div>
                                         </div>
                                     </div>
@@ -387,12 +558,34 @@
                             <% } else { %>
                                 <p class="no-grades">No graded assignments yet.</p>
                             <% } %>
+                            <div class="grade-debug" id="grade-debug-<%= course.section_id %>" style="display: none; margin-top: var(--space-3);"></div>
                         </div>
                     </div>
                 <% }) %>
             <% } %>
         </div>
     </main>
+
+    <% } %>
+
+    <!-- Center edit modal -->
+    <div class="modal-overlay" id="grade-edit-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal" role="document">
+            <h3 id="grade-edit-title">Edit Assignment</h3>
+            <div class="field">
+                <label for="grade-edit-score">Current grade</label>
+                <input id="grade-edit-score" type="number" step="0.5" />
+            </div>
+            <div class="field">
+                <label for="grade-edit-max">Max grade</label>
+                <input id="grade-edit-max" type="number" step="0.5" />
+            </div>
+            <div class="actions">
+                <button class="btn btn-secondary" type="button" id="grade-edit-cancel">Cancel</button>
+                <button class="btn" type="button" id="grade-edit-save">Save</button>
+            </div>
+        </div>
+    </div>
 
     <script src="/js/app.js"></script>
     <script src="/js/grades.js"></script>
@@ -424,24 +617,19 @@
 
         // Navigate to assignment page when clicking on a grade row
         function navigateToAssignment(sectionId, assignmentId) {
-            // Don't navigate if clicking on an input field
-            if (event.target.tagName === 'INPUT' || event.target.closest('input')) {
+            // Don't navigate if clicking on an action button (edit/drop)
+            if (event.target.closest('.row-actions') || event.target.closest('button')) {
                 event.stopPropagation();
                 return;
             }
-            window.location.href = `/assignment?section=${sectionId}&id=${assignmentId}`;
+            const url = `/assignment?section=${sectionId}&id=${assignmentId}`;
+            if (window.__spaNavigate) window.__spaNavigate(url);
+            else window.location.href = url;
         }
     </script>
     <script src="/js/particles.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            document.body.style.opacity = '0';
-            document.body.style.transform = 'translateY(20px)';
-            document.body.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-            setTimeout(() => {
-                document.body.style.opacity = '1';
-                document.body.style.transform = 'translateY(0)';
-            }, 100);
             const pageTitle = document.querySelector('.page-title');
             if (pageTitle) pageTitle.classList.add('gradient-text');
         });

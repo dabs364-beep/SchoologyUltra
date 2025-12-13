@@ -581,8 +581,29 @@
         }
     </style>
 </head>
-<body>
-    <%- include('partials/nav') %>
+    <body data-shell="<%= isShell ? '1' : '0' %>">
+        <%- include('partials/nav', { active: 'focus' }) %>
+
+        <% if (isShell) { %>
+        <div class="focus-container">
+            <div class="progress-container">
+                <div class="skeleton skeleton-line" style="width: 220px; height: 10px; margin: 0 auto 12px;"></div>
+                <div class="skeleton skeleton-pill" style="width: 160px; height: 12px; margin: 0 auto;"></div>
+            </div>
+
+            <div class="focus-card" style="pointer-events: none;">
+                <div class="skeleton skeleton-line" style="width: 140px; height: 10px; margin-bottom: 12px;"></div>
+                <div class="skeleton skeleton-line" style="width: 86%; height: 16px; margin-bottom: 18px;"></div>
+                <div class="skeleton skeleton-pill" style="width: 180px; height: 12px; margin-bottom: 20px;"></div>
+                <div class="skeleton skeleton-line" style="width: 96%; height: 10px; margin-bottom: 10px;"></div>
+                <div class="skeleton skeleton-line" style="width: 90%; height: 10px; margin-bottom: 10px;"></div>
+                <div class="skeleton skeleton-line" style="width: 72%; height: 10px;"></div>
+            </div>
+        </div>
+
+        <script src="/js/app.js"></script>
+        <script src="/js/analytics.js"></script>
+        <% } else { %>
     
     <!-- Success checkmark -->
     <div class="success-check" id="success-check">
@@ -995,5 +1016,7 @@
     </script>
     <script src="/js/app.js"></script>
     <script src="/js/analytics.js"></script>
+
+    <% } %>
 </body>
 </html>

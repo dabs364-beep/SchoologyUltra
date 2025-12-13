@@ -25,6 +25,8 @@ class ParticleSystem {
         document.body.appendChild(this.canvas);
         
         this.ctx = this.canvas.getContext('2d');
+        // Detect whether the 2D context supports createRadialGradient in this environment
+        this.supportsRadial = !!(this.ctx && typeof this.ctx.createRadialGradient === 'function');
         this.setCanvasSize();
         this.createParticles();
         
@@ -62,13 +64,21 @@ class ParticleSystem {
     }
     
     animate() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Update and draw particles
-        this.particles.forEach(particle => {
-            particle.update(this.canvas.width, this.canvas.height, this.mouse);
-            particle.draw(this.ctx);
-        });
+        try {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+            // Update and draw particles
+            this.particles.forEach(particle => {
+                try {
+                    particle.update(this.canvas.width, this.canvas.height, this.mouse);
+                    particle.draw(this.ctx);
+                } catch (e) {
+                    console.warn('[Particles] particle draw/update error:', e);
+                }
+            });
+        } catch (e) {
+            console.warn('[Particles] animate loop error:', e);
+        }
         
         // Draw connections
         this.drawConnections();
@@ -77,27 +87,31 @@ class ParticleSystem {
     }
     
     drawConnections() {
-        for (let i = 0; i < this.particles.length; i++) {
-            for (let j = i + 1; j < this.particles.length; j++) {
-                const dx = this.particles[i].x - this.particles[j].x;
-                const dy = this.particles[i].y - this.particles[j].y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance < this.connectionDistance) {
-                    const opacity = 1 - (distance / this.connectionDistance);
-                    
-                    // Use theme-aware colors
-                    const isDarkMode = document.documentElement.classList.contains('dark-mode');
-                    const color = isDarkMode ? '166, 161, 182' : '102, 126, 234';
-                    
-                    this.ctx.strokeStyle = `rgba(${color}, ${opacity * 0.3})`;
-                    this.ctx.lineWidth = 1;
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(this.particles[i].x, this.particles[i].y);
-                    this.ctx.lineTo(this.particles[j].x, this.particles[j].y);
-                    this.ctx.stroke();
+        try {
+            for (let i = 0; i < this.particles.length; i++) {
+                for (let j = i + 1; j < this.particles.length; j++) {
+                    const dx = this.particles[i].x - this.particles[j].x;
+                    const dy = this.particles[i].y - this.particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < this.connectionDistance) {
+                        const opacity = 1 - (distance / this.connectionDistance);
+
+                        // Use theme-aware colors
+                        const isDarkMode = document.documentElement.classList.contains('dark-mode');
+                        const color = isDarkMode ? '166, 161, 182' : '102, 126, 234';
+
+                        this.ctx.strokeStyle = `rgba(${color}, ${opacity * 0.3})`;
+                        this.ctx.lineWidth = 1;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(this.particles[i].x, this.particles[i].y);
+                        this.ctx.lineTo(this.particles[j].x, this.particles[j].y);
+                        this.ctx.stroke();
+                    }
                 }
             }
+        } catch (e) {
+            console.warn('[Particles] drawConnections error:', e);
         }
     }
 }
@@ -124,7 +138,7 @@ class Particle {
         
         // Move particle
         this.x += this.vx;
-        this.y += this.y;
+        this.y += this.vy;
         
         // Mouse interaction
         if (mouse.x !== null && mouse.y !== null) {
@@ -154,20 +168,57 @@ class Particle {
     draw(ctx) {
         // Use theme-aware colors
         const isDarkMode = document.documentElement.classList.contains('dark-mode');
-        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
-        
-        if (isDarkMode) {
-            gradient.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
-            gradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
-        } else {
-            gradient.addColorStop(0, 'rgba(102, 126, 234, 0.6)');
-            gradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
+        // Validate inputs and ctx
+        if (!ctx || !isFinite(this.x) || !isFinite(this.y) || !isFinite(this.radius) || this.radius <= 0) {
+            return;
         }
-        
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fill();
+
+        let paintedWithGradient = false;
+        if (ctx && typeof ctx.createRadialGradient === 'function') {
+            try {
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+                if (isDarkMode) {
+                    gradient.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
+                    gradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
+                } else {
+                    gradient.addColorStop(0, 'rgba(102, 126, 234, 0.6)');
+                    gradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
+                }
+                ctx.fillStyle = gradient;
+                paintedWithGradient = true;
+            } catch (e) {
+                // Some browsers/environment can throw NotSupportedError — we'll fall back below
+                paintedWithGradient = false;
+            }
+        }
+
+        if (paintedWithGradient) {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+            return;
+        }
+
+        // Fallback: draw a simple solid circle with optional glow using shadow if available
+        try {
+            ctx.save();
+            // Slightly stronger color when dark mode
+            const fillColor = isDarkMode ? 'rgba(102, 126, 234, 0.7)' : 'rgba(102, 126, 234, 0.6)';
+            // Attempt to provide a soft glow without gradients
+            if (typeof ctx.shadowBlur === 'number') {
+                ctx.shadowColor = fillColor;
+                ctx.shadowBlur = Math.max(0, Math.min(20, this.radius * 0.75));
+            }
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = fillColor;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        } catch (e) {
+            // If anything fails here, silently ignore to avoid breaking the whole animation
+            return;
+        }
     }
 }
 

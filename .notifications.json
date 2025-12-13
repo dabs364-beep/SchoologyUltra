@@ -11,7 +11,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "fabda06618dad2c7",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.888Z"
       },
       {
@@ -24,7 +24,7 @@
         "grade": 10,
         "maxPoints": 10,
         "id": "43c91b7e82cae312",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.887Z"
       },
       {
@@ -37,7 +37,7 @@
         "grade": 10,
         "maxPoints": 10,
         "id": "549012b6f5a2768f",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.886Z"
       },
       {
@@ -50,7 +50,7 @@
         "grade": 10,
         "maxPoints": 10,
         "id": "824351e0239a7bab",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.886Z"
       },
       {
@@ -63,7 +63,7 @@
         "grade": 10,
         "maxPoints": 10,
         "id": "41115c0d5fcdb5a9",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.886Z"
       },
       {
@@ -76,7 +76,7 @@
         "grade": 10,
         "maxPoints": 10,
         "id": "2a12411b5221fab0",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.885Z"
       },
       {
@@ -89,7 +89,7 @@
         "grade": 10,
         "maxPoints": 10,
         "id": "0406b51daa23a6e2",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.884Z"
       },
       {
@@ -102,7 +102,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "e4a97bb81d26f2d9",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.884Z"
       },
       {
@@ -115,7 +115,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "a7a681af0002e6fd",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.883Z"
       },
       {
@@ -128,7 +128,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "6516428ecf02d253",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.883Z"
       },
       {
@@ -141,7 +141,7 @@
         "grade": 3,
         "maxPoints": 3,
         "id": "5d5f910931076361",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.882Z"
       },
       {
@@ -154,7 +154,7 @@
         "grade": 1,
         "maxPoints": 1,
         "id": "bc190c8b15b177be",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.882Z"
       },
       {
@@ -167,7 +167,7 @@
         "grade": 2,
         "maxPoints": 2,
         "id": "2e6c09f9c8c800b5",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.881Z"
       },
       {
@@ -180,7 +180,7 @@
         "grade": 1,
         "maxPoints": 1,
         "id": "cb3525ca0e806f65",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.881Z"
       },
       {
@@ -193,7 +193,7 @@
         "grade": 1,
         "maxPoints": 1,
         "id": "a4a21d1306d32b50",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.881Z"
       },
       {
@@ -206,7 +206,7 @@
         "grade": 8,
         "maxPoints": 10,
         "id": "40ac019cd149a656",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.880Z"
       },
       {
@@ -219,7 +219,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "7eb1a01225f807cf",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.879Z"
       },
       {
@@ -232,7 +232,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "316b901b70633980",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.879Z"
       },
       {
@@ -245,7 +245,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "d4d313695a659f13",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.879Z"
       },
       {
@@ -258,7 +258,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "206c539b2c701b26",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.878Z"
       },
       {
@@ -271,7 +271,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "6c5e63f85e942543",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.878Z"
       },
       {
@@ -284,7 +284,7 @@
         "grade": 23,
         "maxPoints": 24,
         "id": "3afbf744a17ddda7",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.877Z"
       },
       {
@@ -297,7 +297,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "f6304cb47eac2ac9",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.877Z"
       },
       {
@@ -310,7 +310,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "56b143aebe7b265b",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.876Z"
       },
       {
@@ -323,7 +323,7 @@
         "grade": 3,
         "maxPoints": 5,
         "id": "49bb92974cbf91c1",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.876Z"
       },
       {
@@ -336,7 +336,7 @@
         "grade": 31.8,
         "maxPoints": 53,
         "id": "dbf659d616ab3255",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.875Z"
       },
       {
@@ -349,7 +349,7 @@
         "grade": 0,
         "maxPoints": 10,
         "id": "7ebffc635761481a",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.874Z"
       },
       {
@@ -362,7 +362,7 @@
         "grade": 4,
         "maxPoints": 5,
         "id": "a75b3a357d93c67f",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.874Z"
       },
       {
@@ -375,7 +375,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "9a648a1b7a2376cb",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.873Z"
       },
       {
@@ -388,7 +388,7 @@
         "grade": 10,
         "maxPoints": 10,
         "id": "f20d6e99724c5444",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.872Z"
       },
       {
@@ -401,7 +401,7 @@
         "grade": 18.7,
         "maxPoints": 24,
         "id": "df242cbb96b6b465",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.871Z"
       },
       {
@@ -414,7 +414,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "90aa207f998c901e",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.870Z"
       },
       {
@@ -427,7 +427,7 @@
         "grade": 4.25,
         "maxPoints": 5,
         "id": "2545b2e125b89474",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.869Z"
       },
       {
@@ -440,7 +440,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "d7f8531bb86cf7a1",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.868Z"
       },
       {
@@ -453,7 +453,7 @@
         "grade": 4.5,
         "maxPoints": 5,
         "id": "e613b934c7a4a742",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.867Z"
       },
       {
@@ -466,7 +466,7 @@
         "grade": 5,
         "maxPoints": 5,
         "id": "d58cd49d9b770616",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:42.866Z"
       },
       {
@@ -478,7 +478,7 @@
         "assignmentId": 7997275931,
         "dueDate": "2025-08-29T15:30:00.000Z",
         "id": "95c51f29f70f6363",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.679Z"
       },
       {
@@ -490,7 +490,7 @@
         "assignmentId": 7962765371,
         "dueDate": "2025-08-27T15:30:00.000Z",
         "id": "a35092bb921330c4",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.679Z"
       },
       {
@@ -502,7 +502,7 @@
         "assignmentId": 7962765433,
         "dueDate": "2025-08-27T15:30:00.000Z",
         "id": "93c05fc3098297fe",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.678Z"
       },
       {
@@ -514,7 +514,7 @@
         "assignmentId": 7962765396,
         "dueDate": "2025-08-27T15:30:00.000Z",
         "id": "5cc367f74d67b6a1",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.678Z"
       },
       {
@@ -526,7 +526,7 @@
         "assignmentId": 7962765342,
         "dueDate": "2025-08-27T15:30:00.000Z",
         "id": "2358280c948c6e09",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.677Z"
       },
       {
@@ -538,7 +538,7 @@
         "assignmentId": 7962764766,
         "dueDate": "2025-08-27T15:30:00.000Z",
         "id": "e2bef5e592924eab",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.677Z"
       },
       {
@@ -550,7 +550,7 @@
         "assignmentId": 7962764865,
         "dueDate": "2025-08-27T15:30:00.000Z",
         "id": "4ef8fa79821d30e0",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.676Z"
       },
       {
@@ -562,7 +562,7 @@
         "assignmentId": 7962765349,
         "dueDate": "2025-08-27T15:30:00.000Z",
         "id": "23362dbe98e8406d",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.676Z"
       },
       {
@@ -574,7 +574,7 @@
         "assignmentId": 7962765812,
         "dueDate": "2025-08-25T18:50:00.000Z",
         "id": "826271d084e66eda",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.676Z"
       },
       {
@@ -586,7 +586,7 @@
         "assignmentId": 7962764760,
         "dueDate": "2025-08-25T15:30:00.000Z",
         "id": "f77af07f4bf32839",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.675Z"
       },
       {
@@ -598,7 +598,7 @@
         "assignmentId": 7962764872,
         "dueDate": "2025-08-25T15:30:00.000Z",
         "id": "75c3f21474c9bff0",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.674Z"
       },
       {
@@ -610,7 +610,7 @@
         "assignmentId": 7962765306,
         "dueDate": "2025-08-22T15:30:00.000Z",
         "id": "ddd6ab37a2772f92",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.674Z"
       },
       {
@@ -622,7 +622,7 @@
         "assignmentId": 7962765804,
         "dueDate": "2025-08-22T15:30:00.000Z",
         "id": "d61086ce16f7e1aa",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.673Z"
       },
       {
@@ -634,7 +634,7 @@
         "assignmentId": 7962765312,
         "dueDate": "2025-08-22T15:30:00.000Z",
         "id": "519e680c1a257fae",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.672Z"
       },
       {
@@ -646,7 +646,7 @@
         "assignmentId": 8038254284,
         "dueDate": "2024-11-22T18:05:00.000Z",
         "id": "9e519951a0da6bee",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.671Z"
       },
       {
@@ -658,7 +658,7 @@
         "assignmentId": 8038254931,
         "dueDate": "2024-10-21T15:30:00.000Z",
         "id": "59352f8128e87ad3",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.670Z"
       },
       {
@@ -670,7 +670,7 @@
         "assignmentId": 8038254753,
         "dueDate": "2024-10-15T21:20:00.000Z",
         "id": "c801ec538528b539",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.670Z"
       },
       {
@@ -682,7 +682,7 @@
         "assignmentId": 8065614596,
         "dueDate": null,
         "id": "00ad61e1c6c659e2",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.669Z"
       },
       {
@@ -694,7 +694,7 @@
         "assignmentId": 8026604548,
         "dueDate": null,
         "id": "83a9ba175115261a",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.668Z"
       },
       {
@@ -706,7 +706,7 @@
         "assignmentId": 8132443092,
         "dueDate": null,
         "id": "3e91b23b3252462d",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.667Z"
       },
       {
@@ -718,7 +718,7 @@
         "assignmentId": 5237284158,
         "dueDate": null,
         "id": "ebe0b30a1898a17b",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.308Z"
       },
       {
@@ -730,7 +730,7 @@
         "assignmentId": 5168584608,
         "dueDate": null,
         "id": "2cddfa51ee5d9e6e",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.141Z"
       },
       {
@@ -742,7 +742,7 @@
         "assignmentId": 6046028064,
         "dueDate": null,
         "id": "66b77660db1db080",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.140Z"
       },
       {
@@ -754,7 +754,7 @@
         "assignmentId": 5168585012,
         "dueDate": null,
         "id": "6634bd48d89f63be",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.140Z"
       },
       {
@@ -766,7 +766,7 @@
         "assignmentId": 5168585776,
         "dueDate": null,
         "id": "90782cb5a48e2413",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.139Z"
       },
       {
@@ -778,7 +778,7 @@
         "assignmentId": 5168586512,
         "dueDate": null,
         "id": "36dd187ac291d8c0",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.138Z"
       },
       {
@@ -790,7 +790,7 @@
         "assignmentId": 5168586156,
         "dueDate": null,
         "id": "159aaad047007284",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.136Z"
       },
       {
@@ -802,7 +802,7 @@
         "assignmentId": 5168585382,
         "dueDate": null,
         "id": "677a3ae04ddce669",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:41.135Z"
       },
       {
@@ -814,7 +814,7 @@
         "assignmentId": 8142988977,
         "dueDate": "2025-12-02T06:00:00.000Z",
         "id": "2434fc57593c6e87",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.843Z"
       },
       {
@@ -826,7 +826,7 @@
         "assignmentId": 8131589383,
         "dueDate": "2025-11-24T06:00:00.000Z",
         "id": "27e5222336440178",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.843Z"
       },
       {
@@ -838,7 +838,7 @@
         "assignmentId": 8124839459,
         "dueDate": "2025-11-13T21:30:00.000Z",
         "id": "f0bc084f2a40f0da",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.842Z"
       },
       {
@@ -850,7 +850,7 @@
         "assignmentId": 8092430551,
         "dueDate": "2025-10-28T20:30:00.000Z",
         "id": "6e9dca075f7d39a1",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.842Z"
       },
       {
@@ -862,7 +862,7 @@
         "assignmentId": 8085077011,
         "dueDate": "2025-10-14T22:30:00.000Z",
         "id": "2250fe3f4977d170",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.841Z"
       },
       {
@@ -874,7 +874,7 @@
         "assignmentId": 8075074492,
         "dueDate": "2025-10-14T05:00:00.000Z",
         "id": "d72082db3a12390d",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.841Z"
       },
       {
@@ -886,7 +886,7 @@
         "assignmentId": 8119492772,
         "dueDate": "2025-10-10T06:59:00.000Z",
         "id": "5213c13de4177896",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.840Z"
       },
       {
@@ -898,7 +898,7 @@
         "assignmentId": 8064786734,
         "dueDate": "2025-10-07T05:00:00.000Z",
         "id": "1b10f287d8f491bc",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.839Z"
       },
       {
@@ -910,7 +910,7 @@
         "assignmentId": 8061269899,
         "dueDate": "2025-09-30T20:30:00.000Z",
         "id": "d4da747db95d72db",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.838Z"
       },
       {
@@ -922,7 +922,7 @@
         "assignmentId": 8004902537,
         "dueDate": "2025-09-18T05:00:00.000Z",
         "id": "6df3c7e6c4504e72",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.837Z"
       },
       {
@@ -934,7 +934,7 @@
         "assignmentId": 8046161459,
         "dueDate": "2025-09-09T20:30:00.000Z",
         "id": "8c578712334d2167",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.837Z"
       },
       {
@@ -946,7 +946,7 @@
         "assignmentId": 8004131516,
         "dueDate": "2025-09-02T18:35:00.000Z",
         "id": "d5366bd31fe4bbf0",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.836Z"
       },
       {
@@ -958,7 +958,7 @@
         "assignmentId": 8002166899,
         "dueDate": "2025-08-28T20:30:00.000Z",
         "id": "258c203fea7be8f5",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.835Z"
       },
       {
@@ -970,7 +970,7 @@
         "assignmentId": 8002165339,
         "dueDate": "2025-08-21T20:30:00.000Z",
         "id": "916ee2c79b1a87f1",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.834Z"
       },
       {
@@ -982,7 +982,7 @@
         "assignmentId": 8002164506,
         "dueDate": "2025-08-21T20:30:00.000Z",
         "id": "02a33c90e64e9080",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.834Z"
       },
       {
@@ -994,7 +994,7 @@
         "assignmentId": 7935517985,
         "dueDate": "2025-08-21T05:00:00.000Z",
         "id": "3d51393484a7ed8c",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.832Z"
       },
       {
@@ -1006,7 +1006,7 @@
         "assignmentId": 8060086680,
         "dueDate": "2025-10-02T06:59:59.000Z",
         "id": "b64cef95734b8b66",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.625Z"
       },
       {
@@ -1018,7 +1018,7 @@
         "assignmentId": 8056628974,
         "dueDate": "2025-09-30T06:59:59.000Z",
         "id": "faff770c8c2a9bf3",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.625Z"
       },
       {
@@ -1030,7 +1030,7 @@
         "assignmentId": 8052953897,
         "dueDate": "2025-09-27T06:59:59.000Z",
         "id": "2c4d6a5b23edacd4",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.624Z"
       },
       {
@@ -1042,7 +1042,7 @@
         "assignmentId": 8049222254,
         "dueDate": "2025-09-25T06:59:59.000Z",
         "id": "cf8adfbd2e194005",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.624Z"
       },
       {
@@ -1054,7 +1054,7 @@
         "assignmentId": 8045909451,
         "dueDate": "2025-09-23T06:59:59.000Z",
         "id": "861b316599aec99f",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.623Z"
       },
       {
@@ -1066,7 +1066,7 @@
         "assignmentId": 8033253997,
         "dueDate": "2025-09-20T06:59:00.000Z",
         "id": "a3d025a20c7e35f5",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.623Z"
       },
       {
@@ -1078,7 +1078,7 @@
         "assignmentId": 8036011340,
         "dueDate": "2025-09-18T06:59:59.000Z",
         "id": "254f57fda879bf23",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.623Z"
       },
       {
@@ -1090,7 +1090,7 @@
         "assignmentId": 8032062615,
         "dueDate": "2025-09-16T06:59:59.000Z",
         "id": "7ecaa1a7448c0588",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.622Z"
       },
       {
@@ -1102,7 +1102,7 @@
         "assignmentId": 8023251928,
         "dueDate": "2025-09-13T06:59:59.000Z",
         "id": "a40c6a7919fdac39",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.621Z"
       },
       {
@@ -1114,7 +1114,7 @@
         "assignmentId": 8025693062,
         "dueDate": "2025-09-11T06:59:00.000Z",
         "id": "c9db7a14c09a4830",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.620Z"
       },
       {
@@ -1126,7 +1126,7 @@
         "assignmentId": 7984557670,
         "dueDate": "2025-09-11T06:59:59.000Z",
         "id": "ecc7d8a079cc78a6",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.619Z"
       },
       {
@@ -1138,7 +1138,7 @@
         "assignmentId": 8018659646,
         "dueDate": "2025-09-09T06:59:59.000Z",
         "id": "b13cb25e71555cba",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.618Z"
       },
       {
@@ -1150,7 +1150,7 @@
         "assignmentId": 8013744498,
         "dueDate": "2025-09-06T06:59:59.000Z",
         "id": "5672734660929c65",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.618Z"
       },
       {
@@ -1162,7 +1162,7 @@
         "assignmentId": 7998575816,
         "dueDate": "2025-09-04T06:59:59.000Z",
         "id": "363b1af7eba9f175",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.617Z"
       },
       {
@@ -1174,7 +1174,7 @@
         "assignmentId": 8005068203,
         "dueDate": "2025-08-30T06:59:00.000Z",
         "id": "075f3a07ced90680",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.617Z"
       },
       {
@@ -1186,7 +1186,7 @@
         "assignmentId": 7989966393,
         "dueDate": "2025-08-28T06:59:59.000Z",
         "id": "7b0dbc5521909491",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.616Z"
       },
       {
@@ -1198,7 +1198,7 @@
         "assignmentId": 7984562045,
         "dueDate": "2025-08-26T06:59:59.000Z",
         "id": "c676319389331999",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.616Z"
       },
       {
@@ -1210,7 +1210,7 @@
         "assignmentId": 7994779530,
         "dueDate": "2025-08-23T06:59:00.000Z",
         "id": "04b3a5539ef05fe0",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.615Z"
       },
       {
@@ -1222,7 +1222,7 @@
         "assignmentId": 7994795037,
         "dueDate": "2025-08-23T06:59:00.000Z",
         "id": "5d250e1ba6c57024",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.614Z"
       },
       {
@@ -1234,7 +1234,7 @@
         "assignmentId": 7984553331,
         "dueDate": "2025-08-23T06:59:00.000Z",
         "id": "b24ffa6911f7974c",
-        "read": false,
+        "read": true,
         "timestamp": "2025-12-10T17:43:40.613Z"
       }
     ],

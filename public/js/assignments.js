@@ -1,10 +1,17 @@
 // Assignments page functionality
 
+function initAssignmentsPage() {
+    try {
+        loadCompletedAssignments();
+        loadCustomAssignments();
+    } catch (e) {
+        console.warn('initAssignmentsPage failed:', e);
+    }
+}
+
 // Load completed assignments from cookies
-document.addEventListener('DOMContentLoaded', () => {
-    loadCompletedAssignments();
-    loadCustomAssignments();
-});
+document.addEventListener('DOMContentLoaded', initAssignmentsPage);
+window.addEventListener('spa:load', initAssignmentsPage);
 
 // Get completed assignments from cookie
 function getCompletedAssignments() {
@@ -68,7 +75,12 @@ function saveCustomAssignments(assignments) {
 function loadCustomAssignments() {
     const customAssignments = getCustomAssignments();
     const container = document.getElementById('customAssignments');
-    
+
+    // If the container is not present (SPA body swap timing or different page), bail out safely
+    if (!container) {
+        return;
+    }
+
     if (customAssignments.length === 0) {
         container.innerHTML = '';
         return;
@@ -126,21 +138,28 @@ function loadCustomAssignments() {
 
 // Show add assignment modal
 function showAddModal() {
-    document.getElementById('addModal').classList.add('show');
+    const modal = document.getElementById('addModal');
+    if (!modal) return;
+    modal.classList.add('show');
 }
 
 // Close modal
 function closeModal() {
-    document.getElementById('addModal').classList.remove('show');
-    document.getElementById('addAssignmentForm').reset();
+    const modal = document.getElementById('addModal');
+    const form = document.getElementById('addAssignmentForm');
+    if (modal) modal.classList.remove('show');
+    if (form) form.reset();
 }
 
-// Close modal when clicking outside
-document.getElementById('addModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'addModal') {
-        closeModal();
-    }
-});
+// Close modal when clicking outside (guard element existence)
+const _addModalEl = document.getElementById('addModal');
+if (_addModalEl) {
+    _addModalEl.addEventListener('click', (e) => {
+        if (e.target.id === 'addModal') {
+            closeModal();
+        }
+    });
+}
 
 // Add custom assignment
 function addCustomAssignment(event) {

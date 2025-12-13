@@ -29,6 +29,7 @@
             min-height: 180px;
             display: flex;
             flex-direction: column;
+            transition: transform 200ms var(--ease-out);
         }
         
         .dashboard-card .dashboard-card-content {
@@ -62,6 +63,25 @@
             display: flex;
             align-items: center;
         }
+
+        /* Fade edges so items smoothly appear/disappear instead of snapping in */
+        .courses-marquee-wrapper {
+            --marquee-fade: 48px; /* width of fade on each side */
+            -webkit-mask-image: linear-gradient(to right, transparent 0px, black var(--marquee-fade), black calc(100% - var(--marquee-fade)), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0px, black var(--marquee-fade), black calc(100% - var(--marquee-fade)), transparent 100%);
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+        }
+
+        /* Scale up marquee only on larger screens; keep dashboard cards at natural size */
+        @media (min-width: 1025px) {
+            .courses-marquee-container {
+                transform: none; /* keep marquee same size so its sides line up with cards */
+                transform-origin: top center;
+                transition: transform 220ms var(--ease-out);
+                will-change: auto;
+            }
+        }
         
         .courses-marquee {
             display: flex;
@@ -70,7 +90,8 @@
             white-space: nowrap;
         }
         
-        .courses-marquee:hover {
+        /* Pause the marquee when hovering anywhere in the wrapper */
+        .courses-marquee-wrapper:hover .courses-marquee {
             animation-play-state: paused;
         }
         
@@ -80,27 +101,49 @@
             gap: var(--space-3);
             padding: var(--space-3) var(--space-5);
             background: var(--bg-tertiary);
-            border-radius: var(--radius-full);
+            border-radius: var(--radius-md);
             text-decoration: none;
             color: var(--text-primary);
             font-weight: 500;
-            transition: all var(--duration-fast) var(--ease-out);
             cursor: pointer;
             white-space: nowrap;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .course-marquee-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--text-primary);
+            border-radius: inherit;
+            transform: scale(0);
+            transform-origin: var(--x, 50%) var(--y, 50%);
+            transition: transform 0.3s ease;
+            z-index: 0;
+        }
+        
+        .course-marquee-item:hover::before {
+            transform: scale(1);
         }
         
         .course-marquee-item:hover {
-            background: var(--accent-primary);
-            color: white;
+            color: var(--text-inverse);
+            transition: color 0s;
+            /*
             transform: translateY(-2px);
             box-shadow: var(--shadow-md);
+            */
         }
         
         .course-marquee-icon {
             width: 24px;
             height: 24px;
             border-radius: var(--radius-sm);
-            background: linear-gradient(135deg, var(--accent-primary) 0%, #5856d6 100%);
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--text-inverse) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -110,14 +153,75 @@
         }
         
         .course-marquee-item:hover .course-marquee-icon {
-            background: white;
-            color: var(--accent-primary);
+            /*
+            color: var(--text-inverse);
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--text-primary) 100%);
+            */
         }
         
         .course-marquee-grade {
             font-size: 0.75rem;
             opacity: 0.7;
             margin-left: var(--space-1);
+        }
+        
+        /* Quick link fill effect */
+        .quick-link {
+            position: relative;
+            overflow: hidden;
+            z-index: 2; /* ensure anchor itself sits above the fill */
+            transition: background 0.4s var(--ease-out), color 0s; /* override global transition so color flips instantly */
+        }
+        
+        .quick-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--text-primary);
+            border-radius: inherit;
+            transform: scale(0);
+            transform-origin: var(--x, 50%) var(--y, 50%);
+            transition: transform 0.3s ease;
+            z-index: 0;
+        }
+        
+        .quick-link:hover::before {
+            transform: scale(1);
+        }
+        
+        /* Keep all button content above the expanding fill and force instant color change */
+        .quick-link > *,
+        .quick-link span,
+        .course-marquee-item > *,
+        .course-marquee-item .course-marquee-icon,
+        .course-marquee-item span,
+        .course-marquee-grade {
+            position: relative;
+            z-index: 3;
+            transition: color 0s, background 0s;
+        }
+
+        .quick-link:hover {
+            background: transparent !important;
+            transition: color 0s !important;
+        }
+
+        /* Force color/fill/stroke for anchor and any nested elements (text nodes included via *) */
+        .quick-link:hover,
+        .quick-link:hover *,
+        .quick-link:focus,
+        .quick-link:focus * {
+            color: var(--text-inverse) !important;
+            fill: var(--text-inverse) !important;
+            stroke: var(--text-inverse) !important;
+        }
+        
+        /* Pause marquee when tab is hidden */
+        .marquee-paused .courses-marquee {
+            animation-play-state: paused !important;
         }
         
         @keyframes marqueeScroll {
@@ -130,10 +234,49 @@
         }
     </style>
 </head>
-<body>
+<body data-shell="<%= (typeof isShell !== 'undefined' && isShell) ? '1' : '0' %>">
     <%- include('partials/nav', { active: 'dashboard' }) %>
     
     <main class="container">
+        <% if (typeof isShell !== 'undefined' && isShell) { %>
+            <div class="welcome-section slide-up">
+                <div class="skeleton skeleton-line" style="height: 28px; width: 320px; margin: 0 auto;"></div>
+                <div class="skeleton skeleton-line" style="height: 14px; width: 260px; margin: 10px auto 0;"></div>
+            </div>
+
+            <div class="dashboard-grid">
+                <% for (let i = 0; i < 3; i++) { %>
+                    <div class="dashboard-card slide-up">
+                        <div class="skeleton skeleton-line" style="height: 14px; width: 120px;"></div>
+                        <div class="dashboard-card-content" style="margin-top: var(--space-4);">
+                            <div class="skeleton skeleton-circle" style="width: 44px; height: 44px;"></div>
+                            <div style="flex: 1;">
+                                <div class="skeleton skeleton-line" style="height: 18px; width: 140px; margin-bottom: 10px;"></div>
+                                <div class="skeleton skeleton-line" style="height: 12px; width: 180px;"></div>
+                            </div>
+                        </div>
+                        <div class="quick-links" style="margin-top: var(--space-4);">
+                            <div class="skeleton skeleton-pill" style="width: 96px; height: 12px;"></div>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+
+            <div class="courses-marquee-container slide-up">
+                <h3 class="courses-marquee-title">Your Courses</h3>
+                <div class="courses-marquee-wrapper">
+                    <div class="courses-marquee">
+                        <% for (let i = 0; i < 8; i++) { %>
+                            <div class="course-marquee-item" style="pointer-events:none;">
+                                <div class="skeleton skeleton-circle" style="width: 18px; height: 18px;"></div>
+                                <div class="skeleton skeleton-line" style="height: 12px; width: 140px;"></div>
+                                <div class="skeleton skeleton-pill" style="height: 12px; width: 44px; margin-left: auto;"></div>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        <% } else { %>
         <div class="welcome-section slide-up">
             <h1>Welcome back, <%= user.name_first %> 👋</h1>
             <p>Here's your Schoology overview for today</p>
@@ -150,7 +293,7 @@
                     </div>
                 </div>
                 <div class="quick-links">
-                    <a href="/assignments" class="quick-link">View All →</a>
+                    <a href="/assignments" class="quick-link"><span>View All →</span></a>
                 </div>
             </div>
             
@@ -164,7 +307,7 @@
                     </div>
                 </div>
                 <div class="quick-links">
-                    <a href="/grades" class="quick-link">View All →</a>
+                    <a href="/grades" class="quick-link"><span>View All →</span></a>
                 </div>
             </div>
 
@@ -197,16 +340,20 @@
             <h3 class="courses-marquee-title">Your Courses</h3>
             <div class="courses-marquee-wrapper">
                 <div class="courses-marquee">
-                    <% if (sections && sections.length > 0) { 
+                    <% const marqueeSections = (typeof navSections !== 'undefined' && navSections && navSections.length > 0) ? navSections : (sections || []);
+                       if (marqueeSections && marqueeSections.length > 0) { 
                         // Duplicate the courses for seamless infinite scroll
-                        const allCourses = [...sections, ...sections];
+                        const allCourses = [...marqueeSections, ...marqueeSections];
                         allCourses.forEach(section => { 
                             const grade = section.final_grade;
                             const hasGrade = grade !== null && grade !== undefined && grade !== '' && !isNaN(parseFloat(grade));
                             const pct = hasGrade ? parseFloat(grade) : null;
-                            let gradeText = hasGrade ? pct.toFixed(1) + '%' : 'N/A';
+                            const unavailable = !!section.grade_unavailable;
+                            const hasGrades = !!section.has_grades;
+                            let gradeText = hasGrade ? pct.toFixed(2) + '%' : (unavailable ? 'Unavailable' : (hasGrades ? 'Has grades' : 'N/A'));
+                            const sectionId = section.id || section.section_id;
                     %>
-                    <a href="/courses?section=<%= section.id %>" class="course-marquee-item">
+                    <a href="/courses?section=<%= sectionId %>" class="course-marquee-item">
                         <div class="course-marquee-icon">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
@@ -222,29 +369,183 @@
                 </div>
             </div>
         </div>
+        <% } %>
     </main>
 
     <script src="/js/app.js"></script>
     <script src="/js/particles.js"></script>
     <script src="/js/analytics.js"></script>
     <script>
-        // Page transition effect
+        // Smooth marquee: compute pixel-based keyframes to avoid snapping
         document.addEventListener('DOMContentLoaded', () => {
-            document.body.style.opacity = '0';
-            document.body.style.transform = 'translateY(20px)';
-            document.body.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-            
-            setTimeout(() => {
-                document.body.style.opacity = '1';
-                document.body.style.transform = 'translateY(0)';
-            }, 100);
+            const marquee = document.querySelector('.courses-marquee');
+            const wrapper = document.querySelector('.courses-marquee-container');
+            if (!marquee || !wrapper) return;
+
+            marquee.style.willChange = 'transform';
+
+            const DURATION_SEC = 30; // keep synced with CSS intent
+
+            function updateMarqueeKeyframes() {
+                // total scroll width includes duplicated content; singleWidth is half
+                const totalWidth = marquee.scrollWidth || 0;
+                const singleWidth = Math.max(0, Math.round(totalWidth / 2));
+
+                const styleId = 'marquee-keyframes';
+                let styleEl = document.getElementById(styleId);
+                if (!styleEl) {
+                    styleEl = document.createElement('style');
+                    styleEl.id = styleId;
+                    document.head.appendChild(styleEl);
+                }
+
+                // Create a pixel-based keyframes animation so percentages don't re-evaluate
+                styleEl.textContent = `@keyframes marqueeScroll {\n  0% { transform: translateX(0); }\n  100% { transform: translateX(-${singleWidth}px); }\n}`;
+
+                // Store for resuming calculations
+                marquee.dataset.singleWidth = singleWidth;
+                marquee.dataset.duration = DURATION_SEC;
+
+                // Re-apply animation using the computed keyframes
+                marquee.style.animation = `marqueeScroll ${DURATION_SEC}s linear infinite`;
+                marquee.style.animationDelay = '0s';
+                marquee.style.animationPlayState = 'running';
+            }
+
+            updateMarqueeKeyframes();
+
+            // Recompute on resize (debounced)
+            let rTimer = null;
+            window.addEventListener('resize', () => {
+                clearTimeout(rTimer);
+                rTimer = setTimeout(updateMarqueeKeyframes, 200);
+            });
+
+            // Helper: read current translateX from computed transform matrix
+            function _getCurrentTranslateX(el) {
+                const st = window.getComputedStyle(el);
+                const tr = st.transform || st.webkitTransform || st.mozTransform;
+                if (!tr || tr === 'none') return 0;
+                // matrix(a,b,c,d,tx,ty)
+                const mat = tr.match(/matrix\(([^)]+)\)/);
+                if (mat) {
+                    const parts = mat[1].split(',').map(p => parseFloat(p.trim()));
+                    if (parts.length === 6) return parts[4];
+                }
+                const mat3 = tr.match(/matrix3d\(([^)]+)\)/);
+                if (mat3) {
+                    const parts = mat3[1].split(',').map(p => parseFloat(p.trim()));
+                    if (parts.length === 16) return parts[12];
+                }
+                return 0;
+            }
+
+            function _computeProgressSeconds() {
+                const singleWidth = parseFloat(marquee.dataset.singleWidth || 0);
+                const duration = parseFloat(marquee.dataset.duration || DURATION_SEC);
+                if (!singleWidth || singleWidth === 0) return 0;
+                const tx = Math.abs(_getCurrentTranslateX(marquee));
+                const frac = Math.min(1, tx / singleWidth);
+                return frac * duration;
+            }
+
+            // Pause/resume helpers that preserve the transform and progress
+            function _freezeMarquee() {
+                const paused = _computeProgressSeconds();
+                const tx = _getCurrentTranslateX(marquee);
+                marquee.dataset.pausedAt = paused;
+                marquee.dataset.pausedTx = tx;
+                console.log('[MARQUEE] Freeze at tx', tx, 'pausedSec', paused);
+                // Stop CSS animation and set current inline transform to preserve visual
+                marquee.style.animation = 'none';
+                marquee.style.transform = `translateX(${tx}px)`;
+            }
+
+            function _unfreezeMarquee() {
+                // Recompute paused seconds from stored pausedTx after refreshing keyframes
+                updateMarqueeKeyframes();
+                const singleWidth = parseFloat(marquee.dataset.singleWidth || 0);
+                const pausedTx = parseFloat(marquee.dataset.pausedTx || 0);
+                let paused = 0;
+                if (singleWidth && singleWidth > 0 && pausedTx) {
+                    const frac = Math.min(1, Math.abs(pausedTx) / singleWidth);
+                    paused = frac * DURATION_SEC;
+                } else {
+                    paused = parseFloat(marquee.dataset.pausedAt || _computeProgressSeconds() || 0);
+                }
+                paused = paused % DURATION_SEC;
+                console.log('[MARQUEE] Unfreeze, pausedSec(recomputed)', paused, 'singleWidth', singleWidth, 'pausedTx', pausedTx);
+                // Reapply the animation and resume from negative delay
+                marquee.style.animation = `marqueeScroll ${DURATION_SEC}s linear infinite`;
+                marquee.style.animationDelay = `-${paused}s`;
+                // Remove inline transform so CSS animation can take over, then force reflow
+                marquee.style.transform = '';
+                // Force reflow to ensure animation restarts correctly
+                void marquee.offsetWidth;
+                // Use WAAPI to ensure animation is playing immediately
+                if (typeof marquee.getAnimations === 'function') {
+                    const anims = marquee.getAnimations();
+                    if (anims && anims.length) {
+                        anims.forEach(a => {
+                            try { a.play(); } catch (e) { /* ignore */ }
+                        });
+                    }
+                }
+                marquee.style.animationPlayState = 'running';
+                // Clear paused values
+                delete marquee.dataset.pausedTx;
+                delete marquee.dataset.pausedAt;
+            }
+
+            // Make hover/touch pause smooth and consistent
+            wrapper.addEventListener('mouseenter', _freezeMarquee);
+            wrapper.addEventListener('mouseleave', _unfreezeMarquee);
+            wrapper.addEventListener('touchstart', _freezeMarquee);
+            wrapper.addEventListener('touchend', _unfreezeMarquee);
         });
-        
-        // Add gradient text to title
-        const pageTitle = document.querySelector('.page-title');
-        if (pageTitle) {
-            pageTitle.classList.add('gradient-text');
-        }
+    </script>
+    <script>
+        (function() {
+            // Add gradient text to title
+            const pageTitle = document.querySelector('.page-title');
+            if (pageTitle) {
+                pageTitle.classList.add('gradient-text');
+            }
+            
+            // Fill effect for buttons
+            function handleMouseEnter(e) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                console.log('Mouse enter:', e.currentTarget.className, x, y);
+                e.currentTarget.style.setProperty('--x', `${x}%`);
+                e.currentTarget.style.setProperty('--y', `${y}%`);
+            }
+            
+            function handleMouseLeave(e) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                console.log('Mouse leave:', e.currentTarget.className, x, y);
+                e.currentTarget.style.setProperty('--x', `${x}%`);
+                e.currentTarget.style.setProperty('--y', `${y}%`);
+            }
+            
+            document.querySelectorAll('.quick-link, .course-marquee-item').forEach(btn => {
+                btn.addEventListener('mouseenter', handleMouseEnter);
+                btn.addEventListener('mouseleave', handleMouseLeave);
+            });
+            
+            // Tab visibility: prefer pausing marquee and preserving progress so it resumes cleanly
+            // Use visibilitychange to freeze/unfreeze via helpers
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    _freezeMarquee();
+                } else {
+                    _unfreezeMarquee();
+                }
+            });
+        })();
     </script>
 </body>
 </html>

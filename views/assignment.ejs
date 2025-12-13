@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= assignment.title %> - Schoology Pro Max</title>
+    <title><%= (isShell || !assignment) ? 'Assignment - Schoology Pro Max' : (assignment.title + ' - Schoology Pro Max') %></title>
     <link rel="icon" type="image/png" href="/images/logo.png">
     <link rel="stylesheet" href="/css/style.css">
     <%- include('partials/theme') %>
@@ -450,9 +450,37 @@
         }
     </style>
 </head>
-<body>
+<body data-shell="<%= isShell ? '1' : '0' %>">
     <%- include('partials/nav', { active: 'courses' }) %>
-    
+
+    <% if (isShell) { %>
+    <main class="container">
+        <div class="assignment-page">
+            <div class="skeleton skeleton-pill" style="width: 190px; height: 14px; margin-bottom: var(--space-4);"></div>
+
+            <div class="assignment-header" style="pointer-events: none;">
+                <div class="skeleton skeleton-line" style="width: 160px; height: 10px; margin-bottom: var(--space-3);"></div>
+                <div class="skeleton skeleton-line" style="width: 78%; height: 18px; margin-bottom: var(--space-3);"></div>
+                <div class="assignment-meta">
+                    <div class="skeleton skeleton-pill" style="width: 180px; height: 12px;"></div>
+                    <div class="skeleton skeleton-pill" style="width: 90px; height: 12px;"></div>
+                    <div class="skeleton skeleton-pill" style="width: 120px; height: 12px;"></div>
+                </div>
+            </div>
+
+            <div class="content-card" style="margin-top: var(--space-4); padding: var(--space-6); border: 1px solid var(--border-light); border-radius: var(--radius-lg); background: var(--bg-card); pointer-events: none;">
+                <div class="skeleton skeleton-line" style="width: 220px; height: 12px; margin-bottom: var(--space-4);"></div>
+                <div class="skeleton skeleton-line" style="width: 96%; height: 10px; margin-bottom: 10px;"></div>
+                <div class="skeleton skeleton-line" style="width: 88%; height: 10px; margin-bottom: 10px;"></div>
+                <div class="skeleton skeleton-line" style="width: 74%; height: 10px;"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/analytics.js"></script>
+    <% } else { %>
+
     <main class="container">
         <div class="assignment-page">
             <a href="/courses?section=<%= section.id %>" class="back-link">
@@ -561,7 +589,7 @@
                         <span class="grade-max">/ <%= maxPoints %></span>
                     </div>
                     <div class="grade-badge <%= gradeClass %>">
-                        <span class="grade-percentage"><%= percentage.toFixed(1) %>%</span>
+                        <span class="grade-percentage"><%= percentage.toFixed(2) %>%</span>
                     </div>
                 </div>
                 <% if (userGrade.comment) { %>
@@ -897,6 +925,7 @@
             const text = document.getElementById('submission-text').value.trim();
             const resultDiv = document.getElementById('submission-result');
             const submitBtn = event.target;
+            const prevHtml = submitBtn ? submitBtn.innerHTML : null;
             
             if (!text) {
                 resultDiv.style.display = 'block';
@@ -907,7 +936,7 @@
             }
             
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
+            submitBtn.innerHTML = '<span class="skeleton skeleton-pill" style="width: 92px; height: 12px;"></span>';
             
             try {
                 const response = await fetch('/api/assignment/submit', {
@@ -937,7 +966,7 @@
                 resultDiv.style.color = '#dc2626';
                 resultDiv.textContent = 'Error: ' + error.message;
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Submit Assignment';
+                submitBtn.innerHTML = prevHtml !== null ? prevHtml : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Submit Assignment';
             }
         }
         
@@ -1010,5 +1039,7 @@
     </script>
     <script src="/js/app.js"></script>
     <script src="/js/analytics.js"></script>
+
+    <% } %>
 </body>
 </html>

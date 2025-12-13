@@ -334,13 +334,13 @@
         }
     </style>
 </head>
-<body>
+    <body data-shell="<%= isShell ? '1' : '0' %>">
     <%- include('partials/nav', { active: 'settings' }) %>
     
     <main class="container">
         <div class="settings-page">
             <div class="settings-header">
-                <h1 class="settings-title">⚙️ Settings - Eugene Kim</h1>
+                <h1 class="settings-title">⚙️ Settings</h1>
                 <p class="settings-subtitle">Customize your Schoology Pro Max experience</p>
             </div>
             
@@ -583,7 +583,7 @@
                         </div>
                         <div class="setting-description">Remove all inbox notifications</div>
                     </div>
-                    <button class="test-btn" onclick="clearNotifications()">Clear</button>
+                    <button class="test-btn" id="clear-notifications-btn" onclick="clearNotifications()">Clear</button>
                 </div>
             </div>
             
@@ -822,11 +822,22 @@
         
         async function clearNotifications() {
             if (confirm('Are you sure you want to clear all notifications?')) {
+                const btn = document.getElementById('clear-notifications-btn');
+                const prevHtml = btn ? btn.innerHTML : null;
                 try {
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<span class="skeleton skeleton-pill" style="width: 46px; height: 12px;"></span>';
+                    }
                     await fetch('/api/notifications/clear', { method: 'POST' });
                     showToast('Notifications cleared', 'success');
                 } catch (e) {
                     showToast('Error clearing notifications', 'error');
+                } finally {
+                    if (btn) {
+                        btn.disabled = false;
+                        if (prevHtml !== null) btn.innerHTML = prevHtml;
+                    }
                 }
             }
         }

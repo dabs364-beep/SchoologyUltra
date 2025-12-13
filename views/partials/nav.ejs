@@ -2,7 +2,7 @@
     <div class="nav-container">
         <a href="/dashboard" class="nav-brand">
             <img src="/images/logo.png" alt="Logo" style="width: 32px; height: 32px; object-fit: contain;">
-            <span>Schoology Pro Max</span>
+            <span>SchoologyUltra</span>
         </a>
         <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle menu">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -21,11 +21,48 @@
             <a href="/grades" class="nav-link <%= active === 'grades' ? 'active' : '' %>">
                 <span>Grades</span>
             </a>
-            <a href="/courses" class="nav-link <%= active === 'courses' ? 'active' : '' %>">
-                <span>Courses</span>
-            </a>
-            <a href="/focus" class="nav-link <%= active === 'focus' ? 'active' : '' %>" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2)); border-radius: 8px;">
-                <span>🎯 Focus</span>
+            <div class="nav-dropdown <%= active === 'courses' ? 'active' : '' %>">
+                <a href="/courses" class="nav-link">
+                    <span>Courses</span>
+                </a>
+                <div class="nav-dropdown-menu">
+                    <ul role="menu">
+                        <% const navSource = (typeof navSections !== 'undefined' && navSections) ? navSections : (sections || []);
+                           const ordered = (navSource || []).slice().map(s => ({
+                            id: s.section_id || s.id || s.sectionId,
+                            title: s.course_title || s.section_title || s.courseName || '',
+                            grade: (s.final_grade !== undefined && s.final_grade !== null && String(s.final_grade).trim() !== '') ? parseFloat(s.final_grade) : (s.grade !== undefined && s.grade !== null && String(s.grade).trim() !== '') ? parseFloat(s.grade) : null,
+                            unavailable: !!s.grade_unavailable,
+                            has_grades: !!s.has_grades
+                        })).sort((a,b) => {
+                            const aHas = a.grade !== null && !isNaN(a.grade);
+                            const bHas = b.grade !== null && !isNaN(b.grade);
+                            if (aHas && !bHas) return -1;
+                            if (!aHas && bHas) return 1;
+                            return (a.title || '').localeCompare(b.title || '');
+                        });
+                        const dividerIndex = ordered.findIndex(c => c.grade === null || isNaN(c.grade));
+                        if (ordered.length === 0) { %>
+                            <li style="color: var(--text-tertiary); padding: var(--space-3) var(--space-4);">No courses</li>
+                        <% } else {
+                            ordered.forEach((c, idx) => { %>
+                        <% if (idx === dividerIndex && idx !== 0) { %>
+                        <li class="nav-course-divider" aria-hidden="true"><hr></li>
+                        <% } %>
+                        <li>
+                            <a href="/courses?section=<%= c.id %>" class="nav-course-item" role="menuitem">
+                                <span class="nav-course-title"><%= c.title %></span>
+                                <span class="nav-course-grade">
+                                    <%= (c.grade !== null && !isNaN(c.grade)) ? c.grade.toFixed(2) + '%' : (c.unavailable ? 'Unavailable' : (c.has_grades ? 'Has grades' : 'N/A')) %>
+                                </span>
+                            </a>
+                        </li>
+                        <% }) } %>
+                    </ul>
+                </div>
+            </div>
+            <a href="/focus" class="nav-link <%= active === 'focus' ? 'active' : '' %>">
+                <span>Focus</span>
             </a>
         </div>
         <div class="nav-user">
@@ -45,7 +82,7 @@
                     <span class="inbox-badge" style="display: none;">0</span>
                 </div>
             </a>
-            <a href="/logout" class="nav-logout" title="Logout">
+            <a href="/logout" class="nav-icon-link nav-logout" title="Logout">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                     <polyline points="16 17 21 12 16 7"/>
@@ -59,11 +96,22 @@
 <script>
 // Check for unread notifications on every page
 (function() {
+    const badge = document.querySelector('.inbox-badge');
+    if (badge) {
+        badge.style.display = 'flex';
+        badge.textContent = '';
+        badge.classList.add('skeleton', 'skeleton-pill', 'skeleton-muted');
+        badge.style.width = '32px';
+        badge.style.height = '18px';
+    }
+
     fetch('/api/notifications/count')
         .then(r => r.json())
         .then(data => {
-            const badge = document.querySelector('.inbox-badge');
             if (badge) {
+                badge.classList.remove('skeleton', 'skeleton-pill', 'skeleton-muted');
+                badge.style.width = '';
+                badge.style.height = '';
                 if (data.count > 0) {
                     badge.style.display = 'flex';
                     badge.textContent = data.count > 9 ? '9+' : data.count;
@@ -72,7 +120,9 @@
                 }
             }
         })
-        .catch(() => {});
+        .catch(() => {
+            if (badge) badge.style.display = 'none';
+        });
 })();
 
 // Mobile menu toggle
@@ -84,14 +134,50 @@ function toggleMobileMenu() {
 }
 
 // Close mobile menu when clicking outside
-document.addEventListener('click', function(event) {
-    const nav = document.querySelector('.nav');
-    const navLinks = document.querySelector('.nav-links');
-    const toggle = document.querySelector('.mobile-menu-toggle');
-    
-    if (navLinks.classList.contains('mobile-open') && !nav.contains(event.target)) {
-        navLinks.classList.remove('mobile-open');
-        toggle.classList.remove('active');
-    }
-});
+if (!window.__schoologyUltraMobileMenuCloseBound) {
+    window.__schoologyUltraMobileMenuCloseBound = true;
+    document.addEventListener('click', function(event) {
+        const nav = document.querySelector('.nav');
+        const navLinks = document.querySelector('.nav-links');
+        const toggle = document.querySelector('.mobile-menu-toggle');
+
+        if (!nav || !navLinks || !toggle) return;
+        if (navLinks.classList.contains('mobile-open') && !nav.contains(event.target)) {
+            navLinks.classList.remove('mobile-open');
+            toggle.classList.remove('active');
+        }
+    });
+}
+
+// Dropdown toggle (mobile/touch-friendly) and accessible keyboard support
+if (!window.__schoologyUltraDropdownBound) {
+    window.__schoologyUltraDropdownBound = true;
+    (function() {
+        const dropdowns = Array.from(document.querySelectorAll('.nav-dropdown'));
+        if (!dropdowns.length) return;
+
+        dropdowns.forEach(dd => {
+            const link = dd.querySelector('a.nav-link');
+            link.addEventListener('click', (e) => {
+                if (window.innerWidth <= 1024) {
+                    // On small screens, toggle dropdown instead of navigating
+                    e.preventDefault();
+                    dd.classList.toggle('open');
+                }
+            });
+
+            // Close dropdown on escape
+            dd.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') dd.classList.remove('open');
+            });
+        });
+
+        // Close if clicking outside
+        document.addEventListener('click', (ev) => {
+            dropdowns.forEach(dd => {
+                if (dd.classList.contains('open') && !dd.contains(ev.target)) dd.classList.remove('open');
+            });
+        });
+    })();
+}
 </script>

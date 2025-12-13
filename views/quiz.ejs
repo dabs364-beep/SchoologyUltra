@@ -4,9 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <%= assignment.title %> - Quiz Viewer - Schoology Pro Max
-    </title>
+    <title><%= (isShell || !assignment) ? 'Quiz Viewer - Schoology Pro Max' : (assignment.title + ' - Quiz Viewer - Schoology Pro Max') %></title>
     <link rel="icon" type="image/png" href="/images/logo.png">
     <link rel="stylesheet" href="/css/style.css">
     <%- include('partials/theme') %>
@@ -789,8 +787,43 @@
         </style>
 </head>
 
-<body>
+<body data-shell="<%= isShell ? '1' : '0' %>">
     <%- include('partials/nav', { active: 'courses' }) %>
+
+    <% if (isShell) { %>
+    <main class="container">
+        <div class="quiz-page">
+            <div class="skeleton skeleton-pill" style="width: 150px; height: 14px; margin-bottom: var(--space-4);"></div>
+
+            <div class="assignment-header" style="pointer-events: none;">
+                <div class="skeleton skeleton-line" style="width: 180px; height: 10px; margin-bottom: var(--space-3);"></div>
+                <div class="skeleton skeleton-line" style="width: 68%; height: 16px; margin-bottom: var(--space-3);"></div>
+                <div class="assignment-meta">
+                    <div class="skeleton skeleton-pill" style="width: 170px; height: 12px;"></div>
+                    <div class="skeleton skeleton-pill" style="width: 90px; height: 12px;"></div>
+                </div>
+            </div>
+
+            <div class="quiz-viewer" style="pointer-events: none;">
+                <div class="viewer-header">
+                    <div class="skeleton skeleton-line" style="width: 140px; height: 12px;"></div>
+                    <div class="skeleton skeleton-pill" style="width: 120px; height: 12px;"></div>
+                </div>
+                <div class="viewer-content">
+                    <div class="viewer-loading" style="padding: var(--space-6);">
+                        <div class="skeleton skeleton-line lg" style="width: 55%; margin: 0 auto var(--space-3);"></div>
+                        <div class="skeleton skeleton-line" style="width: 90%; margin: 0 auto var(--space-2);"></div>
+                        <div class="skeleton skeleton-line" style="width: 82%; margin: 0 auto var(--space-2);"></div>
+                        <div class="skeleton skeleton-line" style="width: 76%; margin: 0 auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/analytics.js"></script>
+    <% } else { %>
 
         <main class="container">
             <div class="quiz-page">
@@ -907,11 +940,10 @@
 
                 viewerContent.innerHTML = `
                 <div class="viewer-loading">
-                    <div class="spinner"></div>
-                    <p>Opening quiz in browser...</p>
-                    <p style="font-size: 0.875rem; color: var(--text-tertiary); margin-top: 0.5rem;">
-                        The browser will navigate to the quiz and click Start/Resume.
-                    </p>
+                    <div class="skeleton skeleton-line lg" style="width: 55%; margin: 0 auto var(--space-3);"></div>
+                    <div class="skeleton skeleton-block" style="height: 120px; border-radius: var(--radius-lg); margin-bottom: var(--space-3);"></div>
+                    <div class="skeleton skeleton-line" style="width: 75%; margin: 0 auto var(--space-2);"></div>
+                    <div class="skeleton skeleton-line sm" style="width: 60%; margin: 0 auto; opacity: 0.85;"></div>
                 </div>
             `;
 
@@ -2357,6 +2389,8 @@
             checkBrowserStatus();
         </script>
     <script src="/js/analytics.js"></script>
+
+    <% } %>
 </body>
 
 </html>

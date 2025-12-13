@@ -192,37 +192,89 @@ async function fetchAllSectionsOptimized(userId, accessToken) {
     const cacheKey = getCacheKey(userId, 'sections');
     const cached = getCachedData(cacheKey, CACHE_TTL.sections);
     if (cached) {
-        // Cache may contain either the raw API response or the processed array.
-        // Normalize both shapes to always return an array of sections.
         if (Array.isArray(cached)) return cached;
         if (cached && typeof cached === 'object' && Array.isArray(cached.section)) return cached.section;
-        // If cached is unexpected shape, fall through and re-fetch.
     }
 
-    const sectionsUrl = `${config.apiBase}/users/${userId}/sections?limit=200`;
-    debugLog('FETCH', `📚 Fetching sections from: ${sectionsUrl}`);
+    // Pagination: request pages of sections (200 per page) until no more results.
+    const limit = 200;
+    let page = 1;
+    let allSections = [];
 
     try {
-        const sectionsData = await makeOAuthRequest('GET', sectionsUrl, accessToken, null, {
-            cache: true,
-            cacheKey,
-            cacheTTL: CACHE_TTL.sections
-        });
+        while (true) {
+            const sectionsUrl = `${config.apiBase}/users/${userId}/sections?limit=${limit}&page=${page}`;
+            debugLog('FETCH', `📚 Fetching sections from: ${sectionsUrl}`);
 
-        const sections = sectionsData && Array.isArray(sectionsData.section) ? sectionsData.section : [];
-        debugLog('FETCH', `✓ Found ${sections.length} sections`);
+            const sectionsData = await makeOAuthRequest('GET', sectionsUrl, accessToken, null, {
+                cache: true,
+                cacheKey: `${cacheKey}:page:${page}`,
+                cacheTTL: CACHE_TTL.sections
+            });
 
-        // Store the processed array in cache to keep later reads consistent
-        try {
-            setCachedData(cacheKey, sections);
-        } catch (e) {
-            debugLog('CACHE', `Could not set sections cache: ${e.message}`);
+            const sectionsPage = sectionsData && Array.isArray(sectionsData.section) ? sectionsData.section : [];
+            debugLog('FETCH', `✓ Page ${page}: ${sectionsPage.length} sections`);
+
+            if (sectionsPage.length === 0) break;
+            allSections = allSections.concat(sectionsPage);
+
+            if (sectionsPage.length < limit) break; // last page
+            page++;
+            if (page > 20) break; // safety guard to avoid infinite loops
         }
 
-        return sections;
+        debugLog('FETCH', `✓ Found ${allSections.length} total sections after pagination`);
+        try { setCachedData(cacheKey, allSections); } catch (e) { debugLog('CACHE', `Could not set sections cache: ${e.message}`); }
+        return allSections;
     } catch (e) {
         debugLog('FETCH-ERROR', `Failed to fetch sections: ${e.message}`);
         throw e;
+    }
+}
+
+// Fetch all enrollments with caching (useful for grades when main endpoint fails)
+async function fetchEnrollmentsOptimized(userId, accessToken) {
+    const cacheKey = getCacheKey(userId, 'enrollments');
+    const cached = getCachedData(cacheKey, CACHE_TTL.sections); // Reuse section TTL
+    if (cached) return cached;
+
+    const limit = 200;
+    let start = 0; // Enrollments use start/limit usually, or page? Schoology docs say start/limit.
+    // Actually, let's assume standard pagination.
+    // But wait, /users/{id}/enrollments might not be paginated the same way.
+    // Let's try standard start/limit pattern.
+    
+    let allEnrollments = [];
+    
+    try {
+        while (true) {
+            const url = `${config.apiBase}/users/${userId}/enrollments?start=${start}&limit=${limit}`;
+            debugLog('FETCH', `🎓 Fetching enrollments from: ${url}`);
+            
+            const data = await makeOAuthRequest('GET', url, accessToken, null, {
+                cache: true,
+                cacheKey: `${cacheKey}:start:${start}`,
+                cacheTTL: CACHE_TTL.sections
+            });
+            
+            const page = data && Array.isArray(data.enrollment) ? data.enrollment : [];
+            debugLog('FETCH', `✓ Enrollments page: ${page.length} items`);
+            if (page.length > 0) {
+                debugLog('FETCH', `  Sample enrollment: ${JSON.stringify(page[0]).substring(0, 100)}...`);
+            }
+            if (page.length === 0) break;
+            
+            allEnrollments = allEnrollments.concat(page);
+            if (page.length < limit) break;
+            start += limit;
+            if (start > 5000) break; // Safety
+        }
+        
+        try { setCachedData(cacheKey, allEnrollments); } catch (e) {}
+        return allEnrollments;
+    } catch (e) {
+        debugLog('FETCH', `Could not fetch enrollments: ${e.message}`);
+        return [];
     }
 }
 
@@ -318,8 +370,71 @@ async function fetchSectionGrades(sectionId, accessToken) {
         return gradesData;
     } catch (e) {
         debugLog('API', `Failed to fetch section grades: ${e.message}`);
-        return null;
+        // Normalize common HTTP errors to include statusCode so callers can react differently
+        if (e && typeof e.message === 'string' && e.message.indexOf('HTTP 403') !== -1) {
+            const err403 = new Error(e.message);
+            err403.statusCode = 403;
+            throw err403;
+        }
+        throw e;
     }
+}
+
+// Try fetching section grades, fallback to an assignment-specific grades fetch
+async function fetchSectionGradesWithFallback(sectionId, accessToken, userId = null) {
+    try {
+        const data = await fetchSectionGrades(sectionId, accessToken);
+        return { data, usedAssignmentFallback: false };
+    } catch (e) {
+        // If forbidden, try fetching grades using a specific assignment as a last resort
+        if (e && e.statusCode === 403) {
+            try {
+                // Attempt to get an assignment ID to query assignment-specific grades
+                const assignments = await fetchAllAssignments(sectionId, accessToken, userId).catch(() => []);
+                if (assignments && assignments.length > 0) {
+                    const assignmentId = assignments[0].id;
+                    const gradesUrl = `${config.apiBase}/sections/${sectionId}/grades?assignment_id=${assignmentId}`;
+                    debugLog('API', `Fetching section grades via assignment fallback: ${gradesUrl}`);
+                    const sectionSpecificGrades = await makeOAuthRequest('GET', gradesUrl, accessToken);
+                    // Normalize fallback response structure to match standard response
+                    if (sectionSpecificGrades) {
+                        if (sectionSpecificGrades.grades) {
+                            const gradesContent = sectionSpecificGrades.grades;
+                            debugLog('API', `Fallback response keys: ${Object.keys(gradesContent).join(', ')}`);
+                            return { 
+                                data: { section: Array.isArray(gradesContent) ? gradesContent : [gradesContent] }, 
+                                usedAssignmentFallback: true 
+                            };
+                        }
+                        // If it looks like a section object itself (unwrapped)
+                        if (sectionSpecificGrades.section_id || sectionSpecificGrades.final_grade || sectionSpecificGrades.period) {
+                             return { 
+                                data: { section: [sectionSpecificGrades] }, 
+                                usedAssignmentFallback: true 
+                            };
+                        }
+                    }
+                    return { data: sectionSpecificGrades, usedAssignmentFallback: true };
+                }
+            } catch (e2) {
+                debugLog('API', `Assignment fallback failed for section ${sectionId}: ${e2.message}`);
+                // If fallback also results in 403, rethrow 403 so callers can cache/block; otherwise bubble original error
+                if (e2 && e2.message && e2.message.indexOf('HTTP 403') !== -1) {
+                    const err403 = new Error(e2.message);
+                    err403.statusCode = 403;
+                    throw err403;
+                }
+            }
+        }
+        throw e;
+    }
+}
+
+// Section grade fetch forbidden cache TTL (milliseconds)
+const SECTION_GRADE_FORBIDDEN_TTL = 2 * 60 * 60 * 1000; // 2 hours
+
+function getSectionGradeForbiddenCacheKey(userId, sectionId) {
+    return `${userId}:section-grade-forbidden:${sectionId}`;
 }
 
 // Parse grades into a lookup map by assignment_id
@@ -347,7 +462,7 @@ function parseGradesIntoMap(gradesData) {
                 }
             }
 
-            sectionGrades[sectionId] = finalGrade;
+            sectionGrades[String(sectionId)] = finalGrade;
             sectionGradeData[sectionId] = sec;
 
             // Parse individual assignment grades
@@ -364,6 +479,24 @@ function parseGradesIntoMap(gradesData) {
     }
 
     return { gradesMap, sectionGrades, sectionGradeData };
+}
+
+// Attach final grades to section objects using parsed grades data
+function enrichSectionsWithFinalGrades(sections, gradesData) {
+    if (!sections || !Array.isArray(sections)) return sections || [];
+    if (!gradesData) return sections;
+
+    const { sectionGrades } = parseGradesIntoMap(gradesData);
+
+    return sections.map(s => {
+        const normalizedId = s.id || s.section_id || s.sectionId || null;
+        const key = normalizedId !== null ? String(normalizedId) : null;
+        return {
+            ...s,
+            id: normalizedId,
+            final_grade: key !== null && sectionGrades[key] !== undefined ? sectionGrades[key] : s.final_grade !== undefined ? s.final_grade : null
+        };
+    });
 }
 
 // Load schedule from disk (or just return cache on Vercel)
@@ -755,7 +888,47 @@ function buildAuthorizationHeader(params) {
     return `OAuth realm="", ${headerParts}`;
 }
 
-function makeOAuthRequest(method, url, token = null, body = null, cacheOptions = {}) {
+// Simple in-memory rate limiter to avoid Schoology API 429s
+// Schoology limit observed: 50 requests per 5 seconds. We use a sliding window
+// guard that waits when the recent request count in the window would exceed the limit.
+const RATE_LIMIT_WINDOW_MS = 5 * 1000; // 5 seconds
+const RATE_LIMIT_MAX = 50; // maximum requests per window
+const RATE_LIMIT_MARGIN = 4; // keep a small margin to avoid hard limit
+const oauthRequestTimestamps = [];
+
+function nowMs() { return Date.now(); }
+
+function pruneOldTimestamps() {
+    const cutoff = nowMs() - RATE_LIMIT_WINDOW_MS;
+    while (oauthRequestTimestamps.length > 0 && oauthRequestTimestamps[0] < cutoff) {
+        oauthRequestTimestamps.shift();
+    }
+}
+
+function waitForRateLimit() {
+    return new Promise((resolve) => {
+        const tryProceed = () => {
+            pruneOldTimestamps();
+            if (oauthRequestTimestamps.length < (RATE_LIMIT_MAX - RATE_LIMIT_MARGIN)) {
+                // record this request and proceed
+                oauthRequestTimestamps.push(nowMs());
+                resolve();
+                return;
+            }
+
+            // Otherwise wait until the oldest timestamp falls outside the window
+            const oldest = oauthRequestTimestamps[0];
+            const waitMs = Math.max(50, (oldest + RATE_LIMIT_WINDOW_MS) - nowMs());
+            setTimeout(tryProceed, waitMs);
+        };
+        tryProceed();
+    });
+}
+
+async function makeOAuthRequest(method, url, token = null, body = null, cacheOptions = {}) {
+    // Throttle to avoid 429 from Schoology
+    await waitForRateLimit();
+
     return new Promise((resolve, reject) => {
         // Check cache first if enabled
         if (cacheOptions.cache && cacheOptions.cacheKey) {
@@ -990,6 +1163,304 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Routes
 
+// Preload sections+grades for nav to keep dropdown consistent across pages
+app.use(async (req, res, next) => {
+    if (!req.session || !req.session.userId || !req.session.accessToken) return next();
+        try {
+        let [sections, gradesData, enrollments] = await Promise.all([
+            fetchAllSectionsOptimized(req.session.userId, req.session.accessToken).catch(() => []),
+            fetchAllGradesOptimized(req.session.userId, req.session.accessToken).catch(() => null),
+            fetchEnrollmentsOptimized(req.session.userId, req.session.accessToken).catch(() => [])
+        ]);
+
+        // Enrich sections with final_grade using global grades data
+        res.locals.navSections = enrichSectionsWithFinalGrades(sections, gradesData);
+
+        // Further enrich with enrollment data (often contains grades when main endpoint fails)
+        if (enrollments && enrollments.length > 0) {
+            const enrollmentMap = {};
+            enrollments.forEach(e => {
+                if (e.section_id) enrollmentMap[String(e.section_id)] = e;
+            });
+            
+            res.locals.navSections.forEach(s => {
+                const sid = String(s.id || s.section_id || '');
+                if (sid && enrollmentMap[sid]) {
+                    const enroll = enrollmentMap[sid];
+                    // If we don't have a final grade yet, try to get it from enrollment
+                    if (s.final_grade === null || s.final_grade === undefined) {
+                        // Enrollment grade might be 'grade' or 'final_grade'
+                        // Usually it's just 'grade' in enrollment object
+                        if (enroll.grade !== undefined && enroll.grade !== null && enroll.grade !== '') {
+                             const parsed = parseFloat(enroll.grade);
+                             if (!isNaN(parsed)) {
+                                 s.final_grade = parsed;
+                                 debugLog('NAV', `  Recovered final grade from enrollment for section ${sid}: ${parsed}`);
+                             }
+                        }
+                    }
+                }
+            });
+        }
+
+        // If the global grades response contains assignment-grade rows but no final grade,
+        // mark the section as having grades so UI can show "Has grades" instead of "N/A".
+        try {
+            if (gradesData && gradesData.section && Array.isArray(gradesData.section)) {
+                const hasAnyAssignmentBySection = {};
+                for (const sec of gradesData.section) {
+                    const periods = sec.period || [];
+                    let hasAny = false;
+                    for (const period of periods) {
+                        const assignments = period.assignment || [];
+                        if (assignments.length > 0) {
+                            hasAny = true;
+                            break;
+                        }
+                    }
+                    if (hasAny) hasAnyAssignmentBySection[String(sec.section_id)] = true;
+                }
+
+                for (const s of res.locals.navSections) {
+                    const sid = String(s.id || s.section_id || '');
+                    if (sid && hasAnyAssignmentBySection[sid]) {
+                        s.has_grades = true;
+                    }
+                }
+            }
+        } catch (e) {
+            debugLog('NAV', `Could not mark has_grades from global grades: ${e.message}`);
+        }
+
+        // If some sections still lack final_grade (or explicitly show 'N/A'), try fetching them individually
+        const isGradeNA = (g) => (g === null || g === undefined || (typeof g === 'string' && String(g).trim().toLowerCase() === 'n/a'));
+        let missing = res.locals.navSections.filter(s => isGradeNA(s.final_grade));
+        const MAX_PER_SECTION_FETCH = 50;
+
+        // If any sections are missing a final grade, explicitly re-fetch the global /grades endpoint
+        // (some environments or caches may have produced a stale/null gradesData earlier)
+        if (missing.length > 0) {
+            try {
+                const refreshedAllGrades = await fetchAllGradesOptimized(req.session.userId, req.session.accessToken).catch(() => null);
+                if (refreshedAllGrades) {
+                    // Re-enrich sections with any newly available final grades
+                    res.locals.navSections = enrichSectionsWithFinalGrades(res.locals.navSections, refreshedAllGrades);
+                    gradesData = refreshedAllGrades;
+                    // Recompute missing list after enrichment
+                    missing = res.locals.navSections.filter(s => (s.final_grade === null || s.final_grade === undefined));
+                }
+            } catch (refE) {
+                debugLog('NAV', `Could not refresh global grades for nav: ${refE.message}`);
+            }
+        }
+
+        // Create quick section->finalGrade map for reference (from latest gradesData)
+        const _navSectionGradeMap = gradesData ? parseGradesIntoMap(gradesData).sectionGrades : {};
+        const toFetch = missing.slice(0, MAX_PER_SECTION_FETCH);
+        await Promise.all(toFetch.map(async (s) => {
+            try {
+                // Avoid retrying if we recently hit a 403 for this user+section
+                const blockKey = getSectionGradeForbiddenCacheKey(req.session.userId, s.id || s.section_id);
+                const blocked = getCachedData(blockKey, SECTION_GRADE_FORBIDDEN_TTL);
+                if (blocked) {
+                    const quickF = _navSectionGradeMap && _navSectionGradeMap[String(s.id || s.section_id)];
+                    if (quickF !== undefined && quickF !== null) {
+                        s.final_grade = quickF;
+                        return;
+                    }
+                    s.grade_unavailable = true;
+                    return;
+                }
+
+                // Check authoritative global map first
+                let finalGrade = _navSectionGradeMap && _navSectionGradeMap[String(s.id || s.section_id)];
+                if (finalGrade === undefined || finalGrade === null) {
+                    try {
+                        debugLog('NAV', `  No final grade in global map, fetching section-specific grades for ${s.id}...`);
+                        const { data: sectionSpecificGrades, usedAssignmentFallback } = await fetchSectionGradesWithFallback(s.id || s.section_id, req.session.accessToken, req.session.userId);
+                        if (usedAssignmentFallback) debugLog('NAV', `  Used assignment fallback for nav section ${s.id}`);
+                        if (sectionSpecificGrades) {
+                            const secs = sectionSpecificGrades.section
+                                ? (Array.isArray(sectionSpecificGrades.section) ? sectionSpecificGrades.section : [sectionSpecificGrades.section])
+                                : (sectionSpecificGrades.period ? [sectionSpecificGrades] : []);
+                            for (const sec of secs) {
+                                if (sec.final_grade !== undefined && sec.final_grade !== null && sec.final_grade !== '') {
+                                    if (Array.isArray(sec.final_grade) && sec.final_grade.length > 0 && sec.final_grade[0].grade !== undefined) {
+                                        const parsed = parseFloat(sec.final_grade[0].grade);
+                                        if (!isNaN(parsed)) {
+                                            finalGrade = parsed;
+                                            break;
+                                        }
+                                    } else {
+                                        const parsed = parseFloat(sec.final_grade);
+                                        if (!isNaN(parsed)) {
+                                            finalGrade = parsed;
+                                            break;
+                                        }
+                                    }
+                                }
+                                // Fallback: check for 'grade' property directly
+                                if (finalGrade === null && sec.grade !== undefined && sec.grade !== null && sec.grade !== '') {
+                                    const parsed = parseFloat(sec.grade);
+                                    if (!isNaN(parsed)) {
+                                        finalGrade = parsed;
+                                        break;
+                                    }
+                                }
+                            }
+                            // If no final grade found, detect presence of assignment-level grades
+                            if (finalGrade === null || finalGrade === undefined) {
+                                let hasGrades = false;
+                                for (const sec of secs) {
+                                    const periods = sec.period || [];
+                                    for (const period of periods) {
+                                        const assignments = period.assignment || [];
+                                        if (assignments.length > 0) {
+                                            hasGrades = true;
+                                            break;
+                                        }
+                                    }
+                                    if (hasGrades) break;
+                                }
+                                if (hasGrades) s.has_grades = true;
+                            }
+                        }
+                    } catch (e) {
+                        debugLog('NAV', `  Could not fetch section-specific grades for nav (${s.id}): ${e.message}`);
+                        if (e && e.statusCode === 403) {
+                            // Cache 403 decision
+                            try { setCachedData(getSectionGradeForbiddenCacheKey(req.session.userId, s.id || s.section_id), { blocked: true }); } catch (ee) {}
+                            // Check if global user-level grades mapped to this section later in the request set
+                            const altFinal = _navSectionGradeMap && _navSectionGradeMap[String(s.id || s.section_id)];
+                            if (altFinal === undefined || altFinal === null) {
+                                // Try re-fetching global grades once to be safe
+                                try {
+                                    const refreshedGrades = await fetchAllGradesOptimized(req.session.userId, req.session.accessToken).catch(() => null);
+                                    const refreshedMap = refreshedGrades ? parseGradesIntoMap(refreshedGrades).sectionGrades : {};
+                                    const recheck = refreshedMap && refreshedMap[String(s.id || s.section_id)];
+                                    if (recheck !== undefined && recheck !== null) {
+                                        finalGrade = recheck;
+                                    } else {
+                                        s.grade_unavailable = true;
+                                    }
+                                } catch (re) {
+                                    s.grade_unavailable = true;
+                                }
+                            } else {
+                                s.final_grade = altFinal;
+                            }
+                        }
+                    }
+                }
+
+                // If we recovered a final grade, set it and update the quick map to avoid future fetches
+                if (finalGrade !== undefined && finalGrade !== null) {
+                    s.final_grade = finalGrade;
+                    try { _navSectionGradeMap[String(s.id || s.section_id)] = finalGrade; } catch (ee) {}
+                }
+            } catch (err) {
+                debugLog('NAV', `Could not fetch per-section grades for nav (${s.id}): ${err.message}`);
+            }
+        }));
+
+        // SECOND PASS: for sections that still display as 'N/A' (and don't already indicate assignment-level grades),
+        // force a section-specific fetch even if we previously recorded a 403 for it. This aims to recover cases
+        // where the global grades endpoint or earlier attempts produced 'N/A' but section-level/assignment-level data exists.
+        try {
+            // We filter for any section missing a final grade, even if it has 'has_grades' set.
+            // This ensures we try to get the actual number if possible.
+            const naCandidates = res.locals.navSections.filter(s => isGradeNA(s.final_grade));
+            const toForce = naCandidates.slice(0, MAX_PER_SECTION_FETCH);
+            await Promise.all(toForce.map(async (s) => {
+                try {
+                    debugLog('NAV', `  Forcing section-specific fetch for N/A section ${s.id}...`);
+                    const { data: sectionSpecificGrades, usedAssignmentFallback } = await fetchSectionGradesWithFallback(s.id || s.section_id, req.session.accessToken, req.session.userId);
+                    if (usedAssignmentFallback) debugLog('NAV', `  Used assignment fallback for forced nav section ${s.id}`);
+                    
+                    if (sectionSpecificGrades) {
+                        const secs = sectionSpecificGrades.section
+                            ? (Array.isArray(sectionSpecificGrades.section) ? sectionSpecificGrades.section : [sectionSpecificGrades.section])
+                            : (sectionSpecificGrades.period ? [sectionSpecificGrades] : []);
+                        
+                        for (const sec of secs) {
+                            // Debug log for structure inspection if needed
+                            if (usedAssignmentFallback && !sec.final_grade && !sec.grade) {
+                                debugLog('NAV', `  Fallback response structure for ${s.id}: ${JSON.stringify(sec).substring(0, 200)}...`);
+                            }
+
+                            if (sec.final_grade !== undefined && sec.final_grade !== null && sec.final_grade !== '') {
+                                if (Array.isArray(sec.final_grade) && sec.final_grade.length > 0 && sec.final_grade[0].grade !== undefined) {
+                                    const parsed = parseFloat(sec.final_grade[0].grade);
+                                    if (!isNaN(parsed)) {
+                                        s.final_grade = parsed;
+                                        break;
+                                    }
+                                } else {
+                                    const parsed = parseFloat(sec.final_grade);
+                                    if (!isNaN(parsed)) {
+                                        s.final_grade = parsed;
+                                        break;
+                                    }
+                                }
+                            }
+                            // Fallback: check for 'grade' property directly
+                            if ((s.final_grade === null || s.final_grade === undefined) && sec.grade !== undefined && sec.grade !== null && sec.grade !== '') {
+                                const parsed = parseFloat(sec.grade);
+                                if (!isNaN(parsed)) {
+                                    s.final_grade = parsed;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // If we still don't have a final grade, but we have data, mark as has_grades
+                        if ((s.final_grade === null || s.final_grade === undefined) && secs.length > 0) {
+                             s.has_grades = true;
+                             s.grade_unavailable = false; // Clear unavailable flag if we found data
+                        }
+
+                        if (s.final_grade === null || s.final_grade === undefined) {
+                            // detect assignment-level grades
+                            let hasGrades = false;
+                            for (const sec of secs) {
+                                const periods = sec.period || [];
+                                for (const period of periods) {
+                                    const assignments = period.assignment || [];
+                                    if (assignments.length > 0) {
+                                        hasGrades = true;
+                                        break;
+                                    }
+                                }
+                                if (hasGrades) break;
+                            }
+                            if (hasGrades) {
+                                s.has_grades = true;
+                                s.grade_unavailable = false; // Clear unavailable flag
+                            }
+                        }
+                    }
+                    
+                    // If we successfully fetched data (even if no final grade), clear unavailable
+                    if (sectionSpecificGrades) {
+                        s.grade_unavailable = false;
+                    }
+                } catch (e) {
+                    debugLog('NAV', `  Forced fetch failed for nav (${s.id}): ${e.message}`);
+                }
+            }));
+        } catch (e) {
+            debugLog('NAV', `Error during forced N/A section fetch pass: ${e.message}`);
+        }
+
+        // Back-compat: some views historically use `sections` without a dedicated nav variable
+        // (route-level `sections` may override this, but views can now opt into `navSections`).
+        res.locals.sections = res.locals.navSections;
+    } catch (e) {
+        debugLog('NAV', `Could not preload sections for nav: ${e.message}`);
+    }
+    return next();
+});
+
 // Feature detection endpoint - tells frontend what features are available
 app.get('/api/features', (req, res) => {
     res.json({
@@ -1000,6 +1471,17 @@ app.get('/api/features', (req, res) => {
             ? 'Running on Vercel - some features like Quiz Viewer are unavailable'
             : 'All features available'
     });
+});
+
+// DEBUG: Inspect enrollments to find missing grades
+app.get('/debug/enrollments', async (req, res) => {
+    if (!req.session.accessToken) return res.status(401).send('Unauthorized');
+    try {
+        const enrollments = await fetchEnrollmentsOptimized(req.session.userId, req.session.accessToken);
+        res.json(enrollments);
+    } catch (e) {
+        res.status(500).send(e.message);
+    }
 });
 
 app.get('/', (req, res) => {
@@ -1284,6 +1766,21 @@ app.get('/dashboard', async (req, res) => {
 
     debugLog('DASHBOARD', 'Access token found, fetching user info');
 
+    // Shell is the default so pages paint instantly; request full render explicitly.
+    const fullRender = req.get('x-full-render') === '1' || req.query.full === '1';
+    const shellRender = req.query.shell === '1' || req.get('x-shell') === '1' || !fullRender;
+    if (shellRender && !fullRender) {
+        debugLog('DASHBOARD', 'Shell render requested (fast)');
+        return res.render('dashboard', {
+            isShell: true,
+            authenticated: true,
+            userName: req.session.userName,
+            user: null,
+            sections: [],
+            currentClass: null
+        });
+    }
+
     try {
         // Step 1: Get user ID from app-user-info endpoint
         const appUserInfoUrl = `${config.apiBase}/app-user-info`;
@@ -1367,14 +1864,14 @@ app.get('/dashboard', async (req, res) => {
                 // Also check periods for final grade
                 if (allGradesData.section) {
                     for (const sec of allGradesData.section) {
-                        if (sectionGrades[sec.section_id] === null) {
+                        if (sectionGrades[String(sec.section_id)] === null) {
                             const periods = sec.period || [];
                             for (const period of periods) {
                                 if (period.period_id === 'final' || period.period_title === 'Final Grade' || period.period_title === 'Overall') {
                                     const assignments = period.assignment || [];
                                     if (assignments.length > 0 && assignments[0].grade !== null && assignments[0].grade !== undefined && assignments[0].grade !== '') {
                                         const parsed = parseFloat(assignments[0].grade);
-                                        if (!isNaN(parsed)) sectionGrades[sec.section_id] = parsed;
+                                        if (!isNaN(parsed)) sectionGrades[String(sec.section_id)] = parsed;
                                     }
                                 }
                             }
@@ -1382,11 +1879,8 @@ app.get('/dashboard', async (req, res) => {
                     }
                 }
 
-                // Attach grades to sections
-                sections = sections.map(s => ({
-                    ...s,
-                    final_grade: sectionGrades[s.id] !== undefined ? sectionGrades[s.id] : null
-                }));
+                // Attach grades to sections (normalize section id to handle different API shapes)
+                sections = enrichSectionsWithFinalGrades(sections, allGradesData);
 
                 debugLog('DASHBOARD', `✓ Attached grades to ${Object.keys(sectionGrades).length} sections`);
             }
@@ -1426,6 +1920,7 @@ app.get('/dashboard', async (req, res) => {
 
         debugLog('DASHBOARD', '✓ Rendering dashboard');
         res.render('dashboard', {
+            isShell: false,
             user,
             sections,
             currentClass,
@@ -1454,6 +1949,58 @@ app.get('/dashboard', async (req, res) => {
         });
     }
 });
+
+// Ensure we have a userId/userName in session for routes that depend on it.
+// This avoids slow data fetches during shell renders, while keeping full renders robust
+// even if the user lands directly on a deep link.
+async function ensureUserSession(req, res) {
+    if (!req.session.accessToken) {
+        throw new Error('Not authenticated');
+    }
+
+    if (req.session.userId && req.session.userName) {
+        return {
+            id: req.session.userId,
+            name: req.session.userName
+        };
+    }
+
+    // Step 1: Get user ID from app-user-info
+    const appUserInfoUrl = `${config.apiBase}/app-user-info`;
+    const appUserInfo = await makeOAuthRequest('GET', appUserInfoUrl, req.session.accessToken, null, {
+        cache: true,
+        cacheKey: getCacheKey(req.session.userId || 'temp', 'app-user-info'),
+        cacheTTL: CACHE_TTL.user
+    });
+
+    const userId = appUserInfo.api_uid;
+    if (!userId) {
+        throw new Error('No user ID returned from app-user-info');
+    }
+
+    // Step 2: Fetch full user details
+    const userUrl = `${config.apiBase}/users/${userId}`;
+    const user = await makeOAuthRequest('GET', userUrl, req.session.accessToken, null, {
+        cache: true,
+        cacheKey: getCacheKey(userId, 'user-details'),
+        cacheTTL: CACHE_TTL.user
+    });
+
+    req.session.userId = user.id;
+    req.session.userName = `${user.name_first} ${user.name_last}`;
+    req.session.userHash = crypto.createHash('sha256').update(user.id.toString()).digest('hex');
+
+    // Persist user ID for Vercel serverless session recovery
+    res.cookie('user_id', user.id, {
+        httpOnly: true,
+        secure: IS_VERCEL,
+        sameSite: IS_VERCEL ? 'none' : 'lax',
+        maxAge: 365 * 24 * 60 * 60 * 1000,
+        path: '/'
+    });
+
+    return user;
+}
 
 // Helper function to fetch all pages of assignments with caching
 async function fetchAllAssignments(sectionId, accessToken, userId = null) {
@@ -1497,7 +2044,22 @@ app.get('/assignments', async (req, res) => {
         return res.redirect('/');
     }
 
+    const fullRender = req.get('x-full-render') === '1' || req.query.full === '1';
+    const shellRender = req.query.shell === '1' || req.get('x-shell') === '1' || !fullRender;
+    if (shellRender && !fullRender) {
+        debugLog('ASSIGNMENTS', 'Shell render requested (fast)');
+        return res.render('assignments', {
+            isShell: true,
+            upcomingAssignments: [],
+            overdueAssignments: [],
+            sections: [],
+            authenticated: true,
+            userName: req.session.userName
+        });
+    }
+
     try {
+        await ensureUserSession(req, res);
         const startTime = Date.now();
 
         // ⚡ PARALLEL FETCH: Get sections and grades simultaneously with caching
@@ -1511,14 +2073,16 @@ app.get('/assignments', async (req, res) => {
             })
         ]);
 
-        debugLog('ASSIGNMENTS', `✓ Found ${sections.length} sections`);
+        // Enrich sections with final grade if grades were fetched
+        const enrichedSections = enrichSectionsWithFinalGrades(sections, gradesData);
+        debugLog('ASSIGNMENTS', `✓ Found ${enrichedSections.length} sections`);
 
         // Parse grades into lookup map
         const { gradesMap: allGrades } = gradesData ? parseGradesIntoMap(gradesData) : { gradesMap: {} };
         debugLog('ASSIGNMENTS', `✓ Fetched grades for ${Object.keys(allGrades).length} assignments`);
 
         // ⚡ PARALLEL FETCH: Get assignments for all sections in parallel (up to 10)
-        const sectionsToFetch = sections.slice(0, 10);
+        const sectionsToFetch = enrichedSections.slice(0, 10);
         debugLog('ASSIGNMENTS', `⚡ Fetching assignments for ${sectionsToFetch.length} sections in parallel...`);
 
         const assignmentsResults = await fetchAssignmentsForSectionsParallel(
@@ -1728,9 +2292,10 @@ app.get('/assignments', async (req, res) => {
         debugLog('ASSIGNMENTS', '✓ Rendering assignments page');
 
         res.render('assignments', {
+            isShell: false,
             upcomingAssignments: upcomingWithTime,
             overdueAssignments: overdueWithTime,
-            sections,
+            sections: enrichedSections,
             authenticated: true,
             userName: req.session.userName
         });
@@ -1749,7 +2314,20 @@ app.get('/grades', async (req, res) => {
         return res.redirect('/');
     }
 
+    const fullRender = req.get('x-full-render') === '1' || req.query.full === '1';
+    const shellRender = req.query.shell === '1' || req.get('x-shell') === '1' || !fullRender;
+    if (shellRender && !fullRender) {
+        debugLog('GRADES', 'Shell render requested (fast)');
+        return res.render('grades', {
+            isShell: true,
+            gradesData: [],
+            authenticated: true,
+            userName: req.session.userName
+        });
+    }
+
     try {
+        await ensureUserSession(req, res);
         const startTime = Date.now();
 
         // ⚡ PARALLEL FETCH: Get sections and grades simultaneously with caching
@@ -1786,17 +2364,79 @@ app.get('/grades', async (req, res) => {
 
         debugLog('GRADES', `⚡ Assignments and categories fetched in ${Date.now() - parallelStartTime}ms`);
 
+        // Enrich sections with final grades
+        const enrichedAllSections = enrichSectionsWithFinalGrades(allSections, allGradesData);
+
         // Process grades for each section
         let gradesData = [];
 
-        for (const section of allSections) {
+        for (const section of enrichedAllSections) {
             try {
                 debugLog('GRADES', `Processing section ${section.id}: ${section.course_title || section.section_title}`);
 
                 // Get the final grade from our pre-fetched data
-                let finalGrade = sectionFinalGrades[section.id];
+                let finalGrade = sectionFinalGrades[String(section.id)];
                 if (finalGrade === undefined || finalGrade === null || isNaN(finalGrade)) {
                     finalGrade = null;
+                }
+
+                // If we still have no final grade, try fetching section-specific grades
+                if (finalGrade === null) {
+                    try {
+                        debugLog('GRADES', `  No final grade from user-level API, fetching section-specific grades for ${section.id}...`);
+                        const { data: sectionSpecificGrades, usedAssignmentFallback } = await fetchSectionGradesWithFallback(section.id, req.session.accessToken, req.session.userId);
+                        if (usedAssignmentFallback) debugLog('GRADES', `  Used assignment fallback for section ${section.id}`);
+                            if (sectionSpecificGrades) {
+                            // Support both wrapped and unwrapped responses
+                            const secs = sectionSpecificGrades.section
+                                ? (Array.isArray(sectionSpecificGrades.section) ? sectionSpecificGrades.section : [sectionSpecificGrades.section])
+                                : (sectionSpecificGrades.period ? [sectionSpecificGrades] : []);
+                            for (const sec of secs) {
+                                if (sec.final_grade !== undefined && sec.final_grade !== null && sec.final_grade !== '') {
+                                    if (Array.isArray(sec.final_grade) && sec.final_grade.length > 0 && sec.final_grade[0].grade !== undefined) {
+                                        const parsed = parseFloat(sec.final_grade[0].grade);
+                                        if (!isNaN(parsed)) {
+                                            finalGrade = parsed;
+                                            break;
+                                        }
+                                    } else {
+                                        const parsed = parseFloat(sec.final_grade);
+                                        if (!isNaN(parsed)) {
+                                            finalGrade = parsed;
+                                            break;
+                                        }
+                                    }
+                                }
+                                // Fallback: check for 'grade' property directly
+                                if (finalGrade === null && sec.grade !== undefined && sec.grade !== null && sec.grade !== '') {
+                                    const parsed = parseFloat(sec.grade);
+                                    if (!isNaN(parsed)) {
+                                        finalGrade = parsed;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        debugLog('GRADES', `  Could not fetch section-specific grades for ${section.id}: ${e.message}`);
+                        if (e && e.statusCode === 403) {
+                            const blockKey = getSectionGradeForbiddenCacheKey(req.session.userId, section.id);
+                            try { setCachedData(blockKey, { blocked: true }); } catch (ee) {}
+                            // Check if global user-level grades mapped to this section later in the request set
+                            const altFinal = sectionFinalGrades[String(section.id)] || (allGradesData && parseGradesIntoMap(allGradesData).sectionGrades[String(section.id)]);
+                            if (altFinal === undefined || altFinal === null) {
+                                section.grade_unavailable = true;
+                            } else {
+                                // If global logic produced a final grade, use it and do not mark unavailable
+                                section.final_grade = altFinal;
+                            }
+                        }
+                    }
+
+                    // Cache recovered final grade in the parsed map so later lookups avoid extra fetches
+                    if (finalGrade !== null) {
+                        sectionFinalGrades[String(section.id)] = finalGrade;
+                    }
                 }
 
                 debugLog('GRADES', `  Final grade: ${finalGrade !== null ? finalGrade : 'N/A'}`);
@@ -1842,10 +2482,11 @@ app.get('/grades', async (req, res) => {
                 // If no grades found from user-level API and we have assignments, 
                 // try fetching section-specific grades
                 if (gradesList.length === 0 && assignments.length > 0 && !sectionGradeData[section.id]) {
-                    debugLog('GRADES', `  No user-level grades, trying section-specific grades...`);
-                    const sectionSpecificGrades = await fetchSectionGrades(section.id, req.session.accessToken);
+                    try {
+                        debugLog('GRADES', `  No user-level grades, trying section-specific grades...`);
+                        const sectionSpecificGrades = await fetchSectionGrades(section.id, req.session.accessToken);
 
-                    if (sectionSpecificGrades) {
+                        if (sectionSpecificGrades) {
                         // Handle both wrapped {section: [...]} and unwrapped response formats
                         let sections = [];
                         if (sectionSpecificGrades.section) {
@@ -1881,6 +2522,14 @@ app.get('/grades', async (req, res) => {
                             }
                         }
                         debugLog('GRADES', `  Found ${gradesList.length} grades from section-specific API`);
+                        }
+                    } catch (e) {
+                        debugLog('GRADES', `  Could not fetch section-specific grades for ${section.id}: ${e.message}`);
+                        if (e && e.statusCode === 403) {
+                            const blockKey = getSectionGradeForbiddenCacheKey(req.session.userId, section.id);
+                            try { setCachedData(blockKey, { blocked: true }); } catch (ee) {}
+                            section.grade_unavailable = true;
+                        }
                     }
                 }
 
@@ -1909,7 +2558,7 @@ app.get('/grades', async (req, res) => {
                         if (grade) {
                             // If we found the grade via global map (linked section), try to recover final grade
                             if (finalGrade === null && grade._section_id && grade._section_id != section.id) {
-                                const linkedFinalGrade = sectionFinalGrades[grade._section_id];
+                                const linkedFinalGrade = sectionFinalGrades[String(grade._section_id)];
                                 if (linkedFinalGrade !== undefined && linkedFinalGrade !== null) {
                                     finalGrade = linkedFinalGrade;
                                     debugLog('GRADES', `  Recovered final grade ${finalGrade} from linked section ${grade._section_id}`);
@@ -2023,7 +2672,9 @@ app.get('/grades', async (req, res) => {
         debugLog('GRADES', '✓ Rendering grades page');
 
         res.render('grades', {
+            isShell: false,
             gradesData: sortedGradesData,
+            sections: enrichedAllSections,
             authenticated: true,
             userName: req.session.userName
         });
@@ -2110,7 +2761,24 @@ app.get('/courses', async (req, res) => {
         return res.redirect('/');
     }
 
+    const fullRender = req.get('x-full-render') === '1' || req.query.full === '1';
+    const shellRender = req.query.shell === '1' || req.get('x-shell') === '1' || !fullRender;
+    if (shellRender && !fullRender) {
+        debugLog('COURSES', 'Shell render requested (fast)');
+        return res.render('courses', {
+            isShell: true,
+            sections: [],
+            selectedSection: null,
+            folderContents: [],
+            upcomingAssignments: [],
+            overdueAssignments: [],
+            authenticated: true,
+            userName: req.session.userName
+        });
+    }
+
     try {
+        await ensureUserSession(req, res);
         const startTime = Date.now();
 
         // ⚡ Use cached sections
@@ -2118,9 +2786,12 @@ app.get('/courses', async (req, res) => {
         const allSections = await fetchAllSectionsOptimized(req.session.userId, req.session.accessToken);
         debugLog('COURSES', `✓ Found ${allSections.length} total sections`);
 
+        // Normalize and prepare enriched sections (no grades yet)
+        let enrichedAllSections = enrichSectionsWithFinalGrades(allSections, null);
+
         // Get selected section from query param, default to first section
-        const selectedSectionId = req.query.section || (allSections.length > 0 ? allSections[0].id : null);
-        const selectedSection = allSections.find(s => String(s.id) === String(selectedSectionId)) || allSections[0];
+        const selectedSectionId = req.query.section || (enrichedAllSections.length > 0 ? enrichedAllSections[0].id : null);
+        const selectedSection = enrichedAllSections.find(s => String(s.id) === String(selectedSectionId)) || enrichedAllSections[0];
 
         let folderContents = [];
         let upcomingAssignments = [];
@@ -2156,6 +2827,9 @@ app.get('/courses', async (req, res) => {
             debugLog('COURSES', `✓ Retrieved ${folderContents.length} top-level items`);
 
             const assignments = assignmentsResult;
+
+            // Enrich sections with final grades using the fetched grades result
+            enrichedAllSections = enrichSectionsWithFinalGrades(allSections, gradesResult);
 
             // Parse grades into map
             let gradesMap = {};
@@ -2211,7 +2885,8 @@ app.get('/courses', async (req, res) => {
         debugLog('COURSES', '✓ Rendering courses page');
 
         res.render('courses', {
-            sections: allSections,
+            isShell: false,
+            sections: enrichedAllSections,
             selectedSection,
             folderContents,
             upcomingAssignments,
@@ -2234,6 +2909,24 @@ app.get('/assignment', async (req, res) => {
         return res.redirect('/');
     }
 
+    const fullRender = req.get('x-full-render') === '1' || req.query.full === '1';
+    const shellRender = req.query.shell === '1' || req.get('x-shell') === '1' || !fullRender;
+    if (shellRender && !fullRender) {
+        debugLog('ASSIGNMENT', 'Shell render requested (fast)');
+        return res.render('assignment', {
+            isShell: true,
+            assignment: null,
+            section: null,
+            categoryName: null,
+            userGrade: null,
+            userSubmission: null,
+            estimatedTime: null,
+            googleDocLink: null,
+            authenticated: true,
+            userName: req.session.userName
+        });
+    }
+
     const sectionId = req.query.section;
     const assignmentId = req.query.id;
 
@@ -2242,6 +2935,7 @@ app.get('/assignment', async (req, res) => {
     }
 
     try {
+        await ensureUserSession(req, res);
         // ⚡ PARALLEL FETCH: Get assignment, section, categories, and grade simultaneously
         debugLog('ASSIGNMENT', '⚡ Starting parallel fetch...');
         const startTime = Date.now();
@@ -2359,8 +3053,12 @@ app.get('/assignment', async (req, res) => {
 
         // Add time estimate
         const estimatedTime = estimateAssignmentTime(assignment);
-
+        // Also provide enriched sections for nav (use cached fetches)
+        const allSectionsForNav = await fetchAllSectionsOptimized(req.session.userId, req.session.accessToken).catch(() => []);
+        const allGradesForNav = await fetchAllGradesOptimized(req.session.userId, req.session.accessToken).catch(() => null);
+        const enrichedSectionsForNav = enrichSectionsWithFinalGrades(allSectionsForNav, allGradesForNav);
         res.render('assignment', {
+            isShell: false,
             assignment,
             section,
             categoryName,
@@ -2368,6 +3066,7 @@ app.get('/assignment', async (req, res) => {
             userSubmission,
             estimatedTime,
             googleDocLink,
+            sections: enrichedSectionsForNav,
             authenticated: true,
             userName: req.session.userName
         });
@@ -5090,6 +5789,23 @@ app.get('/quiz', async (req, res) => {
         return res.redirect('/');
     }
 
+    const fullRender = req.get('x-full-render') === '1' || req.query.full === '1';
+    const shellRender = req.query.shell === '1' || req.get('x-shell') === '1' || !fullRender;
+    if (shellRender && !fullRender) {
+        debugLog('QUIZ', 'Shell render requested (fast)');
+        return res.render('quiz', {
+            isShell: true,
+            assignment: null,
+            section: null,
+            courseId: req.query.course,
+            sectionId: req.query.section,
+            assignmentId: req.query.id,
+            quizUrl: null,
+            authenticated: true,
+            userName: req.session.userName
+        });
+    }
+
     // Quiz page now requires section and assignment ID from query params
     const sectionId = req.query.section;
     const assignmentId = req.query.id;
@@ -5101,6 +5817,7 @@ app.get('/quiz', async (req, res) => {
     }
 
     try {
+        await ensureUserSession(req, res);
         // Fetch assignment details
         const assignmentUrl = `${config.apiBase}/sections/${sectionId}/assignments/${assignmentId}`;
         debugLog('QUIZ', `Fetching assignment from: ${assignmentUrl}`);
@@ -5114,6 +5831,7 @@ app.get('/quiz', async (req, res) => {
         debugLog('QUIZ', `✓ Section: ${section.course_title || section.section_title}`);
 
         res.render('quiz', {
+            isShell: false,
             assignment,
             section,
             courseId,
@@ -5171,7 +5889,21 @@ app.get('/focus', async (req, res) => {
         return res.redirect('/');
     }
 
+    const fullRender = req.get('x-full-render') === '1' || req.query.full === '1';
+    const shellRender = req.query.shell === '1' || req.get('x-shell') === '1' || !fullRender;
+    if (shellRender && !fullRender) {
+        debugLog('FOCUS', 'Shell render requested (fast)');
+        return res.render('focus', {
+            isShell: true,
+            assignments: [],
+            authenticated: true,
+            userName: req.session.userName,
+            active: 'focus'
+        });
+    }
+
     try {
+        await ensureUserSession(req, res);
         const startTime = Date.now();
 
         // ⚡ Use cached sections
@@ -5238,6 +5970,7 @@ app.get('/focus', async (req, res) => {
         debugLog('FOCUS', `Found ${allAssignments.length} assignments for focus mode`);
 
         res.render('focus', {
+            isShell: false,
             assignments: assignmentsWithTime,
             authenticated: true,
             userName: req.session.userName,
@@ -5258,13 +5991,27 @@ app.get('/schedule', async (req, res) => {
         return res.redirect('/');
     }
 
+    const fullRender = req.get('x-full-render') === '1' || req.query.full === '1';
+    const shellRender = req.query.shell === '1' || req.get('x-shell') === '1' || !fullRender;
+    if (shellRender && !fullRender) {
+        debugLog('SCHEDULE', 'Shell render requested (fast)');
+        return res.render('schedule', {
+            isShell: true,
+            authenticated: true,
+            userName: req.session.userName,
+            courses: []
+        });
+    }
+
     try {
+        await ensureUserSession(req, res);
         // ⚡ Use cached sections
         const courses = await fetchAllSectionsOptimized(req.session.userId, req.session.accessToken);
 
         debugLog('SCHEDULE', `Found ${courses.length} courses`);
 
         res.render('schedule', {
+            isShell: false,
             authenticated: true,
             userName: req.session.userName,
             courses
@@ -5722,7 +6469,20 @@ app.get('/settings', async (req, res) => {
         return res.redirect('/');
     }
 
+    const fullRender = req.get('x-full-render') === '1' || req.query.full === '1';
+    const shellRender = req.query.shell === '1' || req.get('x-shell') === '1' || !fullRender;
+    if (shellRender && !fullRender) {
+        debugLog('SETTINGS', 'Shell render requested (fast)');
+        return res.render('settings', {
+            isShell: true,
+            authenticated: true,
+            userName: req.session.userName,
+            courses: []
+        });
+    }
+
     try {
+        await ensureUserSession(req, res);
         // ⚡ Use cached sections
         const sections = await fetchAllSectionsOptimized(req.session.userId, req.session.accessToken);
         const courses = sections.map(s => ({
@@ -5733,6 +6493,7 @@ app.get('/settings', async (req, res) => {
         debugLog('SETTINGS', `Found ${courses.length} enrolled courses`);
 
         res.render('settings', {
+            isShell: false,
             authenticated: true,
             userName: req.session.userName,
             courses: courses
@@ -5740,6 +6501,7 @@ app.get('/settings', async (req, res) => {
     } catch (error) {
         debugLog('SETTINGS', `Error fetching courses: ${error.message}`);
         res.render('settings', {
+            isShell: false,
             authenticated: true,
             userName: req.session.userName,
             courses: []

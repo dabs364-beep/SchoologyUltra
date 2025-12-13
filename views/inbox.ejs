@@ -247,9 +247,34 @@
             </div>
             
             <div id="notification-container">
-                <div class="empty-inbox">
-                    <div class="empty-inbox-icon">📭</div>
-                    <p class="empty-inbox-text">Loading notifications...</p>
+                <div class="notification-list" aria-busy="true">
+                    <div class="notification-item">
+                        <div class="notification-icon"><div class="skeleton skeleton-circle"></div></div>
+                        <div class="notification-content" style="width: 100%;">
+                            <div class="skeleton skeleton-line lg skeleton-block" style="width: 55%; margin-bottom: var(--space-2);"></div>
+                            <div class="skeleton skeleton-line skeleton-block" style="width: 80%; margin-bottom: var(--space-2);"></div>
+                            <div class="skeleton skeleton-line sm skeleton-block" style="width: 35%;"></div>
+                        </div>
+                        <div class="notification-time"><div class="skeleton skeleton-line sm" style="width: 48px;"></div></div>
+                    </div>
+                    <div class="notification-item">
+                        <div class="notification-icon"><div class="skeleton skeleton-circle"></div></div>
+                        <div class="notification-content" style="width: 100%;">
+                            <div class="skeleton skeleton-line lg skeleton-block" style="width: 48%; margin-bottom: var(--space-2);"></div>
+                            <div class="skeleton skeleton-line skeleton-block" style="width: 76%; margin-bottom: var(--space-2);"></div>
+                            <div class="skeleton skeleton-line sm skeleton-block" style="width: 42%;"></div>
+                        </div>
+                        <div class="notification-time"><div class="skeleton skeleton-line sm" style="width: 48px;"></div></div>
+                    </div>
+                    <div class="notification-item">
+                        <div class="notification-icon"><div class="skeleton skeleton-circle"></div></div>
+                        <div class="notification-content" style="width: 100%;">
+                            <div class="skeleton skeleton-line lg skeleton-block" style="width: 60%; margin-bottom: var(--space-2);"></div>
+                            <div class="skeleton skeleton-line skeleton-block" style="width: 70%; margin-bottom: var(--space-2);"></div>
+                            <div class="skeleton skeleton-line sm skeleton-block" style="width: 32%;"></div>
+                        </div>
+                        <div class="notification-time"><div class="skeleton skeleton-line sm" style="width: 48px;"></div></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -258,9 +283,30 @@
     <script src="/js/app.js"></script>
     <script>
         let notifications = [];
+
+        function renderNotificationsSkeleton() {
+            const container = document.getElementById('notification-container');
+            if (!container) return;
+            container.innerHTML = `
+                <div class="notification-list" aria-busy="true">
+                    ${Array.from({ length: 6 }).map(() => `
+                        <div class="notification-item">
+                            <div class="notification-icon"><div class="skeleton skeleton-circle"></div></div>
+                            <div class="notification-content" style="width: 100%;">
+                                <div class="skeleton skeleton-line lg skeleton-block" style="width: 55%; margin-bottom: var(--space-2);"></div>
+                                <div class="skeleton skeleton-line skeleton-block" style="width: 82%; margin-bottom: var(--space-2);"></div>
+                                <div class="skeleton skeleton-line sm skeleton-block" style="width: 38%;"></div>
+                            </div>
+                            <div class="notification-time"><div class="skeleton skeleton-line sm" style="width: 48px;"></div></div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
         
         async function loadNotifications() {
             try {
+                renderNotificationsSkeleton();
                 const response = await fetch('/api/notifications');
                 const data = await response.json();
                 
@@ -272,6 +318,16 @@
                 }
             } catch (error) {
                 console.error('Error loading notifications:', error);
+                const container = document.getElementById('notification-container');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="empty-inbox">
+                            <div class="empty-inbox-icon">⚠️</div>
+                            <p class="empty-inbox-text">Couldn't load notifications</p>
+                            <p class="empty-inbox-subtext">Try refreshing in a moment.</p>
+                        </div>
+                    `;
+                }
             }
         }
         
@@ -462,6 +518,7 @@
             btn.disabled = true;
             
             try {
+                renderNotificationsSkeleton();
                 const response = await fetch('/api/notifications/refresh', { method: 'POST' });
                 const data = await response.json();
                 

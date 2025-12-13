@@ -160,6 +160,27 @@
         .calendar-panel {
             flex: 1;
             min-width: 0;
+            position: relative;
+        }
+
+        .calendar-loading {
+            position: absolute;
+            inset: var(--space-6);
+            border-radius: var(--radius-xl);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 150ms var(--ease-out);
+        }
+
+        .calendar-loading.active {
+            opacity: 1;
+        }
+
+        .calendar-loading-inner {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
         }
         
         .calendar-grid {
@@ -434,10 +455,47 @@
         }
     </style>
 </head>
-<body>
+    <body data-shell="<%= isShell ? '1' : '0' %>">
     <%- include('partials/nav', { active: 'schedule' }) %>
-    
-    <main class="schedule-page">
+
+        <% if (isShell) { %>
+        <main class="schedule-page">
+            <div class="schedule-header">
+                <div>
+                    <div class="skeleton skeleton-line" style="width: 180px; height: 22px; margin-bottom: 10px;"></div>
+                    <div class="skeleton skeleton-line" style="width: 320px; height: 10px;"></div>
+                </div>
+                <div class="schedule-actions" style="pointer-events: none;">
+                    <div class="skeleton skeleton-pill" style="width: 90px; height: 34px;"></div>
+                    <div class="skeleton skeleton-pill" style="width: 130px; height: 34px;"></div>
+                    <div class="skeleton skeleton-pill" style="width: 120px; height: 34px;"></div>
+                </div>
+            </div>
+
+            <div class="schedule-layout">
+                <div class="courses-panel">
+                    <div class="skeleton skeleton-line" style="width: 120px; height: 12px; margin-bottom: var(--space-3);"></div>
+                    <div class="course-list">
+                        <% for (let i = 0; i < 6; i++) { %>
+                            <div class="course-item" style="pointer-events: none;">
+                                <div class="course-color skeleton skeleton-circle" style="width: 12px; height: 12px;"></div>
+                                <div class="skeleton skeleton-line" style="width: 160px; height: 10px;"></div>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <div class="calendar-panel" style="flex: 1;">
+                    <div class="skeleton skeleton-block" style="height: 520px; border-radius: var(--radius-lg);"></div>
+                </div>
+            </div>
+        </main>
+
+        <script src="/js/app.js"></script>
+        <script src="/js/analytics.js"></script>
+        <% } else { %>
+
+        <main class="schedule-page">
         <div class="schedule-header">
             <div>
                 <h1 class="schedule-title">Class Schedule</h1>
@@ -491,6 +549,12 @@
             </div>
             
             <div class="calendar-panel">
+                <div class="calendar-loading" id="calendar-loading" aria-hidden="true">
+                    <div class="calendar-loading-inner">
+                        <div class="skeleton skeleton-line lg skeleton-block" style="width: 42%;"></div>
+                        <div class="skeleton skeleton-block" style="height: 100%; border-radius: var(--radius-lg);"></div>
+                    </div>
+                </div>
                 <div class="calendar-grid">
                     <div class="calendar-header">
                         <div class="calendar-header-cell">Time</div>
@@ -915,7 +979,9 @@
         }
         
         async function loadSchedule() {
+            const loadingEl = document.getElementById('calendar-loading');
             try {
+                if (loadingEl) loadingEl.classList.add('active');
                 const response = await fetch('/api/schedule');
                 const data = await response.json();
                 
@@ -944,6 +1010,8 @@
                 }
             } catch (error) {
                 console.error('Error loading schedule:', error);
+            } finally {
+                if (loadingEl) loadingEl.classList.remove('active');
             }
         }
         
@@ -958,5 +1026,7 @@
         initCalendar();
     </script>
     <script src="/js/analytics.js"></script>
+
+    <% } %>
 </body>
 </html>
