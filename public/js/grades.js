@@ -162,6 +162,18 @@ function updateRowComputedUI(row) {
         return;
     }
 
+    if (grade !== null && max === 0) {
+        const pillHtml = '<span class="grade-pill status-extra">Extra Credit</span>';
+        if (pill) {
+            pill.outerHTML = pillHtml;
+        } else {
+            if (actions) actions.insertAdjacentHTML('beforebegin', pillHtml);
+            else pctCell.insertAdjacentHTML('afterbegin', pillHtml);
+        }
+        if (actions && !actions.parentElement) pctCell.appendChild(actions);
+        return;
+    }
+
     if (grade === null || max === null || max <= 0) {
         if (pill) pill.remove();
         // show '-' if there's no computable percentage
@@ -333,8 +345,21 @@ function saveEditModal() {
 
     const gradeSpan = activeEditRow.querySelector('.grade-display');
     const maxSpan = activeEditRow.querySelector('.max-display');
-    if (gradeSpan) gradeSpan.textContent = scoreVal === null ? '-' : String(scoreVal);
+    if (gradeSpan) {
+        gradeSpan.textContent = scoreVal === null ? '-' : String(scoreVal);
+    } else if (scoreVal !== null) {
+        const gradeCell = activeEditRow.querySelector('.grade-value');
+        if (gradeCell) {
+            gradeCell.innerHTML = '<span class="grade-display">' + String(scoreVal) + '</span>';
+        }
+    }
     if (maxSpan) maxSpan.textContent = maxVal === null ? '-' : String(maxVal);
+    else if (maxVal !== null) {
+        const maxCell = activeEditRow.querySelector('.max-points');
+        if (maxCell) {
+            maxCell.innerHTML = '<span class="max-display">' + String(maxVal) + '</span>';
+        }
+    }
 
     updateRowComputedUI(activeEditRow);
 
@@ -617,12 +642,15 @@ function recalculateAllGrades(sectionId) {
                 }
             }
 
-            // detect edits on official rows
+            // detect edits on official rows (include previously ungraded entries getting a value)
             if (!isCustom) {
                 const o2 = getRowOriginalNumbers(row);
                 const n = getRowNumbers(row);
-                if ((n.grade !== null && o2.grade !== null && Math.abs(n.grade - o2.grade) > 0.001) ||
-                    (n.max !== null && o2.max !== null && Math.abs(n.max - o2.max) > 0.001)) {
+                const gradeDiff = (n.grade !== null && o2.grade !== null && Math.abs(n.grade - o2.grade) > 0.001);
+                const maxDiff = (n.max !== null && o2.max !== null && Math.abs(n.max - o2.max) > 0.001);
+                const gradeAdded = (n.grade !== null && o2.grade === null && row.dataset.kind === 'official');
+                const maxAdded = (n.max !== null && o2.max === null && row.dataset.kind === 'official');
+                if (gradeDiff || maxDiff || gradeAdded || maxAdded) {
                     hasChanges = true; catHasChanges = true;
                 }
             } else {

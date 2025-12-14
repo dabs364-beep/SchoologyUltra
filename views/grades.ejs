@@ -509,14 +509,20 @@
                                                             <span class="max-display"><%= grade.max_points %></span>
                                                         </td>
                                                         <td class="percentage">
-                                                            <% if (grade.grade !== null && grade.grade !== undefined && grade.exception === 0) { 
-                                                                const pct = (grade.grade / grade.max_points * 100);
+                                                            <% const hasGrade = grade.grade !== null && grade.grade !== undefined;
+                                                               const maxPoints = Number(grade.max_points);
+                                                               const isExtraCredit = hasGrade && maxPoints === 0 && grade.exception === 0;
+                                                               const canCompute = hasGrade && maxPoints > 0 && grade.exception === 0;
+                                                               const pct = canCompute ? (grade.grade / maxPoints * 100) : 0;
                                                             %>
-                                                                <span class="grade-pill <%= getGradeColorClass(pct) %>"><%= pct.toFixed(2) %>%</span>
-                                                            <% } else if (grade.exception === 1) { %>
+                                                            <% if (grade.exception === 1) { %>
                                                                 <span class="grade-pill status-excused">Excused</span>
                                                             <% } else if (grade.exception === 2) { %>
                                                                 <span class="grade-pill status-missing">Missing</span>
+                                                            <% } else if (isExtraCredit) { %>
+                                                                <span class="grade-pill status-extra">Extra Credit</span>
+                                                            <% } else if (canCompute) { %>
+                                                                <span class="grade-pill <%= getGradeColorClass(pct) %>"><%= pct.toFixed(2) %>%</span>
                                                             <% } else { %>
                                                                 <span class="no-grade">-</span>
                                                             <% } %>

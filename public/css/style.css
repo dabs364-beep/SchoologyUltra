@@ -151,6 +151,7 @@ html.dark-mode .status-missing { background: rgba(239, 68, 68, 0.2); color: #f87
 html.dark-mode .status-soon { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
 html.dark-mode .status-excused { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
 html.dark-mode .status-incomplete { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+html.dark-mode .status-extra { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
 
 /* ============================================
    LIQUID GLASS EFFECT
@@ -359,6 +360,7 @@ body::before {
 .status-soon { background: rgba(249, 115, 22, 0.15); color: #ea580c; }
 .status-excused { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
 .status-incomplete { background: rgba(234, 179, 8, 0.15); color: #ca8a04; }
+.status-extra { background: rgba(34, 197, 94, 0.15); color: #16a34a; }
 
 /* ============================================
    NAVIGATION

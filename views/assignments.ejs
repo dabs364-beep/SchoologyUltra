@@ -251,6 +251,100 @@
         html.dark-mode .custom-section {
             background: rgba(26, 26, 26, 0.6);
         }
+
+        .custom-section-heading {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+            margin-bottom: var(--space-4);
+        }
+
+        .custom-assignment-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+            align-items: center;
+        }
+
+        .custom-assignment-form input {
+            flex: 1;
+            min-width: 160px;
+            padding: var(--space-2) var(--space-3);
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-md);
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .custom-form-row {
+            display: flex;
+            gap: var(--space-3);
+            flex: 1 1 100%;
+            min-width: 0;
+        }
+
+        .custom-form-row input {
+            flex: 1;
+        }
+
+        #custom-assignments-list {
+            margin-top: var(--space-4);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .custom-assignments-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-3);
+            padding: var(--space-3);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-light);
+        }
+
+        .custom-assignments-row strong {
+            font-size: 0.95rem;
+        }
+
+        .custom-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .custom-row-meta {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            flex-wrap: wrap;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .custom-assignments-row .remove-custom {
+            background: transparent;
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-sm);
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 0.78rem;
+            transition: background var(--duration-fast);
+        }
+
+        .custom-assignments-row .remove-custom:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .custom-assignments-empty {
+            margin: 0;
+            color: var(--text-secondary);
+        }
+
+        .custom-assignments-row .custom-meta {
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body data-shell="<%= (typeof isShell !== 'undefined' && isShell) ? '1' : '0' %>">
@@ -363,7 +457,7 @@
                     </div>
                     <% } %>
                 </div>
-                <div class="assignment-list">
+                <div class="assignment-list" id="upcoming-day-list">
                     <% if (upcomingAssignments.length === 0) { %>
                         <div class="empty-state">
                             <div class="empty-state-icon">🎉</div>
@@ -673,19 +767,25 @@
             </div>
             <% } %>
 
-            <!-- Custom Assignments -->
-            <div id="customAssignments"></div>
-        </div>
-
-        <!-- Custom Assignment Section -->
-        <div class="custom-section">
-            <h3>➕ Add Custom Assignment</h3>
-            <form class="custom-form" onsubmit="addCustomAssignment(event)">
-                <input type="text" id="customTitle" placeholder="Assignment title" required>
-                <input type="text" id="customCourse" placeholder="Course name">
-                <input type="date" id="customDue">
-                <button type="submit" class="btn btn-primary btn-small">Add</button>
-            </form>
+            <div class="custom-section" id="custom-assignment-section">
+                <div class="custom-section-heading">
+                    <h3>Add a custom assignment</h3>
+                    <p>Custom entries land inside the upcoming list and persist locally in this browser.</p>
+                </div>
+                <form class="custom-assignment-form" id="custom-assignment-form">
+                    <input type="text" name="title" placeholder="Assignment title" required>
+                    <input type="text" name="course" placeholder="Course (optional)">
+                    <div class="custom-form-row">
+                        <input type="date" name="dueDate" aria-label="Due date">
+                        <input type="time" name="dueTime" aria-label="Due time">
+                        <input type="number" name="duration" min="5" step="5" placeholder="Estimate (min)" aria-label="Estimated duration in minutes">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add assignment</button>
+                </form>
+                <div id="custom-assignments-list">
+                    <p class="custom-assignments-empty">No custom assignments yet.</p>
+                </div>
+            </div>
         </div>
         <% } %>
     </main>
@@ -830,32 +930,7 @@
             updateDayCompletions();
         });
         
-        function addCustomAssignment(e) {
-            e.preventDefault();
-            const title = document.getElementById('customTitle').value;
-            const course = document.getElementById('customCourse').value || 'Custom';
-            const due = document.getElementById('customDue').value;
-            
-            // Save to cookies
-            const customs = getCookie('customAssignments') || [];
-            customs.push({
-                id: 'custom-' + Date.now(),
-                title,
-                course,
-                due: due ? new Date(due).toISOString() : null
-            });
-            setCookie('customAssignments', customs);
-            
-            showToast('Custom assignment added!', 'success');
-            
-            // Clear form
-            document.getElementById('customTitle').value = '';
-            document.getElementById('customCourse').value = '';
-            document.getElementById('customDue').value = '';
-            
-            // Reload to show
-            location.reload();
-        }
+        // Use the addCustomAssignment implementation from /js/assignments.js
     </script>
     <script src="/js/particles.js"></script>
     <script>
