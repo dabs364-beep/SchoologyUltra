@@ -377,6 +377,10 @@
             </div>
         </div>
 
+        <!-- Overall statistics (computed client-side, includes edits/custom rows) -->
+        <div class="grade-stats-box grade-stats-overall" id="overall-grade-stats" aria-live="polite"></div>
+        <div class="grade-stats-debug" id="overall-grade-stats-debug" aria-live="polite"></div>
+
         <div class="grades-container">
             <% if (gradesData.length === 0) { %>
                 <div class="empty-state">
@@ -384,7 +388,7 @@
                 </div>
             <% } else { %>
                 <% gradesData.forEach((course, index) => { %>
-                    <div class="course-card" data-section="<%= course.section_id %>">
+                    <div class="course-card" data-section="<%= course.section_id %>" data-course-name="<%= course.course_name || '' %>">
                         <div class="course-header course-toggle" data-course-index="<%= index %>">
                             <div class="course-info">
                                 <h2><%= course.course_name %></h2>
@@ -423,6 +427,9 @@
                         </div>
                         
                         <div class="course-grades" id="course-<%= index %>" style="display: none;">
+                            <!-- Section statistics (computed client-side, includes edits/custom rows) -->
+                            <div class="grade-stats-box grade-stats-section" id="section-grade-stats-<%= course.section_id %>" aria-live="polite"></div>
+
                             <!-- Hidden: earned/total points -->
                             <div class="grade-summary" style="display: none;">
                                 <span>Earned: <strong id="earned-<%= course.section_id %>"><%= course.earnedPoints.toFixed(2) %></strong></span>
@@ -481,6 +488,8 @@
                                                         data-section="<%= course.section_id %>" 
                                                         data-assignment="<%= grade.assignment_id %>"
                                                         data-kind="official"
+                                                        data-due-ts="<%= (grade.due && grade.due.trim() !== '') ? new Date(grade.due).getTime() : '' %>"
+                                                        data-graded-ts="<%= (grade.timestamp !== null && grade.timestamp !== undefined && String(grade.timestamp) !== '') ? (Number(grade.timestamp) * 1000) : '' %>"
                                                         data-original-grade="<%= (grade.grade !== null && grade.grade !== undefined) ? grade.grade : '' %>"
                                                         data-original-max="<%= grade.max_points %>"
                                                         data-current-grade="<%= (grade.grade !== null && grade.grade !== undefined) ? grade.grade : '' %>"

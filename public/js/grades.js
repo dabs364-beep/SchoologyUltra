@@ -10,6 +10,950 @@ let customIdCounter = 1;
 
 let activeEditRow = null;
 
+// Stats rendering (overall + per section)
+let overallStatsRaf = null;
+
+function scheduleOverallStatsUpdate() {
+    if (overallStatsRaf) return;
+    overallStatsRaf = requestAnimationFrame(() => {
+        overallStatsRaf = null;
+        try { renderOverallGradeStats(); } catch (e) { /* non-fatal */ }
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text === null || text === undefined ? '' : String(text);
+    return div.innerHTML;
+}
+
+function toNumberOrNull(v) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+}
+
+function mean(nums) {
+    if (!nums || nums.length === 0) return null;
+    return nums.reduce((s, x) => s + x, 0) / nums.length;
+}
+
+function median(nums) {
+    if (!nums || nums.length === 0) return null;
+    const a = nums.slice().sort((x, y) => x - y);
+    const mid = Math.floor(a.length / 2);
+    return (a.length % 2) ? a[mid] : (a[mid - 1] + a[mid]) / 2;
+}
+
+function stdDev(nums) {
+    if (!nums || nums.length === 0) return null;
+    if (nums.length === 1) return 0;
+    const m = mean(nums);
+    const v = nums.reduce((s, x) => s + Math.pow(x - m, 2), 0) / nums.length; // population std dev
+    return Math.sqrt(v);
+}
+
+function linearRegressionSlope(xs, ys) {
+    if (!xs || !ys || xs.length !== ys.length || xs.length < 2) return null;
+    const n = xs.length;
+    const xMean = xs.reduce((s, x) => s + x, 0) / n;
+    const yMean = ys.reduce((s, y) => s + y, 0) / n;
+    let num = 0;
+    let den = 0;
+    for (let i = 0; i < n; i++) {
+        const dx = xs[i] - xMean;
+        num += dx * (ys[i] - yMean);
+        den += dx * dx;
+    }
+    if (den === 0) return 0;
+    return num / den;
+}
+
+function formatPct(v, decimals = 2) {
+    if (v === null || v === undefined || !Number.isFinite(v)) return 'N/A';
+    return v.toFixed(decimals) + '%';
+}
+
+function formatSignedPct(v, decimals = 2) {
+    if (v === null || v === undefined || !Number.isFinite(v)) return 'N/A';
+    const sign = v > 0 ? '+' : '';
+    return sign + v.toFixed(decimals) + '%';
+}
+
+function pctToGpa(pct) {
+    if (pct === null || pct === undefined || !Number.isFinite(pct)) return 0;
+    if (pct >= 93) return 4.0;
+    if (pct >= 90) return 3.7;
+    if (pct >= 87) return 3.3;
+    if (pct >= 83) return 3.0;
+    if (pct >= 80) return 2.7;
+    if (pct >= 77) return 2.3;
+    if (pct >= 73) return 2.0;
+    if (pct >= 70) return 1.7;
+    if (pct >= 67) return 1.3;
+    if (pct >= 63) return 1.0;
+    if (pct >= 60) return 0.7;
+    return 0;
+}
+
+const MIN_VALID_EPOCH_MS = 946684800000; // 2000-01-01; filters out 0/placeholder timestamps
+
+function getRowTimeMs(row) {
+    // Prefer API "graded" timestamp if present; otherwise use due timestamp.
+    const graded = row?.dataset?.gradedTs !== undefined && row.dataset.gradedTs !== '' ? toNumberOrNull(row.dataset.gradedTs) : null;
+    if (graded !== null && graded >= MIN_VALID_EPOCH_MS) return graded;
+    const due = row?.dataset?.dueTs !== undefined && row.dataset.dueTs !== '' ? toNumberOrNull(row.dataset.dueTs) : null;
+    if (due !== null && due >= MIN_VALID_EPOCH_MS) return due;
+    return null;
+}
+
+function isLikelyEpochMs(x) {
+    // Epoch ms is currently ~1.7e12; use a generous lower bound.
+    return Number.isFinite(x) && x > 1000 * 1000 * 1000 * 10;
+}
+
+function formatShortDate(ms) {
+    try {
+        const d = new Date(ms);
+        if (Number.isNaN(d.getTime())) return '';
+        return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    } catch (e) {
+        return '';
+    }
+}
+
+function getAssignmentNameFromRow(row) {
+    try {
+        const td = row ? row.querySelector('.assignment-name') : null;
+        if (!td) return 'Assignment';
+        // Prefer the first text node (avoids including the CUSTOM badge text).
+        const firstTextNode = Array.from(td.childNodes).find(n => n.nodeType === Node.TEXT_NODE && String(n.textContent).trim() !== '');
+        const raw = (firstTextNode ? firstTextNode.textContent : td.textContent) || '';
+        return String(raw).replace(/\s+/g, ' ').trim() || 'Assignment';
+    } catch (e) {
+        return 'Assignment';
+    }
+}
+
+function getCategoryNameFromRow(row) {
+    try {
+        const catSection = row ? row.closest('.category-section') : null;
+        const titleEl = catSection ? catSection.querySelector('.category-title') : null;
+        const t = titleEl ? titleEl.textContent : '';
+        return String(t || '').replace(/\s+/g, ' ').trim() || 'Category';
+    } catch (e) {
+        return 'Category';
+    }
+}
+
+function buildAssignmentTooltip(row, courseCard, grade, max) {
+    const assignmentName = getAssignmentNameFromRow(row);
+    const categoryName = getCategoryNameFromRow(row);
+    const courseName = (courseCard && courseCard.dataset && courseCard.dataset.courseName)
+        ? courseCard.dataset.courseName
+        : (courseCard?.querySelector('.course-info h2')?.textContent || 'Course');
+
+    let gradeLine = '';
+    if (grade === null || max === null) {
+        gradeLine = 'Grade: N/A';
+    } else if (max > 0) {
+        const pct = (grade / max) * 100;
+        gradeLine = 'Grade: ' + grade + '/' + max + (Number.isFinite(pct) ? (' (' + pct.toFixed(2) + '%)') : '');
+    } else if (max === 0) {
+        gradeLine = 'Grade: +' + grade + ' (extra credit)';
+    } else {
+        gradeLine = 'Grade: ' + grade + '/' + max;
+    }
+
+    return courseName + '\n' + categoryName + ' • ' + assignmentName + '\n' + gradeLine;
+}
+
+function buildAssignmentMeta(row, courseCard, grade, max) {
+    const assignmentName = getAssignmentNameFromRow(row);
+    const categoryName = getCategoryNameFromRow(row);
+    const courseName = (courseCard && courseCard.dataset && courseCard.dataset.courseName)
+        ? courseCard.dataset.courseName
+        : (courseCard?.querySelector('.course-info h2')?.textContent || 'Course');
+
+    const dropped = !!(row && row.classList && row.classList.contains('dropped'));
+    const tooltip = buildAssignmentTooltip(row, courseCard, grade, max);
+
+    return {
+        courseName,
+        categoryName,
+        assignmentName,
+        grade,
+        max,
+        dropped,
+        tooltip
+    };
+}
+
+function computeRunningMeanSeries(rows) {
+    const items = [];
+    rows.forEach((row, idx) => {
+        if (!row) return;
+        if (row.classList.contains('dropped')) return;
+
+        const { grade, max } = getRowNumbers(row);
+        if (grade === null || max === null) return;
+        if (max <= 0) return; // ignore extra credit (0) and invalid
+
+        const pct = (grade / max) * 100;
+        if (!Number.isFinite(pct)) return;
+
+        const ts = getRowTimeMs(row);
+        // If no usable timestamp, fall back to row order so the point still exists.
+        const x = (ts !== null) ? ts : idx;
+
+        items.push({ x, pct });
+    });
+
+    // If most timestamps are real (ms), ordering is meaningful; if some are indices, they still sort last/first consistently.
+    items.sort((a, b) => a.x - b.x);
+
+    const points = [];
+    let sum = 0;
+    let count = 0;
+    for (const it of items) {
+        sum += it.pct;
+        count++;
+        points.push({ x: it.x, y: sum / count, pct: it.pct, n: count });
+    }
+
+    return points;
+}
+
+function computeSectionGradeEvents(sectionId) {
+    const courseCard = document.querySelector('.course-card[data-section="' + sectionId + '"]');
+    if (!courseCard) return [];
+
+    const categorySections = Array.from(courseCard.querySelectorAll('.category-section'));
+    if (!categorySections.length) return [];
+
+    const categories = categorySections.map((catSection, idx) => {
+        const weight = parseFloat(catSection.dataset.weight) || 0;
+        const rows = Array.from(catSection.querySelectorAll('tr.grade-row'));
+        return {
+            index: idx,
+            weight,
+            rows,
+            earned: 0,
+            max: 0
+        };
+    });
+
+    const weightedMode = categories.some(c => c.weight > 0);
+
+    // Build a chronological list of assignment events (every row is a point).
+    const events = [];
+    let tsCount = 0;
+    let minTs = null;
+    let maxTs = null;
+    let fallbackIndex = 0;
+
+    categories.forEach((cat, catIdx) => {
+        cat.rows.forEach(row => {
+            if (!row) return;
+            const dropped = row.classList.contains('dropped');
+
+            const n = getRowNumbers(row);
+            const grade = n.grade;
+            const max = n.max;
+
+            // Every row should get a point. Only some rows affect the grade.
+            const affectsGrade = !dropped && grade !== null && max !== null && max >= 0;
+
+            const ts = getRowTimeMs(row);
+            if (ts !== null) {
+                tsCount++;
+                minTs = (minTs === null) ? ts : Math.min(minTs, ts);
+                maxTs = (maxTs === null) ? ts : Math.max(maxTs, ts);
+            }
+
+            events.push({ x: null, ts, fallbackIndex, row, catIdx, grade, max, affectsGrade });
+            fallbackIndex++;
+        });
+    });
+
+    // X-axis fallback:
+    // - If we have <2 real timestamps (or no range), use stable index order for everyone.
+    // - Otherwise, keep real timestamps, and spread missing-timestamp rows across the observed range
+    //   by their stable row order so points don't pile up at the far right.
+    const hasUsableTimeRange = (tsCount >= 2) && (minTs !== null) && (maxTs !== null) && (maxTs > minTs);
+    const maxIdx = Math.max(1, fallbackIndex - 1);
+    events.forEach(ev => {
+        if (hasUsableTimeRange) {
+            if (ev.ts !== null) ev.x = ev.ts;
+            else ev.x = minTs + (ev.fallbackIndex / maxIdx) * (maxTs - minTs);
+        } else {
+            ev.x = ev.fallbackIndex;
+        }
+    });
+
+    events.sort((a, b) => a.x - b.x);
+
+    const out = [];
+    for (const ev of events) {
+        const cat = categories[ev.catIdx];
+        if (!cat) continue;
+
+        if (ev.affectsGrade) {
+            // max === 0 => extra credit: include earned, but not max
+            if (ev.max > 0) {
+                cat.earned += ev.grade;
+                cat.max += ev.max;
+            } else if (ev.max === 0) {
+                cat.earned += ev.grade;
+            }
+        }
+
+        // Compute the current section grade using the same rules as recalculateAllGrades().
+        let sectionPct = 0;
+        let sumNewContrib = 0;
+
+        if (weightedMode) {
+            const totalActiveWeight = categories.reduce((s, c) => s + (c.weight > 0 && c.max > 0 ? c.weight : 0), 0);
+            if (totalActiveWeight > 0) {
+                categories.forEach(c => {
+                    if (!(c.weight > 0 && c.max > 0)) return;
+                    const pct = (c.earned / c.max) * 100;
+                    if (!Number.isFinite(pct)) return;
+                    sumNewContrib += pct * (c.weight / totalActiveWeight);
+                });
+            }
+        }
+
+        // If not weighted mode, or weighted mode has no active weighted categories, fall back to points-based.
+        if (!weightedMode || sumNewContrib === 0) {
+            const sectionMax = categories.reduce((s, c) => s + (c.max > 0 ? c.max : 0), 0);
+            if (sectionMax > 0) {
+                const sectionEarned = categories.reduce((s, c) => s + (Number.isFinite(c.earned) ? c.earned : 0), 0);
+                sectionPct = (sectionEarned / sectionMax) * 100;
+            } else {
+                sectionPct = 0;
+            }
+        } else {
+            sectionPct = sumNewContrib;
+        }
+
+        if (Number.isFinite(sectionPct)) {
+            out.push({
+                x: ev.x,
+                y: sectionPct,
+                meta: buildAssignmentMeta(ev.row, courseCard, ev.grade, ev.max)
+            });
+        }
+    }
+
+    return out;
+}
+
+function computeSectionGradeSeries(sectionId) {
+    return computeSectionGradeEvents(sectionId).map(p => ({
+        x: p.x,
+        y: p.y,
+        tooltip: p.meta?.tooltip,
+        assignmentName: p.meta?.assignmentName,
+        categoryName: p.meta?.categoryName,
+        courseName: p.meta?.courseName,
+        grade: p.meta?.grade,
+        max: p.meta?.max,
+        dropped: p.meta?.dropped
+    }));
+}
+
+function computeOverallMeanSectionGradeSeries() {
+    const courseCards = Array.from(document.querySelectorAll('.course-card[data-section]'));
+    const perSectionEvents = courseCards
+        .map(card => {
+            const sectionId = card.dataset.section;
+            const series = sectionId ? computeSectionGradeEvents(sectionId) : [];
+            return { sectionId, series };
+        })
+        .filter(s => s.sectionId && s.series && s.series.length);
+
+    if (!perSectionEvents.length) return [];
+
+    // Merge all section events so the overall chart has a point per assignment event.
+    const merged = [];
+    perSectionEvents.forEach(s => {
+        s.series.forEach(p => merged.push({
+            sectionId: s.sectionId,
+            x: p.x,
+            y: p.y,
+            meta: p.meta
+        }));
+    });
+    merged.sort((a, b) => a.x - b.x);
+
+    // Keep latest grade per section to compute mean after each event.
+    const latest = new Map();
+    const points = [];
+
+    for (const ev of merged) {
+        latest.set(ev.sectionId, ev.y);
+        let sum = 0;
+        let count = 0;
+        latest.forEach(v => {
+            if (v !== null && Number.isFinite(v)) {
+                sum += v;
+                count++;
+            }
+        });
+
+        if (count > 0) {
+            points.push({
+                x: ev.x,
+                y: sum / count,
+                tooltip: ev.meta?.tooltip,
+                assignmentName: ev.meta?.assignmentName,
+                categoryName: ev.meta?.categoryName,
+                courseName: ev.meta?.courseName,
+                grade: ev.meta?.grade,
+                max: ev.meta?.max,
+                dropped: ev.meta?.dropped
+            });
+        }
+    }
+
+    return points;
+}
+
+function renderMeanOverTimeChart(containerEl, points, ariaLabel, options = {}) {
+    if (!containerEl) return;
+    if (!points || points.length === 0) {
+        containerEl.innerHTML = '<div class="muted">No graded assignments yet.</div>';
+        return;
+    }
+
+    const width = 640;
+    const height = 180;
+    const padLeft = 32;
+    const padRight = 12;
+    const padTop = 16;
+    const padBottom = 18;
+
+    points.forEach((p, idx) => { p.__graphIndex = idx; });
+    const xs = points.map(p => p.x);
+    const ys = points.map(p => p.y);
+
+    let xMin = Math.min(...xs);
+    let xMax = Math.max(...xs);
+    const earliestDueMs = options.timelineStartMs ?? null;
+    const latestBoundMs = options.timelineEndMs ?? Date.now();
+    const hasEpochTime = xs.some(v => isLikelyEpochMs(v));
+    if (earliestDueMs !== null && Number.isFinite(earliestDueMs) && hasEpochTime) {
+        xMin = Math.min(xMin, earliestDueMs);
+    }
+    if (latestBoundMs !== null && Number.isFinite(latestBoundMs) && hasEpochTime) {
+        xMax = Math.max(xMax, latestBoundMs);
+    }
+    if (xMin === xMax) xMax = xMin + 1;
+
+    const gradeMin = Math.min(...ys);
+    const gradeMax = Math.max(...ys);
+    let yMin = Number.isFinite(gradeMin) ? gradeMin - 5 : 0;
+    if (!Number.isFinite(yMin)) yMin = 0;
+    let yMax = Math.max(gradeMax, 100);
+    if (yMin < 0) yMin = 0;
+    const span = yMax - yMin;
+    // Ensure at least a small padding so flat lines remain visible.
+    if (span < 20) {
+        const mid = (yMax + yMin) / 2;
+        yMin = Math.max(0, mid - 10);
+        yMax = Math.min(100, mid + 10);
+        if (yMin === 0 && yMax - yMin < 20) {
+            yMax = yMin + 20;
+        }
+    }
+    if (yMin === yMax) {
+        yMin -= 1;
+        yMax += 1;
+    } else {
+        const padY = (yMax - yMin) * 0.08;
+        yMin = Math.max(0, yMin - padY);
+        yMax += padY;
+    }
+
+    const xSpan = xMax - xMin;
+    const xRange = xSpan === 0 ? 1 : xSpan;
+    const yRange = Math.max(0.1, yMax - yMin);
+    const xScale = (x) => padLeft + ((x - xMin) / xRange) * (width - padLeft - padRight);
+    const yScale = (y) => (height - padBottom) - ((y - yMin) / yRange) * (height - padTop - padBottom);
+
+    const d = points
+        .map((p, i) => (i === 0 ? 'M' : 'L') + xScale(p.x).toFixed(2) + ' ' + yScale(p.y).toFixed(2))
+        .join(' ');
+
+    const bottomY = height - padBottom;
+    const circles = points
+            .map(p => {
+                const cx = xScale(p.x).toFixed(2);
+                const cy = yScale(p.y).toFixed(2);
+                const tip = p && p.tooltip ? String(p.tooltip) : null;
+                return (
+                    '<g data-index="' + p.__graphIndex + '">' +
+                        '<circle class="grade-stats-point" data-index="' + p.__graphIndex + '" cx="' + cx + '" cy="' + cy + '" r="3.2" fill="var(--accent-primary)" opacity="0.95" />' +
+                        (tip ? ('<title>' + escapeHtml(tip) + '</title>') : '') +
+                    '</g>'
+                );
+            })
+            .join('');
+
+    const areaPath = [];
+    if (points.length) {
+        areaPath.push('M ' + xScale(points[0].x).toFixed(2) + ' ' + bottomY.toFixed(2));
+        areaPath.push('L ' + xScale(points[0].x).toFixed(2) + ' ' + yScale(points[0].y).toFixed(2));
+        for (let i = 1; i < points.length; i++) {
+            areaPath.push('L ' + xScale(points[i].x).toFixed(2) + ' ' + yScale(points[i].y).toFixed(2));
+        }
+        areaPath.push('L ' + xScale(points[points.length - 1].x).toFixed(2) + ' ' + bottomY.toFixed(2));
+        areaPath.push('Z');
+    }
+
+    // Minimal axis labels: y min/mid/max, and x start/end when timestamps.
+    const yTicks = [yMax, (yMin + yMax) / 2, yMin];
+    const yLabelX = 6;
+    const yLabels = yTicks
+        .map(v => {
+            const y = yScale(v).toFixed(2);
+            const labelText = Number.isFinite(v) ? (v.toFixed(0) + '%') : '';
+            return (
+                '<g>' +
+                        '<line x1="' + padLeft + '" y1="' + y + '" x2="' + (width - padRight) + '" y2="' + y + '" stroke="var(--border-medium)" stroke-width="1" opacity="0.35" />' +
+                        '<text x="' + yLabelX + '" y="' + (Number(y) - 2) + '" font-size="10" fill="var(--text-tertiary)" text-anchor="start">' + escapeHtml(labelText) + '</text>' +
+                '</g>'
+            );
+        })
+        .join('');
+
+    const xIsMs = isLikelyEpochMs(xMin) && isLikelyEpochMs(xMax);
+    const xStart = xIsMs ? formatShortDate(xMin) : '';
+    const xEnd = xIsMs ? formatShortDate(xMax) : '';
+    const xLabels = xIsMs
+        ? (
+            '<text x="' + padLeft + '" y="' + (height - 2) + '" font-size="10" fill="var(--text-tertiary)">' + escapeHtml(xStart) + '</text>' +
+            '<text x="' + (width - padRight) + '" y="' + (height - 2) + '" font-size="10" fill="var(--text-tertiary)" text-anchor="end">' + escapeHtml(xEnd) + '</text>'
+        )
+        : '';
+
+    const label = ariaLabel ? String(ariaLabel) : 'Grade over time';
+
+    containerEl.innerHTML =
+        '<svg class="grade-stats-svg" viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="' + escapeHtml(label) + '">' +
+            yLabels +
+            (areaPath.length ? ('<path class="grade-stats-area" d="' + areaPath.join(' ') + '" />') : '') +
+            '<path d="' + d + '" fill="none" stroke="var(--accent-primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" />' +
+            circles +
+            // hover dotted line
+            '<line class="chart-hover-line" x1="0" y1="' + padTop + '" x2="0" y2="' + (height - padBottom) + '" stroke="var(--text-tertiary)" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.9" style="display:none;" />' +
+            // selected assignment solid line (bottom up to point)
+            '<line class="chart-selected-line" x1="0" y1="' + (height - padBottom) + '" x2="0" y2="' + (height - padBottom) + '" stroke="var(--accent-primary)" stroke-width="2" opacity="0.85" style="display:none;" />' +
+            xLabels +
+        '</svg>';
+
+    // Hover UI: dotted line at cursor, and solid line to nearest assignment point.
+    try {
+        const svg = containerEl.querySelector('svg.grade-stats-svg');
+        if (!svg) return;
+
+        let tip = containerEl.querySelector('.grade-stats-hover-tip');
+        if (!tip) {
+            tip = document.createElement('div');
+            tip.className = 'grade-stats-hover-tip';
+            containerEl.appendChild(tip);
+        }
+
+        const hoverLine = svg.querySelector('.chart-hover-line');
+        const selectedLine = svg.querySelector('.chart-selected-line');
+        let activeCircle = null;
+
+        const pts = points.slice().sort((a, b) => a.x - b.x);
+        const xsSorted = pts.map(p => p.x);
+
+        function nearestIndex(xVal) {
+            // binary search for insertion index
+            let lo = 0;
+            let hi = xsSorted.length;
+            while (lo < hi) {
+                const mid = (lo + hi) >> 1;
+                if (xsSorted[mid] < xVal) lo = mid + 1;
+                else hi = mid;
+            }
+            if (lo <= 0) return 0;
+            if (lo >= xsSorted.length) return xsSorted.length - 1;
+            const left = lo - 1;
+            const right = lo;
+            return (Math.abs(xsSorted[left] - xVal) <= Math.abs(xsSorted[right] - xVal)) ? left : right;
+        }
+
+        function interpolateY(xVal) {
+            if (!pts.length) return null;
+            if (xVal <= pts[0].x) return pts[0].y;
+            if (xVal >= pts[pts.length - 1].x) return pts[pts.length - 1].y;
+
+            let i = nearestIndex(xVal);
+            // Ensure we have a bracket [i, i+1] where pts[i].x <= xVal <= pts[i+1].x
+            if (pts[i].x > xVal) i = Math.max(0, i - 1);
+            const j = Math.min(pts.length - 1, i + 1);
+            if (i === j) return pts[i].y;
+            const x0 = pts[i].x;
+            const x1 = pts[j].x;
+            const y0 = pts[i].y;
+            const y1 = pts[j].y;
+            if (x1 === x0) return y1;
+            const t = (xVal - x0) / (x1 - x0);
+            return y0 + (y1 - y0) * t;
+        }
+
+        function show() {
+            if (hoverLine) hoverLine.style.display = '';
+            if (selectedLine) selectedLine.style.display = '';
+            if (tip) tip.style.display = 'block';
+        }
+
+        function hide() {
+            if (hoverLine) hoverLine.style.display = 'none';
+            if (selectedLine) selectedLine.style.display = 'none';
+            if (tip) tip.style.display = 'none';
+            if (activeCircle) {
+                const original = activeCircle.dataset.originalRadius || '3.2';
+                activeCircle.setAttribute('r', original);
+                activeCircle.classList.remove('active');
+                activeCircle = null;
+            }
+        }
+
+        function onMove(e) {
+            const rect = svg.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+            const relX = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+            const xVal = xMin + relX * (xMax - xMin);
+
+            const yVal = interpolateY(xVal);
+            const nearest = nearestIndex(xVal);
+            const p = pts[nearest];
+
+            const xPx = xScale(xVal);
+            if (hoverLine) {
+                hoverLine.setAttribute('x1', String(xPx));
+                hoverLine.setAttribute('x2', String(xPx));
+            }
+
+            if (p && selectedLine) {
+                const px = xScale(p.x);
+                const py = yScale(p.y);
+                selectedLine.setAttribute('x1', String(px));
+                selectedLine.setAttribute('x2', String(px));
+                selectedLine.setAttribute('y2', String(py));
+            }
+
+            const timeLabel = (xIsMs && isLikelyEpochMs(xVal)) ? formatShortDate(xVal) : '';
+            const pctLabel = (yVal !== null && Number.isFinite(yVal)) ? (yVal.toFixed(2) + '%') : 'N/A';
+
+            let closestLine = 'Closest: N/A';
+            if (p) {
+                const name = p.assignmentName || 'Assignment';
+                const cat = p.categoryName || 'Category';
+                const course = p.courseName || '';
+                const g = p.grade;
+                const m = p.max;
+                let gm = 'Grade: N/A';
+                if (g !== null && g !== undefined && m !== null && m !== undefined) {
+                    if (m > 0) {
+                        const pp = (g / m) * 100;
+                        gm = 'Grade: ' + g + '/' + m + (Number.isFinite(pp) ? (' (' + pp.toFixed(2) + '%)') : '');
+                    } else if (m === 0) {
+                        gm = 'Grade: +' + g + ' (extra credit)';
+                    } else {
+                        gm = 'Grade: ' + g + '/' + m;
+                    }
+                }
+                closestLine = 'Closest: ' + (course ? (course + ' • ') : '') + cat + ' • ' + name + (p.dropped ? ' (dropped)' : '') + ' — ' + gm;
+            }
+
+            tip.textContent = (timeLabel ? (timeLabel + ' • ') : '') + pctLabel + '\n' + closestLine;
+            show();
+            if (activeCircle) {
+                const original = activeCircle.dataset.originalRadius || '3.2';
+                activeCircle.setAttribute('r', original);
+                activeCircle.classList.remove('active');
+                activeCircle = null;
+            }
+            if (p) {
+                const circleIdx = p.__graphIndex;
+                const circleEl = svg.querySelector('circle.grade-stats-point[data-index="' + circleIdx + '"]');
+                if (circleEl) {
+                    const baseRadius = circleEl.getAttribute('r') || '3.2';
+                    circleEl.dataset.originalRadius = circleEl.dataset.originalRadius || baseRadius;
+                    circleEl.setAttribute('r', (Number(baseRadius) + 1).toFixed(1));
+                    circleEl.classList.add('active');
+                    activeCircle = circleEl;
+                }
+            }
+        }
+
+        svg.addEventListener('mouseenter', show);
+        svg.addEventListener('mouseleave', hide);
+        svg.addEventListener('mousemove', onMove);
+        hide();
+    } catch (e) {
+        // non-fatal
+    }
+}
+
+function pickTrendLabel(slope, unitLabel) {
+    if (slope === null || !Number.isFinite(slope)) return { label: 'N/A', detail: '' };
+    const unit = unitLabel || 'day';
+    // Thresholds tuned to avoid noisy flips
+    if (slope > 0.25) return { label: 'Rising', detail: formatSignedPct(slope, 2) + '/' + unit };
+    if (slope < -0.25) return { label: 'Falling', detail: formatSignedPct(slope, 2) + '/' + unit };
+    return { label: 'Flat', detail: formatSignedPct(slope, 2) + '/' + unit };
+}
+
+function computeSectionAssignmentStats(sectionId) {
+    const courseCard = document.querySelector('.course-card[data-section="' + sectionId + '"]');
+    if (!courseCard) return null;
+
+    const rows = Array.from(courseCard.querySelectorAll('tr.grade-row[data-section="' + sectionId + '"]'));
+
+    let droppedCount = 0;
+    let ungradedCount = 0;
+    let extraCreditPoints = 0;
+
+    const pcts = [];
+    const xs = [];
+    const ys = [];
+
+    // For trend: prefer due timestamps; otherwise use row order.
+    // Use days as x-axis to make the slope interpretable.
+    const now = Date.now();
+    let hasAnyDueTs = false;
+    rows.forEach((row, idx) => {
+        const dropped = row.classList.contains('dropped');
+        if (dropped) {
+            droppedCount++;
+            return;
+        }
+
+        const { grade, max } = getRowNumbers(row);
+        if (grade === null || max === null) {
+            ungradedCount++;
+            return;
+        }
+        if (max === 0) {
+            // extra credit
+            extraCreditPoints += grade;
+            return;
+        }
+        if (max < 0) return;
+        if (max === 0) return;
+
+        const pct = (max > 0) ? (grade / max) * 100 : null;
+        if (pct === null || !Number.isFinite(pct)) return;
+        pcts.push(pct);
+
+        const dueTsRaw = row.dataset.dueTs;
+        const dueTs = dueTsRaw !== undefined && dueTsRaw !== '' ? toNumberOrNull(dueTsRaw) : null;
+        if (dueTs !== null) hasAnyDueTs = true;
+
+        const xDays = (dueTs !== null ? (dueTs - now) : idx) / (24 * 60 * 60 * 1000);
+        xs.push(xDays);
+        ys.push(pct);
+    });
+
+    // If no due timestamps exist, re-map x to sequential 0..n-1 in days.
+    if (!hasAnyDueTs && xs.length >= 2) {
+        for (let i = 0; i < xs.length; i++) xs[i] = i;
+    }
+
+    const avg = mean(pcts);
+    const med = median(pcts);
+    const sd = stdDev(pcts);
+
+    const last5 = pcts.slice(-5);
+    const last5Avg = mean(last5);
+
+    // Slope is % per day (or % per assignment when no due dates)
+    const slope = (xs.length >= 2) ? linearRegressionSlope(xs, ys) : null;
+    const trend = pickTrendLabel(slope, hasAnyDueTs ? 'day' : 'assignment');
+
+    // Simple streak: compare last 3 average vs previous 3
+    let momentum = 'N/A';
+    if (pcts.length >= 6) {
+        const tail = pcts.slice(-3);
+        const prev = pcts.slice(-6, -3);
+        const delta = mean(tail) - mean(prev);
+        momentum = formatSignedPct(delta, 2);
+    }
+
+    // Consistency score: 100 - stddev, clamped
+    let consistency = null;
+    if (sd !== null) {
+        consistency = Math.max(0, Math.min(100, 100 - sd));
+    }
+
+    return {
+        count: pcts.length,
+        droppedCount,
+        ungradedCount,
+        extraCreditPoints,
+        mean: avg,
+        median: med,
+        stdDev: sd,
+        last5Avg,
+        slope,
+        trend,
+        momentum,
+        consistency
+    };
+}
+
+function renderSectionGradeStats(sectionId) {
+    const box = document.getElementById('section-grade-stats-' + sectionId);
+    if (!box) return;
+
+    const courseCard = document.querySelector('.course-card[data-section="' + sectionId + '"]');
+    if (!courseCard) return;
+
+    const stats = computeSectionAssignmentStats(sectionId);
+    if (!stats) return;
+
+    const computedPct = toNumberOrNull(courseCard.dataset.computedPct);
+    const originalPct = toNumberOrNull(courseCard.dataset.originalPct);
+    const deltaPct = (computedPct !== null && originalPct !== null) ? (computedPct - originalPct) : null;
+
+    const title = courseCard.dataset.courseName || courseCard.querySelector('.course-info h2')?.textContent || 'Section';
+    const trendText = stats.trend.label + (stats.trend.detail ? ' (' + stats.trend.detail + ')' : '');
+
+    box.innerHTML =
+        '<div class="grade-stats-header">' +
+            '<div class="grade-stats-title">' + escapeHtml(title) + ' • Statistics</div>' +
+            '<div class="grade-stats-chip">' +
+                (computedPct !== null ? (formatPct(computedPct) + ' ' + getLetterGrade(computedPct)) : 'N/A') +
+                (deltaPct !== null ? (' • ' + formatSignedPct(deltaPct)) : '') +
+            '</div>' +
+        '</div>' +
+        '<div class="grade-stats-grid">' +
+            '<div class="grade-stats-metric"><div class="k">Mean</div><div class="v">' + formatPct(stats.mean) + '</div></div>' +
+            '<div class="grade-stats-metric"><div class="k">Median</div><div class="v">' + formatPct(stats.median) + '</div></div>' +
+            '<div class="grade-stats-metric"><div class="k">Std dev</div><div class="v">' + (stats.stdDev !== null ? stats.stdDev.toFixed(2) : 'N/A') + '</div></div>' +
+            '<div class="grade-stats-metric"><div class="k">Last 5 avg</div><div class="v">' + formatPct(stats.last5Avg) + '</div></div>' +
+            '<div class="grade-stats-metric"><div class="k">Trend</div><div class="v">' + escapeHtml(trendText) + '</div></div>' +
+            '<div class="grade-stats-metric"><div class="k">Momentum</div><div class="v">' + escapeHtml(String(stats.momentum)) + '</div></div>' +
+            '<div class="grade-stats-metric"><div class="k">Consistency</div><div class="v">' + (stats.consistency !== null ? stats.consistency.toFixed(0) + '/100' : 'N/A') + '</div></div>' +
+            '<div class="grade-stats-metric"><div class="k">Count</div><div class="v">' + stats.count + ' graded' + (stats.ungradedCount ? (' • ' + stats.ungradedCount + ' ungraded') : '') + (stats.droppedCount ? (' • ' + stats.droppedCount + ' dropped') : '') + '</div></div>' +
+        '</div>' +
+        '<div class="grade-stats-chart" id="section-grade-chart-' + sectionId + '"></div>';
+
+    try {
+        const rows = Array.from(courseCard.querySelectorAll('tr.grade-row[data-section="' + sectionId + '"]'));
+        const series = computeSectionGradeSeries(sectionId);
+        const dueTs = rows
+            .map(row => row?.dataset?.dueTs)
+            .map(toNumberOrNull)
+            .filter(ts => ts !== null && ts >= MIN_VALID_EPOCH_MS);
+        const earliestDue = dueTs.length ? Math.min(...dueTs) : null;
+        const chartEl = document.getElementById('section-grade-chart-' + sectionId);
+        renderMeanOverTimeChart(chartEl, series, 'Section grade over time', {
+            timelineStartMs: earliestDue,
+            timelineEndMs: Date.now()
+        });
+    } catch (e) {
+        // non-fatal
+    }
+
+    return stats;
+}
+
+function renderOverallGradeStats() {
+    const box = document.getElementById('overall-grade-stats');
+    if (!box) return;
+
+    const courseCards = Array.from(document.querySelectorAll('.course-card[data-section]'));
+    const sectionPcts = [];
+    const sectionDeltas = [];
+    let totalEarned = 0;
+    let totalMax = 0;
+
+    let highestPct = null;
+    let lowestPct = null;
+
+    courseCards.forEach(card => {
+        if (card.dataset.sectionHasGrade !== '1') return;
+        const pct = toNumberOrNull(card.dataset.computedPct);
+        if (pct !== null) {
+            sectionPcts.push(pct);
+            highestPct = highestPct === null ? pct : Math.max(highestPct, pct);
+            lowestPct = lowestPct === null ? pct : Math.min(lowestPct, pct);
+        }
+
+        const orig = toNumberOrNull(card.dataset.originalPct);
+        if (pct !== null && orig !== null) {
+            const d = pct - orig;
+            sectionDeltas.push(d);
+        }
+
+        const earned = toNumberOrNull(card.dataset.sectionEarned);
+        const max = toNumberOrNull(card.dataset.sectionMax);
+        if (earned !== null) totalEarned += earned;
+        if (max !== null) totalMax += max;
+    });
+
+    const overallPointsPct = (totalMax > 0) ? (totalEarned / totalMax * 100) : null;
+    const m = mean(sectionPcts);
+    const med = median(sectionPcts);
+    const sd = stdDev(sectionPcts);
+    const deltaMean = mean(sectionDeltas);
+
+    const roundedForGpa = sectionPcts.map(pct => Math.round(pct));
+    const gpa = sectionPcts.length ? (roundedForGpa.reduce((sum, pct) => sum + pctToGpa(pct), 0) / sectionPcts.length) : null;
+    const rangePct = (highestPct !== null && lowestPct !== null) ? (highestPct - lowestPct) : null;
+
+    const gpaText = gpa !== null ? gpa.toFixed(2) + ' / 4.0' : 'N/A';
+    const rangeText = rangePct !== null ? formatPct(rangePct) : 'N/A';
+
+    box.innerHTML =
+        '<div class="grade-stats-header">' +
+            '<div class="grade-stats-title">Overall • Statistics</div>' +
+            '<div class="grade-stats-chip">' + (overallPointsPct !== null ? ('Points-based: ' + formatPct(overallPointsPct)) : 'Points-based: N/A') + '</div>' +
+        '</div>' +
+        '<div class="grade-stats-grid">' +
+            '<div class="grade-stats-metric"><div class="k">Mean section %</div><div class="v">' + formatPct(m) + '</div></div>' +
+            '<div class="grade-stats-metric"><div class="k">Median section %</div><div class="v">' + formatPct(med) + '</div></div>' +
+            '<div class="grade-stats-metric"><div class="k">Std dev</div><div class="v">' + (sd !== null ? sd.toFixed(2) : 'N/A') + '</div></div>' +
+            '<div class="grade-stats-metric"><div class="k">Avg change</div><div class="v">' + (deltaMean !== null ? formatSignedPct(deltaMean) : 'N/A') + '</div></div>' +
+            '<div class="grade-stats-metric"><div class="k">GPA</div><div class="v">' + escapeHtml(gpaText) + '</div></div>' +
+            '<div class="grade-stats-metric"><div class="k">Range</div><div class="v">' + escapeHtml(rangeText) + '</div></div>' +
+        '</div>' +
+            '<div class="grade-stats-chart" id="overall-grade-chart" style="display: none;"></div>';
+
+    try {
+            const overallChartEl = document.getElementById('overall-grade-chart');
+            if (overallChartEl) overallChartEl.remove();
+    } catch (e) {
+        // non-fatal
+    }
+
+    const debugBox = document.getElementById('overall-grade-stats-debug');
+    if (debugBox) {
+        const totalSections = courseCards.length;
+        const excludedSections = totalSections - sectionPcts.length;
+        const deltaSample = sectionDeltas.length ? sectionDeltas.slice(-3).map(d => formatSignedPct(d)).join(', ') : 'N/A';
+        const gpaSamples = sectionPcts.length ? sectionPcts.slice(0, Math.min(sectionPcts.length, 5)).map(pct => pctToGpa(pct).toFixed(1)).join(', ') + (sectionPcts.length > 5 ? '…' : '') : 'N/A';
+        const rangeDetail = (highestPct !== null && lowestPct !== null) ? (highestPct.toFixed(2) + '% / ' + lowestPct.toFixed(2) + '%') : 'N/A';
+        let debugHtml = '';
+        debugHtml += '<div class="row"><div><strong>Overall stats debug</strong></div><div></div></div>';
+        debugHtml += '<div class="row"><div class="muted">Sections counted</div><div>' + sectionPcts.length + ' of ' + totalSections + (excludedSections ? ' (excluded ' + excludedSections + ' N/A)' : '') + '</div></div>';
+        debugHtml += '<div class="row"><div class="muted">Points total</div><div>' + totalEarned.toFixed(2) + '/' + totalMax.toFixed(2) + ' (' + formatPct(overallPointsPct) + ')</div></div>';
+        debugHtml += '<div class="row"><div class="muted">Avg change datapoints</div><div>' + sectionDeltas.length + ' sections</div></div>';
+        debugHtml += '<div class="row"><div class="muted">Recent deltas</div><div>' + escapeHtml(deltaSample) + '</div></div>';
+        debugHtml += '<div class="row"><div class="muted">GPA contributions (first few)</div><div>' + escapeHtml(gpaSamples) + '</div></div>';
+        debugHtml += '<div class="row"><div class="muted">Range detail</div><div>' + rangeDetail + '</div></div>';
+        debugBox.innerHTML = debugHtml;
+    }
+}
+
 function initGradesPage() {
     try {
         // Only run if the grades UI exists
@@ -34,6 +978,9 @@ function initGradesPage() {
         document.querySelectorAll('.course-card[data-section]').forEach(card => {
             recalculateAllGrades(card.dataset.section);
         });
+
+        // Initial overall stats once sections have computed pcts
+        scheduleOverallStatsUpdate();
     } catch (e) {
         console.warn('initGradesPage failed:', e);
     }
@@ -547,6 +1494,7 @@ function addCustomAssignmentRow(assignment) {
     row.dataset.originalMax = '';
     row.dataset.currentGrade = String(scoreVal);
     row.dataset.currentMax = String(maxVal);
+    row.dataset.gradedTs = String(Date.now());
 
     const pctHtml = (maxVal > 0)
         ? ('<span class="grade-pill ' + getGradeColorClass(pct) + '">' + pct.toFixed(2) + '%</span>')
@@ -840,6 +1788,18 @@ function recalculateAllGrades(sectionId) {
     const hasOriginalGrade = originalPctStr !== '' && originalPctStr !== undefined && originalPctStr !== null;
     const originalSectionPct = hasOriginalGrade ? parseFloat(originalPctStr) : null;
 
+    // Expose computed values for overall stats
+    try {
+        courseCard.dataset.computedPct = String(newSectionPct);
+        courseCard.dataset.originalPct = (originalSectionPct !== null && Number.isFinite(originalSectionPct)) ? String(originalSectionPct) : '';
+        courseCard.dataset.sectionEarned = String(newSectionEarned);
+        courseCard.dataset.sectionMax = String(newSectionMax);
+        const hasGrade = (newSectionMax > 0) || (weightedMode && sumNewContrib > 0);
+        courseCard.dataset.sectionHasGrade = hasGrade ? '1' : '';
+    } catch (e) {
+        // non-fatal
+    }
+
     if (editedSectionEl) {
         const shouldShowCalculated = hasChanges && (
             (hasOriginalGrade && Math.abs(newSectionPct - originalSectionPct) > 0.01) ||
@@ -856,6 +1816,10 @@ function recalculateAllGrades(sectionId) {
             editedSectionEl.style.display = 'none';
         }
     }
+
+    // Render section stats box once so debug can reference it
+    let sectionStats = null;
+    try { sectionStats = renderSectionGradeStats(sectionId); } catch (e) { sectionStats = null; }
 
     // Render debug panel
     const debugEl = document.getElementById('grade-debug-' + sectionId);
@@ -896,9 +1860,31 @@ function recalculateAllGrades(sectionId) {
                 html += '<div class="row"><div class="muted">Total section points:</div><div>' + newSectionEarned.toFixed(2) + '/' + newSectionMax.toFixed(2) + '</div></div>';
             }
 
+            if (sectionStats) {
+                const trendDetail = sectionStats.trend.label + (sectionStats.trend.detail ? ' (' + sectionStats.trend.detail + ')' : '');
+                const momentumText = sectionStats.momentum || 'N/A';
+                const consistencyText = (sectionStats.consistency !== null) ? sectionStats.consistency.toFixed(0) + '/100' : 'N/A';
+                html += '<hr style="opacity:0.1; border: none; border-top: 1px solid rgba(0,0,0,0.1); margin: var(--space-2) 0;">';
+                html += '<div class="row"><div><strong>Stats calc</strong> <span class="muted">current values used for the box</span></div><div></div></div>';
+                html += '<div class="row"><div class="muted">Assignments included</div><div>' + sectionStats.count + '</div></div>';
+                html += '<div class="row"><div class="muted">Mean</div><div>' + formatPct(sectionStats.mean) + '</div></div>';
+                html += '<div class="row"><div class="muted">Median</div><div>' + formatPct(sectionStats.median) + '</div></div>';
+                html += '<div class="row"><div class="muted">Std dev</div><div>' + (sectionStats.stdDev !== null ? sectionStats.stdDev.toFixed(2) + '%' : 'N/A') + '</div></div>';
+                html += '<div class="row"><div class="muted">Last 5 avg</div><div>' + formatPct(sectionStats.last5Avg) + '</div></div>';
+                html += '<div class="row"><div class="muted">Trend</div><div>' + escapeHtml(trendDetail) + '</div></div>';
+                html += '<div class="row"><div class="muted">Momentum</div><div>' + escapeHtml(momentumText) + '</div></div>';
+                html += '<div class="row"><div class="muted">Consistency</div><div>' + escapeHtml(consistencyText) + '</div></div>';
+                html += '<div class="row"><div class="muted">Extra credit points</div><div>' + sectionStats.extraCreditPoints.toFixed(2) + '</div></div>';
+                html += '<div class="row"><div class="muted">Ungraded</div><div>' + sectionStats.ungradedCount + '</div></div>';
+                html += '<div class="row"><div class="muted">Dropped</div><div>' + sectionStats.droppedCount + '</div></div>';
+            }
+
             debugEl.innerHTML = html;
         }
     }
+
+    // Refresh overall stats box (section stats already rendered before debug)
+    scheduleOverallStatsUpdate();
 }
 
 // On page load, set debug button states from localStorage

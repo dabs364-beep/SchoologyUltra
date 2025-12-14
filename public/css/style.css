@@ -218,6 +218,182 @@ html:not(.liquid-glass) .nav {
     -webkit-backdrop-filter: none;
 }
 
+/* ============================================
+   GRADES: STATISTICS BOXES
+   Accent-tinted; transparent in liquid-glass
+   ============================================ */
+.grade-stats-box {
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, var(--border-medium));
+    box-shadow: var(--shadow-sm);
+}
+
+html.liquid-glass .grade-stats-box {
+    background: color-mix(in srgb, var(--accent-primary) 18%, transparent) !important;
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+
+html:not(.liquid-glass) .grade-stats-box {
+    background: color-mix(in srgb, var(--accent-primary) 14%, var(--bg-card)) !important;
+}
+
+.grade-stats-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.grade-stats-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.grade-stats-chip {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--accent-primary) 22%, var(--bg-secondary));
+    color: var(--text-primary);
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, var(--border-light));
+}
+
+.grade-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-3);
+}
+
+@media (max-width: 900px) {
+    .grade-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .grade-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.grade-stats-metric {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+    background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+}
+
+html:not(.liquid-glass) .grade-stats-metric {
+    background: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-secondary));
+}
+
+.grade-stats-metric .k {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.grade-stats-metric .v {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.grade-stats-chart {
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+    background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+    min-height: 240px;
+    height: auto;
+    position: relative;
+    overflow: hidden;
+}
+
+html:not(.liquid-glass) .grade-stats-chart {
+    background: color-mix(in srgb, var(--accent-primary) 6%, var(--bg-secondary));
+}
+
+.grade-stats-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.grade-stats-area {
+    fill: color-mix(in srgb, var(--accent-primary) 33%, var(--bg-card));
+    opacity: 0.45;
+}
+
+.grade-stats-point {
+    stroke: var(--text-inverse);
+    stroke-width: 1.4;
+    transition: stroke-width 120ms ease;
+}
+
+.grade-stats-point.active {
+    stroke-width: 2.4;
+}
+
+.grade-stats-hover-tip {
+    position: absolute;
+    top: var(--space-2);
+    left: var(--space-2);
+    right: var(--space-2);
+    padding: 6px 8px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+    background: color-mix(in srgb, var(--bg-card) 70%, transparent);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    line-height: 1.25;
+    white-space: pre-line;
+    pointer-events: none;
+}
+
+.grade-stats-debug {
+    border-radius: var(--radius-lg);
+    border: 1px dashed color-mix(in srgb, var(--accent-primary) 40%, var(--border-medium));
+    background: color-mix(in srgb, var(--accent-primary) 6%, var(--bg-secondary));
+    padding: var(--space-3);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    box-shadow: var(--shadow-xs);
+    margin-bottom: var(--space-4);
+}
+
+.grade-stats-debug .row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.grade-stats-debug .muted {
+    color: var(--text-tertiary);
+}
+
+/* Disable hover lift for collapsed course-card on grades page */
+.grades-container .course-card:not(.open):hover {
+    transform: none !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
 html:not(.liquid-glass) .course-card,
 html:not(.liquid-glass) .assignment-card,
 html:not(.liquid-glass) .grade-card,
@@ -2140,14 +2316,6 @@ body::after {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
-.card:hover::before,
-.course-card:hover::before,
-.assignment-card:hover::before,
-.grade-card:hover::before,
-.folder-item:hover::before {
-    /*opacity: 1;*/
-}
-
 /* When a course card is expanded, disable the hover lift/scale to avoid
    visual jump for expanded content */
 .course-card.open:hover,
@@ -2783,6 +2951,9 @@ html.liquid-glass.dark-mode .custom-assignment-row {
 .grades-table .grade-row.dropped td:first-child,
 .grades-table .grade-row.custom-assignment-row td:first-child {
     padding-left: calc(var(--space-3));
+    border-left: 4px solid var(--accent-primary);
+    border-top-left-radius: var(--radius-md);
+    border-bottom-left-radius: var(--radius-md);
 }
 
 /* Edited rows: show a full accent border around the row using cell borders */
