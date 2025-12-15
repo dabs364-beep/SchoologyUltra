@@ -499,6 +499,46 @@ function enrichSectionsWithFinalGrades(sections, gradesData) {
     });
 }
 
+function normalizeGradeCandidate(value) {
+    if (value === undefined || value === null) return null;
+    if (Array.isArray(value)) {
+        for (const entry of value) {
+            const normalized = normalizeGradeCandidate(entry && (entry.grade !== undefined ? entry.grade : entry));
+            if (normalized !== null) return normalized;
+        }
+        return null;
+    }
+    if (typeof value === 'object') {
+        if (value.grade !== undefined) return normalizeGradeCandidate(value.grade);
+        return null;
+    }
+    const trimmed = String(value).trim();
+    if (!trimmed) return null;
+    const numeric = Number.parseFloat(trimmed);
+    if (!Number.isNaN(numeric)) return numeric;
+    return trimmed;
+}
+
+function formatCourseGradeLabel(section) {
+    if (!section) return '—';
+    const gradeCandidates = [section.final_grade, section.grade];
+    for (const candidate of gradeCandidates) {
+        const normalized = normalizeGradeCandidate(candidate);
+        if (normalized !== null) {
+            if (typeof normalized === 'number') return `${normalized.toFixed(1)}%`;
+            return normalized;
+        }
+    }
+    if (section.grade_unavailable) return 'Unavailable';
+    if (section.has_grades) return 'Has grades';
+    return '—';
+}
+
+function getDisplayCourseTitle(section) {
+    if (!section) return 'Course materials';
+    return section.course_title || section.section_title || section.courseName || 'Course materials';
+}
+
 // Load schedule from disk (or just return cache on Vercel)
 function loadSchedule(userId) {
     // On Vercel, we can't persist to filesystem, just use in-memory cache
@@ -894,6 +934,8 @@ function buildAuthorizationHeader(params) {
 const RATE_LIMIT_WINDOW_MS = 5 * 1000; // 5 seconds
 const RATE_LIMIT_MAX = 50; // maximum requests per window
 const RATE_LIMIT_MARGIN = 4; // keep a small margin to avoid hard limit
+const RATE_LIMIT_RETRY_LIMIT = 4; // number of throttled retries when 429s occur
+const RATE_LIMIT_RETRY_BASE_MS = 1500; // base backoff when Retry-After header missing
 const oauthRequestTimestamps = [];
 
 function nowMs() { return Date.now(); }
@@ -925,7 +967,7 @@ function waitForRateLimit() {
     });
 }
 
-async function makeOAuthRequest(method, url, token = null, body = null, cacheOptions = {}) {
+async function makeOAuthRequest(method, url, token = null, body = null, cacheOptions = {}, retryCount = 0) {
     // Throttle to avoid 429 from Schoology
     await waitForRateLimit();
 
@@ -1031,6 +1073,36 @@ async function makeOAuthRequest(method, url, token = null, body = null, cacheOpt
                     makeOAuthRequest(method, redirectUrl, token, body, cacheOptions)
                         .then(resolve)
                         .catch(reject);
+                    return;
+                }
+
+                if (res.statusCode === 429) {
+                    if (retryCount >= RATE_LIMIT_RETRY_LIMIT) {
+                        debugLog('OAUTH-RETRY', `Rate limit reached after ${retryCount} retries`);
+                        reject(new Error(`HTTP 429: Rate limit exceeded after ${retryCount} retries`));
+                        return;
+                    }
+
+                    let retryAfterMs = RATE_LIMIT_RETRY_BASE_MS;
+                    const retryAfterHeader = res.headers['retry-after'];
+                    if (retryAfterHeader) {
+                        const parsedSeconds = Number.parseInt(retryAfterHeader, 10);
+                        if (!Number.isNaN(parsedSeconds) && parsedSeconds > 0) {
+                            retryAfterMs = parsedSeconds * 1000;
+                        } else {
+                            const parsedDate = Date.parse(retryAfterHeader);
+                            if (!Number.isNaN(parsedDate)) {
+                                retryAfterMs = Math.max(parsedDate - Date.now(), RATE_LIMIT_RETRY_BASE_MS);
+                            }
+                        }
+                    }
+
+                    debugLog('OAUTH-RETRY', `429 received, retrying after ${retryAfterMs}ms (attempt ${retryCount + 1})`);
+                    setTimeout(() => {
+                        makeOAuthRequest(method, url, token, body, cacheOptions, retryCount + 1)
+                            .then(resolve)
+                            .catch(reject);
+                    }, retryAfterMs);
                     return;
                 }
 
@@ -2884,6 +2956,9 @@ app.get('/courses', async (req, res) => {
         debugLog('COURSES', `⚡ Total processing time: ${Date.now() - startTime}ms`);
         debugLog('COURSES', '✓ Rendering courses page');
 
+        const courseTitle = getDisplayCourseTitle(selectedSection);
+        const courseGradeDisplay = formatCourseGradeLabel(selectedSection);
+
         res.render('courses', {
             isShell: false,
             sections: enrichedAllSections,
@@ -2891,6 +2966,8 @@ app.get('/courses', async (req, res) => {
             folderContents,
             upcomingAssignments,
             overdueAssignments,
+            courseTitle,
+            courseGradeDisplay,
             authenticated: true,
             userName: req.session.userName
         });
